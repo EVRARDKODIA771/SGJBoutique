@@ -2,7 +2,6 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import productRoutes from "./src/routes/productRoutes.js";
 
 import {
   env,
@@ -11,6 +10,9 @@ import {
 
 import adminAuthRoutes
   from "./src/routes/adminAuthRoutes.js";
+
+import productRoutes
+  from "./src/routes/productRoutes.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -69,10 +71,16 @@ const apiLimiter = rateLimit({
 
 app.use("/api", apiLimiter);
 
-// Routes d'authentification administrative
+// Routes d’authentification administrative
 app.use(
   "/api/admin/auth",
   adminAuthRoutes
+);
+
+// Routes de gestion des parfums
+app.use(
+  "/api/admin/products",
+  productRoutes
 );
 
 app.get("/", (request, response) => {
@@ -95,6 +103,7 @@ app.get(
   }
 );
 
+// Cette route doit rester après toutes les routes API.
 app.use((request, response) => {
   response.status(404).json({
     success: false,
@@ -102,6 +111,7 @@ app.use((request, response) => {
   });
 });
 
+// Gestion centralisée des erreurs.
 app.use(
   (
     error,
