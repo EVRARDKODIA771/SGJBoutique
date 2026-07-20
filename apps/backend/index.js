@@ -8,6 +8,9 @@ import {
   allowedOrigins,
 } from "./src/config/env.js";
 
+import adminAuthRoutes
+  from "./src/routes/adminAuthRoutes.js";
+
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -24,14 +27,12 @@ app.use(
 app.use(
   cors({
     origin(origin, callback) {
-      // Autorise les appels sans origine :
-      // applications mobiles, outils serveur et tests directs.
+      // Applications mobiles, outils serveur
+      // et accès direct sans en-tête Origin.
       if (!origin) {
         return callback(null, true);
       }
 
-      // En développement, toutes les origines sont acceptées.
-      // En production, seules les origines enregistrées sont acceptées.
       if (
         env.NODE_ENV !== "production" ||
         allowedOrigins.includes(origin)
@@ -67,6 +68,12 @@ const apiLimiter = rateLimit({
 
 app.use("/api", apiLimiter);
 
+// Routes d'authentification administrative
+app.use(
+  "/api/admin/auth",
+  adminAuthRoutes
+);
+
 app.get("/", (request, response) => {
   response.status(200).json({
     success: true,
@@ -75,16 +82,18 @@ app.get("/", (request, response) => {
   });
 });
 
-app.get("/api/health", (request, response) => {
-  response.status(200).json({
-    success: true,
-    status: "healthy",
-    environment: env.NODE_ENV,
-    timestamp: new Date().toISOString(),
-  });
-});
+app.get(
+  "/api/health",
+  (request, response) => {
+    response.status(200).json({
+      success: true,
+      status: "healthy",
+      environment: env.NODE_ENV,
+      timestamp: new Date().toISOString(),
+    });
+  }
+);
 
-// Cette route intercepte toutes les adresses inexistantes.
 app.use((request, response) => {
   response.status(404).json({
     success: false,
@@ -92,25 +101,32 @@ app.use((request, response) => {
   });
 });
 
-// Gestion centrale des erreurs Express.
-app.use((error, request, response, next) => {
-  console.error(error);
+app.use(
+  (
+    error,
+    request,
+    response,
+    next
+  ) => {
+    console.error(error);
 
-  if (error.message === "Origin not allowed") {
-    return response.status(403).json({
+    if (
+      error.message ===
+      "Origin not allowed"
+    ) {
+      return response.status(403).json({
+        success: false,
+        error: "Origin not allowed",
+      });
+    }
+
+    return response.status(500).json({
       success: false,
-      error: "Origin not allowed",
+      error: "Internal server error",
     });
   }
+);
 
-  return response.status(500).json({
-    success: false,
-    error: "Internal server error",
-  });
-});
-
-// En local, Node démarre le serveur normalement.
-// Sur Vercel, l’application Express exportée devient une fonction.
 if (env.NODE_ENV !== "production") {
   app.listen(port, () => {
     console.log(
