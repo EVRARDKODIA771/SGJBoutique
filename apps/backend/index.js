@@ -3,6 +3,11 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 
+import {
+  env,
+  allowedOrigins,
+} from "./src/config/env.js";
+
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -16,32 +21,37 @@ app.use(
   })
 );
 
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-
 app.use(
   cors({
     origin(origin, callback) {
+      // Autorise les appels sans origine :
+      // applications mobiles, outils serveur et tests directs.
       if (!origin) {
         return callback(null, true);
       }
 
+      // En développement, toutes les origines sont acceptées.
+      // En production, seules les origines enregistrées sont acceptées.
       if (
-        process.env.NODE_ENV !== "production" ||
+        env.NODE_ENV !== "production" ||
         allowedOrigins.includes(origin)
       ) {
         return callback(null, true);
       }
 
-      return callback(new Error("Origin not allowed"));
+      return callback(
+        new Error("Origin not allowed")
+      );
     },
     credentials: true,
   })
 );
 
-app.use(express.json({ limit: "1mb" }));
+app.use(
+  express.json({
+    limit: "1mb",
+  })
+);
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -50,7 +60,8 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
   message: {
     success: false,
-    error: "Too many requests. Please try again later.",
+    error:
+      "Too many requests. Please try again later.",
   },
 });
 
@@ -68,10 +79,12 @@ app.get("/api/health", (request, response) => {
   response.status(200).json({
     success: true,
     status: "healthy",
+    environment: env.NODE_ENV,
     timestamp: new Date().toISOString(),
   });
 });
 
+// Cette route intercepte toutes les adresses inexistantes.
 app.use((request, response) => {
   response.status(404).json({
     success: false,
@@ -79,18 +92,30 @@ app.use((request, response) => {
   });
 });
 
+// Gestion centrale des erreurs Express.
 app.use((error, request, response, next) => {
   console.error(error);
 
-  response.status(500).json({
+  if (error.message === "Origin not allowed") {
+    return response.status(403).json({
+      success: false,
+      error: "Origin not allowed",
+    });
+  }
+
+  return response.status(500).json({
     success: false,
     error: "Internal server error",
   });
 });
 
-if (process.env.NODE_ENV !== "production") {
+// En local, Node démarre le serveur normalement.
+// Sur Vercel, l’application Express exportée devient une fonction.
+if (env.NODE_ENV !== "production") {
   app.listen(port, () => {
-    console.log(`SGJ Boutique API running on port ${port}`);
+    console.log(
+      `SGJ Boutique API running on port ${port}`
+    );
   });
 }
 
