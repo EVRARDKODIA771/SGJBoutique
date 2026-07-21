@@ -350,7 +350,7 @@ productRoutes.get(
         .from("product_images")
         .select("*")
         .eq("product_id", productId)
-        .order("sort_order", {
+        .order("display_order", {
           ascending: true,
         });
 
