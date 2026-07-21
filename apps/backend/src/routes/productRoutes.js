@@ -1123,6 +1123,422 @@ productRoutes.patch(
 );
 
 /**
+ * POST /api/admin/products/:productId/stock-movements
+ * Enregistre un mouvement de stock.
+ *
+ * La quantité reçue par l’API est toujours positive.
+ * Le backend détermine automatiquement son signe.
+ */
+productRoutes.post(
+  "/:productId/stock-movements",
+  async (request, response) => {
+    try {
+      const parameterSchema = z.object({
+        productId: z.string().uuid(),
+      });
+
+      const movementSchema = z
+        .object({
+          movementType: z.enum([
+            "purchase",
+            "sale",
+            "return",
+            "damage",
+            "loss",
+            "adjustment",
+          ]),
+
+          quantity: z
+            .number()
+            .int()
+            .positive(),
+
+          adjustmentDirection: z
+            .enum([
+              "increase",
+              "decrease",
+            ])
+            .optional(),
+
+          reason: z
+            .string()
+            .trim()
+            .max(500)
+            .nullable()
+            .optional(),
+
+          reference: z
+            .string()
+            .trim()
+            .max(100)
+            .nullable()
+            .optional(),
+        })
+        .strict()
+        .superRefine((movement, context) => {
+          if (
+            movement.movementType ===
+              "adjustment" &&
+            !movement.adjustmentDirection
+          ) {
+            context.addIssue({
+              code: "custom",
+              path: [
+                "adjustmentDirection",
+              ],
+              message:
+                "Adjustment direction is required",
+            });
+          }
+
+          if (
+            movement.movementType !==
+              "adjustment" &&
+            movement.adjustmentDirection !==
+              undefined
+          ) {
+            context.addIssue({
+              code: "custom",
+              path: [
+                "adjustmentDirection",
+              ],
+              message:
+                "Adjustment direction is only allowed for adjustments",
+            });
+          }
+        });
+
+      const parameterValidation =
+        parameterSchema.safeParse(
+          request.params
+        );
+
+      if (
+        !parameterValidation.success
+      ) {
+        return response
+          .status(400)
+          .json({
+            success: false,
+            error: "Invalid product ID",
+          });
+      }
+
+      const movementValidation =
+        movementSchema.safeParse(
+          request.body
+        );
+
+      if (!movementValidation.success) {
+        return response
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Invalid stock movement data",
+            details:
+              movementValidation.error.flatten(),
+          });
+      }
+
+      const { productId } =
+        parameterValidation.data;
+
+      const movement =
+        movementValidation.data;
+
+      let quantityDelta =
+        movement.quantity;
+
+      if (
+        [
+          "sale",
+          "damage",
+          "loss",
+        ].includes(movement.movementType)
+      ) {
+        quantityDelta =
+          -movement.quantity;
+      }
+
+      if (
+        movement.movementType ===
+          "adjustment" &&
+        movement.adjustmentDirection ===
+          "decrease"
+      ) {
+        quantityDelta =
+          -movement.quantity;
+      }
+
+      const {
+        data: updatedProduct,
+        error,
+      } = await request.auth.supabase.rpc(
+        "record_stock_movement",
+        {
+          target_product_id:
+            productId,
+          target_movement_type:
+            movement.movementType,
+          quantity_delta:
+            quantityDelta,
+          movement_reason:
+            movement.reason ?? null,
+          movement_reference:
+            movement.reference ?? null,
+        }
+      );
+
+      if (error) {
+        console.error(
+          "Stock movement error:",
+          error
+        );
+
+        if (
+          error.message?.includes(
+            "Product not found"
+          )
+        ) {
+          return response
+            .status(404)
+            .json({
+              success: false,
+              error: "Product not found",
+            });
+        }
+
+        if (
+          error.message?.includes(
+            "Insufficient stock"
+          )
+        ) {
+          return response
+            .status(409)
+            .json({
+              success: false,
+              error:
+                "Insufficient stock",
+            });
+        }
+
+        if (
+          error.message?.includes(
+            "Administrative access required"
+          )
+        ) {
+          return response
+            .status(403)
+            .json({
+              success: false,
+              error:
+                "Your administrative role does not allow stock movements",
+            });
+        }
+
+        return response
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Unable to record stock movement",
+          });
+      }
+
+      return response.status(201).json({
+        success: true,
+        message:
+          "Stock movement recorded successfully",
+        movement: {
+          type: movement.movementType,
+          quantityChange:
+            quantityDelta,
+          reason:
+            movement.reason ?? null,
+          reference:
+            movement.reference ?? null,
+        },
+        product: updatedProduct,
+      });
+    } catch (error) {
+      console.error(
+        "Stock movement route error:",
+        error
+      );
+
+      return response.status(500).json({
+        success: false,
+        error:
+          "Unable to record stock movement",
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/admin/products/:productId/stock-movements
+ * Retourne l’historique paginé du stock.
+ */
+productRoutes.get(
+  "/:productId/stock-movements",
+  async (request, response) => {
+    try {
+      const parameterSchema = z.object({
+        productId: z.string().uuid(),
+      });
+
+      const querySchema = z.object({
+        page: z.coerce
+          .number()
+          .int()
+          .min(1)
+          .default(1),
+
+        limit: z.coerce
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .default(20),
+      });
+
+      const parameterValidation =
+        parameterSchema.safeParse(
+          request.params
+        );
+
+      if (
+        !parameterValidation.success
+      ) {
+        return response
+          .status(400)
+          .json({
+            success: false,
+            error: "Invalid product ID",
+          });
+      }
+
+      const queryValidation =
+        querySchema.safeParse(
+          request.query
+        );
+
+      if (!queryValidation.success) {
+        return response
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Invalid query parameters",
+            details:
+              queryValidation.error.flatten(),
+          });
+      }
+
+      const { productId } =
+        parameterValidation.data;
+
+      const {
+        page,
+        limit,
+      } = queryValidation.data;
+
+      const start =
+        (page - 1) * limit;
+      const end = start + limit - 1;
+
+      const {
+        data: product,
+        error: productError,
+      } = await supabaseAdmin
+        .from("products")
+        .select("id")
+        .eq("id", productId)
+        .maybeSingle();
+
+      if (productError) {
+        console.error(
+          "Product verification error:",
+          productError
+        );
+
+        return response
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Unable to verify product",
+          });
+      }
+
+      if (!product) {
+        return response
+          .status(404)
+          .json({
+            success: false,
+            error: "Product not found",
+          });
+      }
+
+      const {
+        data: movements,
+        error,
+        count,
+      } = await supabaseAdmin
+        .from("stock_movements")
+        .select("*", {
+          count: "exact",
+        })
+        .eq("product_id", productId)
+        .order("created_at", {
+          ascending: false,
+        })
+        .range(start, end);
+
+      if (error) {
+        console.error(
+          "Stock history error:",
+          error
+        );
+
+        return response
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Unable to retrieve stock history",
+          });
+      }
+
+      return response.status(200).json({
+        success: true,
+        movements: movements ?? [],
+        pagination: {
+          page,
+          limit,
+          total: count ?? 0,
+          totalPages: Math.ceil(
+            (count ?? 0) / limit
+          ),
+        },
+      });
+    } catch (error) {
+      console.error(
+        "Stock history route error:",
+        error
+      );
+
+      return response.status(500).json({
+        success: false,
+        error:
+          "Unable to retrieve stock history",
+      });
+    }
+  }
+);
+
+/**
  * GET /api/admin/products/:productId
  * Retourne un parfum précis avec ses images.
  */
