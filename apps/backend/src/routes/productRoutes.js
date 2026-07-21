@@ -48,7 +48,7 @@ productRoutes.get("/", async (request, response) => {
     const end = start + limit - 1;
 
     let databaseQuery = supabaseAdmin
-      .from("product_catalog")
+      .from("products")
       .select("*", {
         count: "exact",
       })
@@ -319,7 +319,7 @@ productRoutes.get(
         data: product,
         error,
       } = await supabaseAdmin
-        .from("product_catalog")
+        .from("products")
         .select("*")
         .eq("id", productId)
         .maybeSingle();
