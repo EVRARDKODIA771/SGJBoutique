@@ -11,6 +11,9 @@ import {
 import adminAuthRoutes
   from "./src/routes/adminAuthRoutes.js";
 
+import categoryRoutes
+  from "./src/routes/categoryRoutes.js";
+
 import productRoutes
   from "./src/routes/productRoutes.js";
 
@@ -75,6 +78,12 @@ app.use("/api", apiLimiter);
 app.use(
   "/api/admin/auth",
   adminAuthRoutes
+);
+
+// Routes de gestion des catégories
+app.use(
+  "/api/admin/categories",
+  categoryRoutes
 );
 
 // Routes de gestion des parfums
