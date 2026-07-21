@@ -684,6 +684,445 @@ productRoutes.post(
 );
 
 /**
+ * PATCH /api/admin/products/:productId
+ * Modifie les informations d’un parfum.
+ *
+ * Le stock ne peut pas être modifié ici.
+ */
+productRoutes.patch(
+  "/:productId",
+  async (request, response) => {
+    try {
+      const parameterSchema = z.object({
+        productId: z.string().uuid(),
+      });
+
+      const updateSchema = z
+        .object({
+          name: z
+            .string()
+            .trim()
+            .min(1)
+            .max(150)
+            .optional(),
+
+          brand: z
+            .string()
+            .trim()
+            .max(100)
+            .nullable()
+            .optional(),
+
+          categoryId: z
+            .string()
+            .uuid()
+            .nullable()
+            .optional(),
+
+          description: z
+            .string()
+            .trim()
+            .max(2000)
+            .nullable()
+            .optional(),
+
+          internalComment: z
+            .string()
+            .trim()
+            .max(2000)
+            .nullable()
+            .optional(),
+
+          purchasePrice: z
+            .number()
+            .int()
+            .min(0)
+            .optional(),
+
+          salePrice: z
+            .number()
+            .int()
+            .min(0)
+            .optional(),
+
+          lowStockThreshold: z
+            .number()
+            .int()
+            .min(0)
+            .optional(),
+
+          volumeMl: z
+            .number()
+            .int()
+            .positive()
+            .nullable()
+            .optional(),
+
+          adminRating: z
+            .number()
+            .min(0)
+            .max(5)
+            .nullable()
+            .optional(),
+
+          status: z
+            .enum([
+              "draft",
+              "active",
+            ])
+            .optional(),
+        })
+        .strict();
+
+      const parameterValidation =
+        parameterSchema.safeParse(
+          request.params
+        );
+
+      if (
+        !parameterValidation.success
+      ) {
+        return response
+          .status(400)
+          .json({
+            success: false,
+            error: "Invalid product ID",
+          });
+      }
+
+      const bodyValidation =
+        updateSchema.safeParse(
+          request.body
+        );
+
+      if (!bodyValidation.success) {
+        return response
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Invalid product data",
+            details:
+              bodyValidation.error.flatten(),
+          });
+      }
+
+      if (
+        Object.keys(
+          bodyValidation.data
+        ).length === 0
+      ) {
+        return response
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "At least one modification is required",
+          });
+      }
+
+      const { productId } =
+        parameterValidation.data;
+
+      const update =
+        bodyValidation.data;
+
+      const productUpdates = {};
+
+      if (update.name !== undefined) {
+        productUpdates.name =
+          update.name;
+      }
+
+      if (update.brand !== undefined) {
+        productUpdates.brand =
+          update.brand;
+      }
+
+      if (
+        update.categoryId !== undefined
+      ) {
+        productUpdates.category_id =
+          update.categoryId;
+      }
+
+      if (
+        update.description !== undefined
+      ) {
+        productUpdates.public_description =
+          update.description;
+      }
+
+      if (
+        update.internalComment !==
+        undefined
+      ) {
+        productUpdates.internal_comment =
+          update.internalComment;
+      }
+
+      if (
+        update.purchasePrice !== undefined
+      ) {
+        productUpdates.purchase_price =
+          update.purchasePrice;
+      }
+
+      if (
+        update.salePrice !== undefined
+      ) {
+        productUpdates.sale_price =
+          update.salePrice;
+      }
+
+      if (
+        update.lowStockThreshold !==
+        undefined
+      ) {
+        productUpdates.low_stock_threshold =
+          update.lowStockThreshold;
+      }
+
+      if (
+        update.volumeMl !== undefined
+      ) {
+        productUpdates.volume_ml =
+          update.volumeMl;
+      }
+
+      if (
+        update.adminRating !== undefined
+      ) {
+        productUpdates.admin_rating =
+          update.adminRating;
+      }
+
+      if (update.status !== undefined) {
+        productUpdates.status =
+          update.status;
+      }
+
+      const {
+        data: updatedProduct,
+        error,
+      } = await request.auth.supabase.rpc(
+        "update_product",
+        {
+          product_id: productId,
+          product_updates:
+            productUpdates,
+        }
+      );
+
+      if (error) {
+        console.error(
+          "Product update error:",
+          error
+        );
+
+        if (
+          error.message?.includes(
+            "Product not found"
+          )
+        ) {
+          return response
+            .status(404)
+            .json({
+              success: false,
+              error: "Product not found",
+            });
+        }
+
+        if (
+          error.message?.includes(
+            "Archived products cannot be modified"
+          )
+        ) {
+          return response
+            .status(409)
+            .json({
+              success: false,
+              error:
+                "Archived products cannot be modified",
+            });
+        }
+
+        if (
+          error.message?.includes(
+            "Administrative access required"
+          )
+        ) {
+          return response
+            .status(403)
+            .json({
+              success: false,
+              error:
+                "Your administrative role does not allow this operation",
+            });
+        }
+
+        if (
+          error.code === "23503" ||
+          error.message
+            ?.toLowerCase()
+            .includes("foreign key")
+        ) {
+          return response
+            .status(400)
+            .json({
+              success: false,
+              error:
+                "The selected category does not exist",
+            });
+        }
+
+        return response
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Unable to update product",
+          });
+      }
+
+      return response.status(200).json({
+        success: true,
+        message:
+          "Product updated successfully",
+        product: updatedProduct,
+      });
+    } catch (error) {
+      console.error(
+        "Product update route error:",
+        error
+      );
+
+      return response.status(500).json({
+        success: false,
+        error:
+          "Unable to update product",
+      });
+    }
+  }
+);
+
+/**
+ * PATCH /api/admin/products/:productId/archive
+ * Archive un parfum sans le supprimer.
+ */
+productRoutes.patch(
+  "/:productId/archive",
+  async (request, response) => {
+    try {
+      const parameterSchema = z.object({
+        productId: z.string().uuid(),
+      });
+
+      const validation =
+        parameterSchema.safeParse(
+          request.params
+        );
+
+      if (!validation.success) {
+        return response
+          .status(400)
+          .json({
+            success: false,
+            error: "Invalid product ID",
+          });
+      }
+
+      const { productId } =
+        validation.data;
+
+      const {
+        data: archivedProduct,
+        error,
+      } = await request.auth.supabase.rpc(
+        "archive_product",
+        {
+          product_id: productId,
+        }
+      );
+
+      if (error) {
+        console.error(
+          "Product archive error:",
+          error
+        );
+
+        if (
+          error.message?.includes(
+            "Product not found"
+          )
+        ) {
+          return response
+            .status(404)
+            .json({
+              success: false,
+              error: "Product not found",
+            });
+        }
+
+        if (
+          error.message?.includes(
+            "Product is already archived"
+          )
+        ) {
+          return response
+            .status(409)
+            .json({
+              success: false,
+              error:
+                "Product is already archived",
+            });
+        }
+
+        if (
+          error.message?.includes(
+            "Administrative access required"
+          )
+        ) {
+          return response
+            .status(403)
+            .json({
+              success: false,
+              error:
+                "Your administrative role does not allow product archiving",
+            });
+        }
+
+        return response
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Unable to archive product",
+          });
+      }
+
+      return response.status(200).json({
+        success: true,
+        message:
+          "Product archived successfully",
+        product: archivedProduct,
+      });
+    } catch (error) {
+      console.error(
+        "Product archive route error:",
+        error
+      );
+
+      return response.status(500).json({
+        success: false,
+        error:
+          "Unable to archive product",
+      });
+    }
+  }
+);
+
+/**
  * GET /api/admin/products/:productId
  * Retourne un parfum précis avec ses images.
  */
