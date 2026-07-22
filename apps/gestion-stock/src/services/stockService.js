@@ -106,9 +106,6 @@ export function uploadProductImage(
  * MOUVEMENTS DE STOCK
  */
 
-/*
- * Historique d’un parfum précis.
- */
 export function getStockMovements(
   productId,
   {
@@ -126,9 +123,6 @@ export function getStockMovements(
   );
 }
 
-/*
- * Enregistre un mouvement pour un parfum.
- */
 export function recordStockMovement(
   productId,
   movementData
@@ -142,13 +136,6 @@ export function recordStockMovement(
   );
 }
 
-/*
- * Historique global de tous les parfums.
- *
- * Cette URL réutilise le point d’entrée
- * Vercel dynamique déjà existant :
- * api/admin/products/[productId].js.
- */
 export function getGlobalStockMovements({
   movementType,
   productId,
@@ -201,17 +188,17 @@ export function createCategory(
   );
 }
 
-export function updateSupplier(
-  supplierId,
-  supplierData
+export function updateCategory(
+  categoryId,
+  categoryData
 ) {
   return apiRequest(
-    "/api/admin/suppliers",
+    "/api/admin/categories",
     {
       method: "PATCH",
       body: {
-        supplierId,
-        ...supplierData,
+        categoryId,
+        ...categoryData,
       },
     }
   );
@@ -256,10 +243,13 @@ export function updateSupplier(
   supplierData
 ) {
   return apiRequest(
-    `/api/admin/suppliers/${supplierId}`,
+    "/api/admin/suppliers",
     {
       method: "PATCH",
-      body: supplierData,
+      body: {
+        supplierId,
+        ...supplierData,
+      },
     }
   );
 }
