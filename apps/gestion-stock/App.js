@@ -50,6 +50,9 @@ import ProductSuppliersScreen from
 import StockMovementScreen from
   "./src/screens/StockMovementScreen.js";
 
+import SuppliersScreen from
+  "./src/screens/SuppliersScreen.js";
+
 import {
   initializeAuth,
 } from "./src/services/authService.js";
@@ -93,8 +96,6 @@ function SectionPlaceholder({
 }) {
   const sectionNames = {
     stock: "Mouvements de stock",
-    suppliers:
-      "Gestion des fournisseurs",
   };
 
   return (
@@ -306,6 +307,20 @@ function ApplicationContent() {
   ) {
     return (
       <CategoriesScreen
+        onBack={() => {
+          setActiveSection(
+            "dashboard"
+          );
+        }}
+      />
+    );
+  }
+
+  if (
+    activeSection === "suppliers"
+  ) {
+    return (
+      <SuppliersScreen
         onBack={() => {
           setActiveSection(
             "dashboard"
