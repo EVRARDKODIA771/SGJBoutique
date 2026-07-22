@@ -92,16 +92,25 @@ app.use(
   categoryRoutes
 );
 
+// Historique global des mouvements de stock.
+//
+// Cette route est volontairement placée
+// sous /products afin de réutiliser la
+// fonction Vercel dynamique existante :
+// api/admin/products/[productId].js.
+//
+// Elle doit être montée avant productRoutes,
+// sinon "stock-history" pourrait être traité
+// comme un identifiant de parfum.
+app.use(
+  "/api/admin/products/stock-history",
+  stockRoutes
+);
+
 // Routes de gestion des parfums
 app.use(
   "/api/admin/products",
   productRoutes
-);
-
-// Historique global des mouvements de stock
-app.use(
-  "/api/admin/stock-movements",
-  stockRoutes
 );
 
 // Routes de gestion des fournisseurs
@@ -130,7 +139,8 @@ app.get(
   }
 );
 
-// Cette route doit rester après toutes les routes API.
+// Cette route doit rester après
+// toutes les routes API.
 app.use((request, response) => {
   response.status(404).json({
     success: false,
