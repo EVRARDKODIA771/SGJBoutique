@@ -1975,5 +1975,122 @@ productRoutes.post(
     }
   }
 );
+/**
+ * DELETE /api/admin/products/:productId/suppliers/:supplierId
+ * Retire un fournisseur d’un parfum.
+ *
+ * Le fournisseur lui-même n’est pas supprimé.
+ */
+productRoutes.delete(
+  "/:productId/suppliers/:supplierId",
+  async (request, response) => {
+    try {
+      const parameterSchema = z.object({
+        productId: z.string().uuid(),
+        supplierId: z.string().uuid(),
+      });
 
+      const validation =
+        parameterSchema.safeParse(
+          request.params
+        );
+
+      if (!validation.success) {
+        return response
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Invalid product or supplier ID",
+            details:
+              validation.error.flatten(),
+          });
+      }
+
+      const {
+        productId,
+        supplierId,
+      } = validation.data;
+
+      const {
+        data: removed,
+        error,
+      } = await request.auth.supabase.rpc(
+        "remove_product_supplier",
+        {
+          target_product_id:
+            productId,
+
+          target_supplier_id:
+            supplierId,
+        }
+      );
+
+      if (error) {
+        console.error(
+          "Product supplier removal error:",
+          error
+        );
+
+        if (
+          error.message?.includes(
+            "Product supplier association not found"
+          )
+        ) {
+          return response
+            .status(404)
+            .json({
+              success: false,
+              error:
+                "Product supplier association not found",
+            });
+        }
+
+        if (
+          error.message?.includes(
+            "Administrative access required"
+          )
+        ) {
+          return response
+            .status(403)
+            .json({
+              success: false,
+              error:
+                "Your administrative role does not allow supplier removal",
+            });
+        }
+
+        return response
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Unable to remove supplier from product",
+          });
+      }
+
+      return response
+        .status(200)
+        .json({
+          success: true,
+          message:
+            "Supplier removed from product successfully",
+          removed,
+        });
+    } catch (error) {
+      console.error(
+        "Product supplier removal route error:",
+        error
+      );
+
+      return response
+        .status(500)
+        .json({
+          success: false,
+          error:
+            "Unable to remove supplier from product",
+        });
+    }
+  }
+);
 export default productRoutes;
