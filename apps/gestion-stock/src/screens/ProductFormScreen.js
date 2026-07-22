@@ -26,6 +26,7 @@ import { z } from "zod";
 import {
   createProduct,
   getCategories,
+  updateProduct,
 } from "../services/stockService.js";
 
 import { colors } from
@@ -71,7 +72,7 @@ const optionalRating = z
     "La note doit être comprise entre 0 et 5"
   );
 
-const productSchema = z.object({
+const sharedProductSchema = z.object({
   name: z
     .string()
     .trim()
@@ -103,11 +104,33 @@ const productSchema = z.object({
 
   purchasePrice: integerText,
   salePrice: integerText,
-  initialQuantity: integerText,
   lowStockThreshold: integerText,
   volumeMl: optionalPositiveInteger,
   adminRating: optionalRating,
 });
+
+const createProductSchema =
+  sharedProductSchema.extend({
+    initialQuantity: integerText,
+  });
+
+const updateProductSchema =
+  sharedProductSchema.extend({
+    initialQuantity: z
+      .string()
+      .optional(),
+  });
+
+function valueToText(value) {
+  if (
+    value === null ||
+    value === undefined
+  ) {
+    return "";
+  }
+
+  return String(value);
+}
 
 function FormInput({
   control,
@@ -148,7 +171,7 @@ function FormInput({
               error &&
                 styles.inputError,
             ]}
-            value={value}
+            value={value ?? ""}
             onChangeText={onChange}
             onBlur={onBlur}
             placeholder={placeholder}
@@ -175,9 +198,14 @@ function FormInput({
 }
 
 export default function ProductFormScreen({
+  product = null,
   onBack,
   onCreated,
+  onUpdated,
+  onSaved,
 }) {
+  const isEditing = Boolean(product?.id);
+
   const [categories, setCategories] =
     useState([]);
 
@@ -199,19 +227,51 @@ export default function ProductFormScreen({
       isSubmitting,
     },
   } = useForm({
-    resolver: zodResolver(productSchema),
+    resolver: zodResolver(
+      isEditing
+        ? updateProductSchema
+        : createProductSchema
+    ),
+
     defaultValues: {
-      name: "",
-      brand: "",
-      categoryId: null,
-      description: "",
-      internalComment: "",
-      purchasePrice: "",
-      salePrice: "",
-      initialQuantity: "0",
-      lowStockThreshold: "5",
-      volumeMl: "",
-      adminRating: "",
+      name: product?.name ?? "",
+      brand: product?.brand ?? "",
+
+      categoryId:
+        product?.category_id ?? null,
+
+      description:
+        product?.public_description ??
+        "",
+
+      internalComment:
+        product?.internal_comment ??
+        "",
+
+      purchasePrice: valueToText(
+        product?.purchase_price
+      ),
+
+      salePrice: valueToText(
+        product?.sale_price
+      ),
+
+      initialQuantity: isEditing
+        ? ""
+        : "0",
+
+      lowStockThreshold:
+        valueToText(
+          product?.low_stock_threshold
+        ) || "5",
+
+      volumeMl: valueToText(
+        product?.volume_ml
+      ),
+
+      adminRating: valueToText(
+        product?.admin_rating
+      ),
     },
   });
 
@@ -219,6 +279,8 @@ export default function ProductFormScreen({
     watch("categoryId");
 
   useEffect(() => {
+    let isMounted = true;
+
     async function loadCategories() {
       try {
         const result =
@@ -227,6 +289,10 @@ export default function ProductFormScreen({
             page: 1,
             limit: 100,
           });
+
+        if (!isMounted) {
+          return;
+        }
 
         setCategories(
           result.categories ?? []
@@ -237,84 +303,110 @@ export default function ProductFormScreen({
           error
         );
 
-        setRequestError(
-          "Impossible de charger les catégories."
-        );
+        if (isMounted) {
+          setRequestError(
+            "Impossible de charger les catégories."
+          );
+        }
       } finally {
-        setIsLoadingCategories(
-          false
-        );
+        if (isMounted) {
+          setIsLoadingCategories(
+            false
+          );
+        }
       }
     }
 
     loadCategories();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   async function submitProduct(values) {
     setRequestError("");
 
+    const productData = {
+      name: values.name.trim(),
+
+      brand:
+        values.brand.trim() || null,
+
+      categoryId:
+        values.categoryId,
+
+      description:
+        values.description.trim() ||
+        null,
+
+      internalComment:
+        values.internalComment.trim() ||
+        null,
+
+      purchasePrice: Number(
+        values.purchasePrice
+      ),
+
+      salePrice: Number(
+        values.salePrice
+      ),
+
+      lowStockThreshold: Number(
+        values.lowStockThreshold
+      ),
+
+      volumeMl:
+        values.volumeMl === ""
+          ? null
+          : Number(values.volumeMl),
+
+      adminRating:
+        values.adminRating === ""
+          ? null
+          : Number(values.adminRating),
+    };
+
     try {
+      if (isEditing) {
+        const result =
+          await updateProduct(
+            product.id,
+            productData
+          );
+
+        onUpdated?.(result.product);
+        onSaved?.(result.product);
+
+        return;
+      }
+
       const result =
         await createProduct({
-          name: values.name.trim(),
-
-          brand:
-            values.brand.trim() ||
-            null,
-
-          categoryId:
-            values.categoryId,
-
-          description:
-            values.description.trim() ||
-            null,
-
-          internalComment:
-            values.internalComment
-              .trim() || null,
-
-          purchasePrice: Number(
-            values.purchasePrice
-          ),
-
-          salePrice: Number(
-            values.salePrice
-          ),
+          ...productData,
 
           initialQuantity: Number(
             values.initialQuantity
           ),
-
-          lowStockThreshold: Number(
-            values.lowStockThreshold
-          ),
-
-          volumeMl:
-            values.volumeMl === ""
-              ? null
-              : Number(
-                  values.volumeMl
-                ),
-
-          adminRating:
-            values.adminRating === ""
-              ? null
-              : Number(
-                  values.adminRating
-                ),
         });
 
       onCreated?.(result.product);
+      onSaved?.(result.product);
     } catch (error) {
       console.error(
-        "Product creation error:",
+        isEditing
+          ? "Product update error:"
+          : "Product creation error:",
         error
       );
 
+      const errorMessage =
+        error?.message ?? "";
+
       if (
-        error?.message?.includes(
-          "category"
-        )
+        errorMessage
+          .toLowerCase()
+          .includes("category")
       ) {
         setRequestError(
           "La catégorie sélectionnée n’existe plus."
@@ -324,8 +416,10 @@ export default function ProductFormScreen({
       }
 
       setRequestError(
-        error?.message ||
-          "Impossible de créer le parfum."
+        errorMessage ||
+          (isEditing
+            ? "Impossible de modifier le parfum."
+            : "Impossible de créer le parfum.")
       );
     }
   }
@@ -353,7 +447,9 @@ export default function ProductFormScreen({
                 styles.backButtonText
               }
             >
-              ‹ Retour aux parfums
+              {isEditing
+                ? "‹ Retour à la fiche"
+                : "‹ Retour aux parfums"}
             </Text>
           </Pressable>
         </View>
@@ -364,14 +460,23 @@ export default function ProductFormScreen({
           </Text>
 
           <Text style={styles.title}>
-            Nouveau parfum
+            {isEditing
+              ? "Modifier le parfum"
+              : "Nouveau parfum"}
           </Text>
 
           <Text style={styles.subtitle}>
-            Enregistrez les informations
-            commerciales et le stock
-            initial du parfum.
+            {isEditing
+              ? "Mettez à jour les informations commerciales du parfum."
+              : "Enregistrez les informations commerciales et le stock initial du parfum."}
           </Text>
+
+          {isEditing &&
+          product?.sku ? (
+            <Text style={styles.skuText}>
+              SKU : {product.sku}
+            </Text>
+          ) : null}
         </View>
 
         {requestError ? (
@@ -502,6 +607,43 @@ export default function ProductFormScreen({
             Prix et stock
           </Text>
 
+          {isEditing ? (
+            <View
+              style={styles.stockNotice}
+            >
+              <View>
+                <Text
+                  style={
+                    styles.stockNoticeLabel
+                  }
+                >
+                  Stock actuel
+                </Text>
+
+                <Text
+                  style={
+                    styles.stockNoticeValue
+                  }
+                >
+                  {product?.stock_quantity ??
+                    0}{" "}
+                  unité(s)
+                </Text>
+              </View>
+
+              <Text
+                style={
+                  styles.stockNoticeText
+                }
+              >
+                Pour modifier cette
+                quantité, utilisez un
+                mouvement de stock depuis
+                la fiche du parfum.
+              </Text>
+            </View>
+          ) : null}
+
           <View style={styles.formGrid}>
             <FormInput
               control={control}
@@ -523,16 +665,18 @@ export default function ProductFormScreen({
               error={errors.salePrice}
             />
 
-            <FormInput
-              control={control}
-              name="initialQuantity"
-              label="Stock initial *"
-              placeholder="0"
-              keyboardType="numeric"
-              error={
-                errors.initialQuantity
-              }
-            />
+            {!isEditing ? (
+              <FormInput
+                control={control}
+                name="initialQuantity"
+                label="Stock initial *"
+                placeholder="0"
+                keyboardType="numeric"
+                error={
+                  errors.initialQuantity
+                }
+              />
+            ) : null}
 
             <FormInput
               control={control}
@@ -636,7 +780,9 @@ export default function ProductFormScreen({
                     styles.submitButtonText
                   }
                 >
-                  Enregistrer le parfum
+                  {isEditing
+                    ? "Enregistrer les modifications"
+                    : "Enregistrer le parfum"}
                 </Text>
               )}
             </Pressable>
@@ -711,6 +857,15 @@ const styles = StyleSheet.create({
     marginTop: 7,
     color: colors.textMuted,
     fontSize: 15,
+    lineHeight: 22,
+  },
+
+  skuText: {
+    marginTop: 9,
+    color: colors.secondaryDark,
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 0.4,
   },
 
   formCard: {
@@ -817,6 +972,41 @@ const styles = StyleSheet.create({
     height: 1,
     marginVertical: 27,
     backgroundColor: colors.border,
+  },
+
+  stockNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 18,
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 13,
+    borderWidth: 1,
+    borderColor: colors.secondary,
+    backgroundColor:
+      colors.secondaryLight,
+  },
+
+  stockNoticeLabel: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  stockNoticeValue: {
+    marginTop: 3,
+    color: colors.primaryDark,
+    fontSize: 22,
+    fontWeight: "800",
+  },
+
+  stockNoticeText: {
+    flexGrow: 1,
+    flexBasis: 280,
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 20,
   },
 
   actions: {
