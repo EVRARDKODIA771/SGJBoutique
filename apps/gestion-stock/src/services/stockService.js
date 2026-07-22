@@ -106,6 +106,9 @@ export function uploadProductImage(
  * MOUVEMENTS DE STOCK
  */
 
+/*
+ * Historique d’un parfum précis.
+ */
 export function getStockMovements(
   productId,
   {
@@ -123,6 +126,9 @@ export function getStockMovements(
   );
 }
 
+/*
+ * Enregistre un mouvement pour un parfum.
+ */
 export function recordStockMovement(
   productId,
   movementData
@@ -133,6 +139,27 @@ export function recordStockMovement(
       method: "POST",
       body: movementData,
     }
+  );
+}
+
+/*
+ * Historique global de tous les parfums.
+ */
+export function getGlobalStockMovements({
+  movementType,
+  productId,
+  page = 1,
+  limit = 20,
+} = {}) {
+  const query = buildQuery({
+    movementType,
+    productId,
+    page,
+    limit,
+  });
+
+  return apiRequest(
+    `/api/admin/stock-movements${query}`
   );
 }
 
