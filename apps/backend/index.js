@@ -17,6 +17,9 @@ import categoryRoutes
 import productRoutes
   from "./src/routes/productRoutes.js";
 
+import stockRoutes
+  from "./src/routes/stockRoutes.js";
+
 import supplierRoutes
   from "./src/routes/supplierRoutes.js";
 
@@ -93,6 +96,12 @@ app.use(
 app.use(
   "/api/admin/products",
   productRoutes
+);
+
+// Historique global des mouvements de stock
+app.use(
+  "/api/admin/stock-movements",
+  stockRoutes
 );
 
 // Routes de gestion des fournisseurs
