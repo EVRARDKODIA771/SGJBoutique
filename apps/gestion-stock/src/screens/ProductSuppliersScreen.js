@@ -15,16 +15,6 @@ import {
 } from "react-native";
 
 import {
-  Controller,
-  useForm,
-} from "react-hook-form";
-
-import { zodResolver } from
-  "@hookform/resolvers/zod";
-
-import { z } from "zod";
-
-import {
   getProductSuppliers,
   getSuppliers,
   removeProductSupplier,
@@ -33,32 +23,6 @@ import {
 
 import { colors } from
   "../theme/colors.js";
-
-const associationSchema = z.object({
-  supplierId: z
-    .string()
-    .uuid(
-      "Sélectionnez un fournisseur"
-    ),
-
-  supplierReference: z
-    .string()
-    .trim()
-    .max(
-      150,
-      "La référence ne peut pas dépasser 150 caractères"
-    ),
-
-  lastPurchasePrice: z
-    .string()
-    .trim()
-    .refine(
-      (value) =>
-        value === "" ||
-        /^\d+$/.test(value),
-      "Saisissez un nombre entier positif"
-    ),
-});
 
 function formatPrice(value) {
   if (
@@ -73,62 +37,21 @@ function formatPrice(value) {
   )} FCFA`;
 }
 
-function FormInput({
-  control,
-  name,
-  label,
-  placeholder,
-  error,
-  keyboardType = "default",
-}) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>
-        {label}
-      </Text>
+function validatePrice(value) {
+  if (value.trim() === "") {
+    return "";
+  }
 
-      <Controller
-        control={control}
-        name={name}
-        render={({
-          field: {
-            value,
-            onChange,
-            onBlur,
-          },
-        }) => (
-          <TextInput
-            style={[
-              styles.input,
-              error &&
-                styles.inputError,
-            ]}
-            value={value ?? ""}
-            onChangeText={onChange}
-            onBlur={onBlur}
-            placeholder={placeholder}
-            placeholderTextColor={
-              colors.textMuted
-            }
-            keyboardType={keyboardType}
-            autoCorrect={false}
-          />
-        )}
-      />
+  if (!/^\d+$/.test(value.trim())) {
+    return "Saisissez un nombre entier positif";
+  }
 
-      {error ? (
-        <Text style={styles.fieldError}>
-          {error.message}
-        </Text>
-      ) : null}
-    </View>
-  );
+  return "";
 }
 
 export default function ProductSuppliersScreen({
   product,
   onBack,
-  onChanged,
 }) {
   const [suppliers, setSuppliers] =
     useState([]);
@@ -138,14 +61,20 @@ export default function ProductSuppliersScreen({
     setProductSuppliers,
   ] = useState([]);
 
-  const [isLoading, setIsLoading] =
-    useState(true);
+  const [
+    selectedSupplierId,
+    setSelectedSupplierId,
+  ] = useState("");
 
-  const [requestError, setRequestError] =
-    useState("");
+  const [
+    supplierReference,
+    setSupplierReference,
+  ] = useState("");
 
-  const [successMessage, setSuccessMessage] =
-    useState("");
+  const [
+    lastPurchasePrice,
+    setLastPurchasePrice,
+  ] = useState("");
 
   const [
     editingSupplierId,
@@ -162,30 +91,35 @@ export default function ProductSuppliersScreen({
     setDeletingSupplierId,
   ] = useState(null);
 
-  const {
-    control,
-    handleSubmit,
-    setValue,
-    watch,
-    reset,
-    formState: {
-      errors,
-      isSubmitting,
-    },
-  } = useForm({
-    resolver: zodResolver(
-      associationSchema
-    ),
+  const [isLoading, setIsLoading] =
+    useState(true);
 
-    defaultValues: {
-      supplierId: "",
-      supplierReference: "",
-      lastPurchasePrice: "",
-    },
-  });
+  const [isSaving, setIsSaving] =
+    useState(false);
 
-  const selectedSupplierId =
-    watch("supplierId");
+  const [requestError, setRequestError] =
+    useState("");
+
+  const [formError, setFormError] =
+    useState("");
+
+  const [
+    successMessage,
+    setSuccessMessage,
+  ] = useState("");
+
+  const selectedSupplier = useMemo(
+    () =>
+      suppliers.find(
+        (supplier) =>
+          supplier.id ===
+          selectedSupplierId
+      ) ?? null,
+    [
+      suppliers,
+      selectedSupplierId,
+    ]
+  );
 
   const associatedSupplierIds =
     useMemo(
@@ -197,20 +131,6 @@ export default function ProductSuppliersScreen({
           )
         ),
       [productSuppliers]
-    );
-
-  const selectedSupplier =
-    useMemo(
-      () =>
-        suppliers.find(
-          (supplier) =>
-            supplier.id ===
-            selectedSupplierId
-        ) ?? null,
-      [
-        suppliers,
-        selectedSupplierId,
-      ]
     );
 
   async function loadData({
@@ -235,7 +155,7 @@ export default function ProductSuppliersScreen({
     try {
       const [
         suppliersResult,
-        productSuppliersResult,
+        associationsResult,
       ] = await Promise.all([
         getSuppliers({
           isActive: true,
@@ -253,7 +173,7 @@ export default function ProductSuppliersScreen({
       );
 
       setProductSuppliers(
-        productSuppliersResult.suppliers ??
+        associationsResult.suppliers ??
           []
       );
     } catch (error) {
@@ -276,19 +196,22 @@ export default function ProductSuppliersScreen({
   }, [product?.id]);
 
   function clearForm() {
-    reset({
-      supplierId: "",
-      supplierReference: "",
-      lastPurchasePrice: "",
-    });
-
+    setSelectedSupplierId("");
+    setSupplierReference("");
+    setLastPurchasePrice("");
     setEditingSupplierId(null);
+    setFormError("");
   }
 
   function selectSupplier(supplier) {
     setRequestError("");
+    setFormError("");
     setSuccessMessage("");
     setSupplierToRemove(null);
+
+    setSelectedSupplierId(
+      supplier.id
+    );
 
     const existingAssociation =
       productSuppliers.find(
@@ -297,27 +220,17 @@ export default function ProductSuppliersScreen({
           supplier.id
       );
 
-    setValue(
-      "supplierId",
-      supplier.id,
-      {
-        shouldValidate: true,
-      }
-    );
-
     if (existingAssociation) {
       setEditingSupplierId(
         supplier.id
       );
 
-      setValue(
-        "supplierReference",
+      setSupplierReference(
         existingAssociation
           .supplier_reference ?? ""
       );
 
-      setValue(
-        "lastPurchasePrice",
+      setLastPurchasePrice(
         existingAssociation
           .last_purchase_price ===
           null ||
@@ -335,14 +248,9 @@ export default function ProductSuppliersScreen({
     }
 
     setEditingSupplierId(null);
+    setSupplierReference("");
 
-    setValue(
-      "supplierReference",
-      ""
-    );
-
-    setValue(
-      "lastPurchasePrice",
+    setLastPurchasePrice(
       product?.purchase_price ===
         null ||
         product?.purchase_price ===
@@ -361,36 +269,71 @@ export default function ProductSuppliersScreen({
       association.supplier;
 
     if (!supplier) {
+      setRequestError(
+        "Les informations de ce fournisseur sont indisponibles."
+      );
+
       return;
     }
 
     selectSupplier(supplier);
   }
 
-  async function submitAssociation(
-    values
-  ) {
+  async function saveAssociation() {
     setRequestError("");
+    setFormError("");
     setSuccessMessage("");
     setSupplierToRemove(null);
+
+    if (!selectedSupplierId) {
+      setFormError(
+        "Sélectionnez un fournisseur."
+      );
+
+      return;
+    }
+
+    if (
+      supplierReference.trim().length >
+      150
+    ) {
+      setFormError(
+        "La référence ne peut pas dépasser 150 caractères."
+      );
+
+      return;
+    }
+
+    const priceError =
+      validatePrice(
+        lastPurchasePrice
+      );
+
+    if (priceError) {
+      setFormError(priceError);
+
+      return;
+    }
+
+    setIsSaving(true);
 
     try {
       await saveProductSupplier(
         product.id,
         {
           supplierId:
-            values.supplierId,
+            selectedSupplierId,
 
           supplierReference:
-            values.supplierReference
-              .trim() || null,
+            supplierReference.trim() ||
+            null,
 
           lastPurchasePrice:
-            values.lastPurchasePrice ===
+            lastPurchasePrice.trim() ===
             ""
               ? null
               : Number(
-                  values.lastPurchasePrice
+                  lastPurchasePrice
                 ),
         }
       );
@@ -410,8 +353,6 @@ export default function ProductSuppliersScreen({
           ? "Les informations du fournisseur ont été mises à jour."
           : "Le fournisseur a été associé au parfum."
       );
-
-      onChanged?.();
     } catch (error) {
       console.error(
         "Product supplier save error:",
@@ -451,6 +392,8 @@ export default function ProductSuppliersScreen({
         errorMessage ||
           "Impossible d’associer ce fournisseur."
       );
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -491,8 +434,6 @@ export default function ProductSuppliersScreen({
       setSuccessMessage(
         "Le fournisseur a été retiré du parfum."
       );
-
-      onChanged?.();
     } catch (error) {
       console.error(
         "Product supplier removal error:",
@@ -555,7 +496,7 @@ export default function ProductSuppliersScreen({
             ]}
             onPress={onBack}
             disabled={
-              isSubmitting ||
+              isSaving ||
               Boolean(
                 deletingSupplierId
               )
@@ -601,6 +542,7 @@ export default function ProductSuppliersScreen({
             >
               {product.brand ||
                 "Marque non renseignée"}
+
               {product.sku
                 ? ` • ${product.sku}`
                 : ""}
@@ -729,9 +671,7 @@ export default function ProductSuppliersScreen({
                               supplier
                             )
                           }
-                          disabled={
-                            isSubmitting
-                          }
+                          disabled={isSaving}
                         >
                           <View
                             style={
@@ -811,30 +751,59 @@ export default function ProductSuppliersScreen({
                     ) : null}
                   </View>
 
-                  <View
-                    style={styles.formGrid}
-                  >
-                    <FormInput
-                      control={control}
-                      name="supplierReference"
-                      label="Référence fournisseur"
-                      placeholder="Exemple : DIOR-SAUVAGE-100"
-                      error={
-                        errors.supplierReference
-                      }
-                    />
+                  <View style={styles.field}>
+                    <Text style={styles.label}>
+                      Référence fournisseur
+                    </Text>
 
-                    <FormInput
-                      control={control}
-                      name="lastPurchasePrice"
-                      label="Dernier prix d’achat (FCFA)"
-                      placeholder="350000"
-                      keyboardType="numeric"
-                      error={
-                        errors.lastPurchasePrice
+                    <TextInput
+                      style={styles.input}
+                      value={
+                        supplierReference
                       }
+                      onChangeText={
+                        setSupplierReference
+                      }
+                      placeholder="Exemple : DIOR-SAUVAGE-100"
+                      placeholderTextColor={
+                        colors.textMuted
+                      }
+                      autoCorrect={false}
                     />
                   </View>
+
+                  <View style={styles.field}>
+                    <Text style={styles.label}>
+                      Dernier prix d’achat
+                      (FCFA)
+                    </Text>
+
+                    <TextInput
+                      style={styles.input}
+                      value={
+                        lastPurchasePrice
+                      }
+                      onChangeText={
+                        setLastPurchasePrice
+                      }
+                      placeholder="350000"
+                      placeholderTextColor={
+                        colors.textMuted
+                      }
+                      keyboardType="numeric"
+                      autoCorrect={false}
+                    />
+                  </View>
+
+                  {formError ? (
+                    <Text
+                      style={
+                        styles.fieldError
+                      }
+                    >
+                      {formError}
+                    </Text>
+                  ) : null}
 
                   <View
                     style={styles.actions}
@@ -846,9 +815,7 @@ export default function ProductSuppliersScreen({
                           styles.pressed,
                       ]}
                       onPress={clearForm}
-                      disabled={
-                        isSubmitting
-                      }
+                      disabled={isSaving}
                     >
                       <Text
                         style={
@@ -864,17 +831,15 @@ export default function ProductSuppliersScreen({
                         styles.submitButton,
                         pressed &&
                           styles.pressed,
-                        isSubmitting &&
+                        isSaving &&
                           styles.disabledButton,
                       ]}
-                      onPress={handleSubmit(
-                        submitAssociation
-                      )}
-                      disabled={
-                        isSubmitting
+                      onPress={
+                        saveAssociation
                       }
+                      disabled={isSaving}
                     >
-                      {isSubmitting ? (
+                      {isSaving ? (
                         <ActivityIndicator
                           color={
                             colors.textOnPrimary
@@ -954,6 +919,11 @@ export default function ProductSuppliersScreen({
                         deletingSupplierId ===
                         association.supplier_id;
 
+                      const isConfirming =
+                        supplierToRemove
+                          ?.supplier_id ===
+                        association.supplier_id;
+
                       return (
                         <View
                           key={
@@ -968,11 +938,7 @@ export default function ProductSuppliersScreen({
                               styles.associationHeader
                             }
                           >
-                            <View
-                              style={
-                                styles.associationIdentity
-                              }
-                            >
+                            <View>
                               <Text
                                 style={
                                   styles.associationName
@@ -1045,9 +1011,7 @@ export default function ProductSuppliersScreen({
                                     styles.detailValue
                                   }
                                 >
-                                  {
-                                    supplier.phone
-                                  }
+                                  {supplier.phone}
                                 </Text>
                               </>
                             ) : null}
@@ -1067,17 +1031,13 @@ export default function ProductSuppliersScreen({
                                     styles.detailValue
                                   }
                                 >
-                                  {
-                                    supplier.email
-                                  }
+                                  {supplier.email}
                                 </Text>
                               </>
                             ) : null}
                           </View>
 
-                          {supplierToRemove
-                            ?.supplier_id ===
-                          association.supplier_id ? (
+                          {isConfirming ? (
                             <View
                               style={
                                 styles.confirmationBox
@@ -1334,10 +1294,10 @@ const styles = StyleSheet.create({
   },
 
   loadingBox: {
+    minHeight: 260,
     alignItems: "center",
     justifyContent: "center",
     gap: 14,
-    minHeight: 260,
     borderRadius: 18,
     backgroundColor: colors.surface,
   },
@@ -1469,12 +1429,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 
-  formGrid: {
-    gap: 15,
-  },
-
   field: {
     gap: 7,
+    marginTop: 15,
   },
 
   label: {
@@ -1496,11 +1453,8 @@ const styles = StyleSheet.create({
     outlineStyle: "none",
   },
 
-  inputError: {
-    borderColor: colors.danger,
-  },
-
   fieldError: {
+    marginTop: 10,
     color: colors.danger,
     fontSize: 12,
   },
@@ -1566,10 +1520,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
 
-  associationIdentity: {
-    gap: 4,
-  },
-
   associationName: {
     color: colors.primaryDark,
     fontSize: 16,
@@ -1577,12 +1527,14 @@ const styles = StyleSheet.create({
   },
 
   activeStatus: {
+    marginTop: 4,
     color: "#34734A",
     fontSize: 11,
     fontWeight: "800",
   },
 
   inactiveStatus: {
+    marginTop: 4,
     color: colors.danger,
     fontSize: 11,
     fontWeight: "800",
