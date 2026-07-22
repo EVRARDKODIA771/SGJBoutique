@@ -1780,4 +1780,200 @@ productRoutes.get(
   }
 );
 
+/**
+ * POST /api/admin/products/:productId/suppliers
+ * Associe un fournisseur à un parfum.
+ *
+ * Si l’association existe déjà,
+ * ses informations sont mises à jour.
+ */
+productRoutes.post(
+  "/:productId/suppliers",
+  async (request, response) => {
+    try {
+      const parameterSchema = z.object({
+        productId: z.string().uuid(),
+      });
+
+      const associationSchema = z
+        .object({
+          supplierId: z
+            .string()
+            .uuid(
+              "Invalid supplier ID"
+            ),
+
+          supplierReference: z
+            .string()
+            .trim()
+            .max(150)
+            .nullable()
+            .optional(),
+
+          lastPurchasePrice: z
+            .number()
+            .int()
+            .min(
+              0,
+              "Last purchase price cannot be negative"
+            )
+            .nullable()
+            .optional(),
+        })
+        .strict();
+
+      const parameterValidation =
+        parameterSchema.safeParse(
+          request.params
+        );
+
+      if (
+        !parameterValidation.success
+      ) {
+        return response
+          .status(400)
+          .json({
+            success: false,
+            error: "Invalid product ID",
+          });
+      }
+
+      const bodyValidation =
+        associationSchema.safeParse(
+          request.body
+        );
+
+      if (!bodyValidation.success) {
+        return response
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Invalid product supplier data",
+            details:
+              bodyValidation.error.flatten(),
+          });
+      }
+
+      const { productId } =
+        parameterValidation.data;
+
+      const association =
+        bodyValidation.data;
+
+      const {
+        data: productSupplier,
+        error,
+      } = await request.auth.supabase.rpc(
+        "upsert_product_supplier",
+        {
+          target_product_id:
+            productId,
+
+          target_supplier_id:
+            association.supplierId,
+
+          target_supplier_reference:
+            association.supplierReference ??
+            null,
+
+          target_last_purchase_price:
+            association.lastPurchasePrice ??
+            null,
+        }
+      );
+
+      if (error) {
+        console.error(
+          "Product supplier association error:",
+          error
+        );
+
+        if (
+          error.message?.includes(
+            "Product not found"
+          )
+        ) {
+          return response
+            .status(404)
+            .json({
+              success: false,
+              error: "Product not found",
+            });
+        }
+
+        if (
+          error.message?.includes(
+            "Supplier not found"
+          )
+        ) {
+          return response
+            .status(404)
+            .json({
+              success: false,
+              error: "Supplier not found",
+            });
+        }
+
+        if (
+          error.message?.includes(
+            "Supplier is inactive"
+          )
+        ) {
+          return response
+            .status(409)
+            .json({
+              success: false,
+              error: "Supplier is inactive",
+            });
+        }
+
+        if (
+          error.message?.includes(
+            "Administrative access required"
+          )
+        ) {
+          return response
+            .status(403)
+            .json({
+              success: false,
+              error:
+                "Your administrative role does not allow supplier association",
+            });
+        }
+
+        return response
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Unable to associate supplier with product",
+          });
+      }
+
+      return response
+        .status(201)
+        .json({
+          success: true,
+          message:
+            "Supplier associated with product successfully",
+          productSupplier,
+        });
+    } catch (error) {
+      console.error(
+        "Product supplier association route error:",
+        error
+      );
+
+      return response
+        .status(500)
+        .json({
+          success: false,
+          error:
+            "Unable to associate supplier with product",
+        });
+    }
+  }
+);
+
 export default productRoutes;
