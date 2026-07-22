@@ -23,6 +23,9 @@ import { StatusBar } from
 import AccessStatusScreen from
   "./src/screens/AccessStatusScreen.js";
 
+import CategoriesScreen from
+  "./src/screens/CategoriesScreen.js";
+
 import CompanyPasswordScreen from
   "./src/screens/CompanyPasswordScreen.js";
 
@@ -90,8 +93,6 @@ function SectionPlaceholder({
 }) {
   const sectionNames = {
     stock: "Mouvements de stock",
-    categories:
-      "Gestion des catégories",
     suppliers:
       "Gestion des fournisseurs",
   };
@@ -295,6 +296,20 @@ function ApplicationContent() {
           );
 
           setSelectedProduct(null);
+        }}
+      />
+    );
+  }
+
+  if (
+    activeSection === "categories"
+  ) {
+    return (
+      <CategoriesScreen
+        onBack={() => {
+          setActiveSection(
+            "dashboard"
+          );
         }}
       />
     );
