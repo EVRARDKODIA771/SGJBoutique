@@ -41,6 +41,9 @@ import ProductFormScreen from
 import ProductsScreen from
   "./src/screens/ProductsScreen.js";
 
+import StockMovementScreen from
+  "./src/screens/StockMovementScreen.js";
+
 import {
   initializeAuth,
 } from "./src/services/authService.js";
@@ -89,14 +92,11 @@ function SectionPlaceholder({
       "Gestion des catégories",
     suppliers:
       "Gestion des fournisseurs",
-    "product-stock":
-      "Mouvement de stock",
     "product-suppliers":
       "Fournisseurs du parfum",
   };
 
   const isProductSection = [
-    "product-stock",
     "product-suppliers",
   ].includes(section);
 
@@ -393,6 +393,31 @@ function ApplicationContent() {
 
   if (
     activeSection ===
+      "product-stock" &&
+    selectedProduct
+ selectedProduct
+  ) {
+    return (
+      <StockMovementScreen
+        product={selectedProduct}
+        onBack={() => {
+          setActiveSection(
+            "product-detail"
+          );
+        }}
+        onRecorded={(product) => {
+          setSelectedProduct(product);
+
+          setActiveSection(
+            "product-detail"
+          );
+        }}
+      />
+    );
+  }
+
+  if (
+    activeSection ===
       "product-detail" &&
     selectedProduct
   ) {
@@ -448,7 +473,6 @@ function ApplicationContent() {
         }
         onBack={() => {
           const productSections = [
-            "product-stock",
             "product-suppliers",
           ];
 
@@ -615,3 +639,7 @@ const styles = StyleSheet.create({
     opacity: 0.84,
   },
 });
+
+
+
+
