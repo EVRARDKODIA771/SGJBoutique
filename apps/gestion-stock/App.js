@@ -32,6 +32,9 @@ import DashboardScreen from
 import LoginScreen from
   "./src/screens/LoginScreen.js";
 
+import ProductsScreen from
+  "./src/screens/ProductsScreen.js";
+
 import {
   initializeAuth,
 } from "./src/services/authService.js";
@@ -71,15 +74,26 @@ function LoadingScreen() {
 
 function SectionPlaceholder({
   section,
+  selectedProduct,
   onBack,
 }) {
   const sectionNames = {
-    products: "Gestion des parfums",
     stock: "Mouvements de stock",
-    categories: "Gestion des catégories",
+    categories:
+      "Gestion des catégories",
     suppliers:
       "Gestion des fournisseurs",
+    "product-create":
+      "Création d’un parfum",
+    "product-detail":
+      "Fiche du parfum",
   };
+
+  const backLabel =
+    section === "product-create" ||
+    section === "product-detail"
+      ? "Retour aux parfums"
+      : "Retour au tableau de bord";
 
   return (
     <View
@@ -99,13 +113,22 @@ function SectionPlaceholder({
             "Section"}
         </Text>
 
+        {section === "product-detail" &&
+        selectedProduct ? (
+          <Text
+            style={styles.selectedItem}
+          >
+            {selectedProduct.name}
+          </Text>
+        ) : null}
+
         <Text
           style={
             styles.placeholderDescription
           }
         >
           Cette section est maintenant
-          reliée au tableau de bord. Son
+          reliée à l’application. Son
           interface complète sera ajoutée
           à l’étape suivante.
         </Text>
@@ -120,7 +143,7 @@ function SectionPlaceholder({
           <Text
             style={styles.backButtonText}
           >
-            Retour au tableau de bord
+            {backLabel}
           </Text>
         </Pressable>
       </View>
@@ -129,8 +152,15 @@ function SectionPlaceholder({
 }
 
 function ApplicationContent() {
-  const [activeSection, setActiveSection] =
-    useState("dashboard");
+  const [
+    activeSection,
+    setActiveSection,
+  ] = useState("dashboard");
+
+  const [
+    selectedProduct,
+    setSelectedProduct,
+  ] = useState(null);
 
   const session = useAuthStore(
     (state) => state.session
@@ -190,9 +220,12 @@ function ApplicationContent() {
       (event, newSession) => {
         if (event === "SIGNED_OUT") {
           resetAuthentication();
+
           setActiveSection(
             "dashboard"
           );
+
+          setSelectedProduct(null);
 
           return;
         }
@@ -221,6 +254,8 @@ function ApplicationContent() {
           setActiveSection(
             "dashboard"
           );
+
+          setSelectedProduct(null);
         }}
       />
     );
@@ -244,6 +279,8 @@ function ApplicationContent() {
           setActiveSection(
             "dashboard"
           );
+
+          setSelectedProduct(null);
         }}
       />
     );
@@ -257,10 +294,42 @@ function ApplicationContent() {
           setActiveSection(
             "dashboard"
           );
+
+          setSelectedProduct(null);
         }}
         onSignedOut={() => {
           setActiveSection(
             "dashboard"
+          );
+
+          setSelectedProduct(null);
+        }}
+      />
+    );
+  }
+
+  if (activeSection === "products") {
+    return (
+      <ProductsScreen
+        onBack={() => {
+          setActiveSection(
+            "dashboard"
+          );
+
+          setSelectedProduct(null);
+        }}
+        onCreate={() => {
+          setSelectedProduct(null);
+
+          setActiveSection(
+            "product-create"
+          );
+        }}
+        onOpenProduct={(product) => {
+          setSelectedProduct(product);
+
+          setActiveSection(
+            "product-detail"
           );
         }}
       />
@@ -271,11 +340,29 @@ function ApplicationContent() {
     return (
       <SectionPlaceholder
         section={activeSection}
-        onBack={() =>
+        selectedProduct={
+          selectedProduct
+        }
+        onBack={() => {
+          if (
+            activeSection ===
+              "product-create" ||
+            activeSection ===
+              "product-detail"
+          ) {
+            setActiveSection(
+              "products"
+            );
+
+            return;
+          }
+
           setActiveSection(
             "dashboard"
-          )
-        }
+          );
+
+          setSelectedProduct(null);
+        }}
       />
     );
   }
@@ -284,9 +371,16 @@ function ApplicationContent() {
     <DashboardScreen
       user={user}
       membership={adminMembership}
-      onNavigate={setActiveSection}
+      onNavigate={(section) => {
+        setSelectedProduct(null);
+        setActiveSection(section);
+      }}
       onSignedOut={() => {
-        setActiveSection("dashboard");
+        setActiveSection(
+          "dashboard"
+        );
+
+        setSelectedProduct(null);
       }}
     />
   );
@@ -374,6 +468,14 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
     fontSize: 28,
     fontWeight: "800",
+    textAlign: "center",
+  },
+
+  selectedItem: {
+    marginTop: 9,
+    color: colors.secondaryDark,
+    fontSize: 18,
+    fontWeight: "700",
     textAlign: "center",
   },
 
