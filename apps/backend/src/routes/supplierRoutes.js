@@ -83,8 +83,11 @@ supplierRoutes.get(
         limit,
       } = validation.data;
 
-      const start = (page - 1) * limit;
-      const end = start + limit - 1;
+      const start =
+        (page - 1) * limit;
+
+      const end =
+        start + limit - 1;
 
       let databaseQuery = supabaseAdmin
         .from("suppliers")
@@ -138,6 +141,7 @@ supplierRoutes.get(
           page,
           limit,
           total: count ?? 0,
+
           totalPages: Math.ceil(
             (count ?? 0) / limit
           ),
@@ -299,19 +303,30 @@ supplierRoutes.post(
 );
 
 /**
+ * PATCH /api/admin/suppliers
  * PATCH /api/admin/suppliers/:supplierId
+ *
  * Modifie, active ou désactive un fournisseur.
+ *
+ * Sur la route principale, supplierId doit
+ * être transmis dans le corps JSON.
+ *
+ * L’ancienne route avec :supplierId reste
+ * provisoirement compatible.
  */
 supplierRoutes.patch(
-  "/:supplierId",
+  ["/", "/:supplierId"],
   async (request, response) => {
     try {
-      const parameterSchema = z.object({
-        supplierId: z.string().uuid(),
-      });
-
       const updateSchema = z
         .object({
+          supplierId: z
+            .string()
+            .uuid(
+              "Invalid supplier ID"
+            )
+            .optional(),
+
           name: z
             .string()
             .trim()
@@ -356,23 +371,6 @@ supplierRoutes.patch(
         })
         .strict();
 
-      const parameterValidation =
-        parameterSchema.safeParse(
-          request.params
-        );
-
-      if (
-        !parameterValidation.success
-      ) {
-        return response
-          .status(400)
-          .json({
-            success: false,
-            error:
-              "Invalid supplier ID",
-          });
-      }
-
       const bodyValidation =
         updateSchema.safeParse(
           request.body
@@ -390,10 +388,34 @@ supplierRoutes.patch(
           });
       }
 
+      const supplierId =
+        request.params.supplierId ??
+        bodyValidation.data.supplierId;
+
+      const identifierValidation = z
+        .string()
+        .uuid()
+        .safeParse(supplierId);
+
       if (
-        Object.keys(
-          bodyValidation.data
-        ).length === 0
+        !identifierValidation.success
+      ) {
+        return response
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Invalid supplier ID",
+          });
+      }
+
+      const {
+        supplierId: ignoredSupplierId,
+        ...update
+      } = bodyValidation.data;
+
+      if (
+        Object.keys(update).length === 0
       ) {
         return response
           .status(400)
@@ -403,12 +425,6 @@ supplierRoutes.patch(
               "At least one modification is required",
           });
       }
-
-      const { supplierId } =
-        parameterValidation.data;
-
-      const update =
-        bodyValidation.data;
 
       const supplierUpdates = {};
 
@@ -450,7 +466,9 @@ supplierRoutes.patch(
       } = await request.auth.supabase.rpc(
         "update_supplier",
         {
-          supplier_id: supplierId,
+          supplier_id:
+            identifierValidation.data,
+
           supplier_updates:
             supplierUpdates,
         }
