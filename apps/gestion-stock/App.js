@@ -6,7 +6,6 @@ import {
 import {
   ActivityIndicator,
   Image,
-  Pressable,
   StyleSheet,
   Text,
   View,
@@ -46,6 +45,9 @@ import ProductsScreen from
 
 import ProductSuppliersScreen from
   "./src/screens/ProductSuppliersScreen.js";
+
+import StockHistoryScreen from
+  "./src/screens/StockHistoryScreen.js";
 
 import StockMovementScreen from
   "./src/screens/StockMovementScreen.js";
@@ -90,61 +92,6 @@ function LoadingScreen() {
   );
 }
 
-function SectionPlaceholder({
-  section,
-  onBack,
-}) {
-  const sectionNames = {
-    stock: "Mouvements de stock",
-  };
-
-  return (
-    <View
-      style={styles.placeholderScreen}
-    >
-      <View style={styles.placeholderCard}>
-        <Text
-          style={styles.placeholderEyebrow}
-        >
-          JDE — GESTION DE STOCK
-        </Text>
-
-        <Text
-          style={styles.placeholderTitle}
-        >
-          {sectionNames[section] ??
-            "Section"}
-        </Text>
-
-        <Text
-          style={
-            styles.placeholderDescription
-          }
-        >
-          Cette section est maintenant
-          reliée à l’application. Son
-          interface complète sera ajoutée
-          à l’étape suivante.
-        </Text>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.backButton,
-            pressed && styles.pressed,
-          ]}
-          onPress={onBack}
-        >
-          <Text
-            style={styles.backButtonText}
-          >
-            Retour au tableau de bord
-          </Text>
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
 function ApplicationContent() {
   const [
     activeSection,
@@ -155,6 +102,11 @@ function ApplicationContent() {
     selectedProduct,
     setSelectedProduct,
   ] = useState(null);
+
+  const [
+    productReturnSection,
+    setProductReturnSection,
+  ] = useState("products");
 
   const session = useAuthStore(
     (state) => state.session
@@ -198,6 +150,15 @@ function ApplicationContent() {
         state.resetAuthentication
     );
 
+  function returnToDashboard() {
+    setActiveSection("dashboard");
+    setSelectedProduct(null);
+
+    setProductReturnSection(
+      "products"
+    );
+  }
+
   useEffect(() => {
     initializeAuth().catch(
       (error) => {
@@ -214,12 +175,7 @@ function ApplicationContent() {
       (event, newSession) => {
         if (event === "SIGNED_OUT") {
           resetAuthentication();
-
-          setActiveSection(
-            "dashboard"
-          );
-
-          setSelectedProduct(null);
+          returnToDashboard();
 
           return;
         }
@@ -245,11 +201,7 @@ function ApplicationContent() {
     return (
       <LoginScreen
         onAuthenticated={() => {
-          setActiveSection(
-            "dashboard"
-          );
-
-          setSelectedProduct(null);
+          returnToDashboard();
         }}
       />
     );
@@ -270,11 +222,7 @@ function ApplicationContent() {
           );
         }}
         onSignedOut={() => {
-          setActiveSection(
-            "dashboard"
-          );
-
-          setSelectedProduct(null);
+          returnToDashboard();
         }}
       />
     );
@@ -285,18 +233,31 @@ function ApplicationContent() {
       <CompanyPasswordScreen
         userEmail={user?.email}
         onVerified={() => {
-          setActiveSection(
-            "dashboard"
-          );
-
-          setSelectedProduct(null);
+          returnToDashboard();
         }}
         onSignedOut={() => {
-          setActiveSection(
-            "dashboard"
+          returnToDashboard();
+        }}
+      />
+    );
+  }
+
+  if (activeSection === "stock") {
+    return (
+      <StockHistoryScreen
+        onBack={() => {
+          returnToDashboard();
+        }}
+        onOpenProduct={(product) => {
+          setSelectedProduct(product);
+
+          setProductReturnSection(
+            "stock"
           );
 
-          setSelectedProduct(null);
+          setActiveSection(
+            "product-detail"
+          );
         }}
       />
     );
@@ -308,9 +269,7 @@ function ApplicationContent() {
     return (
       <CategoriesScreen
         onBack={() => {
-          setActiveSection(
-            "dashboard"
-          );
+          returnToDashboard();
         }}
       />
     );
@@ -322,9 +281,7 @@ function ApplicationContent() {
     return (
       <SuppliersScreen
         onBack={() => {
-          setActiveSection(
-            "dashboard"
-          );
+          returnToDashboard();
         }}
       />
     );
@@ -334,14 +291,14 @@ function ApplicationContent() {
     return (
       <ProductsScreen
         onBack={() => {
-          setActiveSection(
-            "dashboard"
-          );
-
-          setSelectedProduct(null);
+          returnToDashboard();
         }}
         onCreate={() => {
           setSelectedProduct(null);
+
+          setProductReturnSection(
+            "products"
+          );
 
           setActiveSection(
             "product-create"
@@ -349,6 +306,10 @@ function ApplicationContent() {
         }}
         onOpenProduct={(product) => {
           setSelectedProduct(product);
+
+          setProductReturnSection(
+            "products"
+          );
 
           setActiveSection(
             "product-detail"
@@ -371,6 +332,10 @@ function ApplicationContent() {
         }}
         onCreated={(product) => {
           setSelectedProduct(product);
+
+          setProductReturnSection(
+            "products"
+          );
 
           setActiveSection(
             "product-detail"
@@ -457,8 +422,10 @@ function ApplicationContent() {
           selectedProduct
         }
         onBack={() => {
+          setSelectedProduct(null);
+
           setActiveSection(
-            "products"
+            productReturnSection
           );
         }}
         onEdit={(product) => {
@@ -493,35 +460,21 @@ function ApplicationContent() {
     );
   }
 
-  if (activeSection !== "dashboard") {
-    return (
-      <SectionPlaceholder
-        section={activeSection}
-        onBack={() => {
-          setActiveSection(
-            "dashboard"
-          );
-
-          setSelectedProduct(null);
-        }}
-      />
-    );
-  }
-
   return (
     <DashboardScreen
       user={user}
       membership={adminMembership}
       onNavigate={(section) => {
         setSelectedProduct(null);
+
+        setProductReturnSection(
+          "products"
+        );
+
         setActiveSection(section);
       }}
       onSignedOut={() => {
-        setActiveSection(
-          "dashboard"
-        );
-
-        setSelectedProduct(null);
+        returnToDashboard();
       }}
     />
   );
@@ -574,69 +527,5 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.textMuted,
     fontSize: 14,
-  },
-
-  placeholderScreen: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-    backgroundColor: colors.background,
-  },
-
-  placeholderCard: {
-    width: "100%",
-    maxWidth: 520,
-    alignItems: "center",
-    paddingHorizontal: 28,
-    paddingVertical: 36,
-    borderRadius: 22,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-
-  placeholderEyebrow: {
-    color: colors.secondaryDark,
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-    textAlign: "center",
-  },
-
-  placeholderTitle: {
-    marginTop: 11,
-    color: colors.primaryDark,
-    fontSize: 28,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-
-  placeholderDescription: {
-    marginTop: 12,
-    color: colors.textMuted,
-    fontSize: 15,
-    lineHeight: 23,
-    textAlign: "center",
-  },
-
-  backButton: {
-    minHeight: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 25,
-    paddingHorizontal: 22,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
-  },
-
-  backButtonText: {
-    color: colors.textOnPrimary,
-    fontSize: 15,
-    fontWeight: "700",
-  },
-
-  pressed: {
-    opacity: 0.84,
   },
 });
