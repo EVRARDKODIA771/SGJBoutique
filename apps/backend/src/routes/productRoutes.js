@@ -1651,4 +1651,133 @@ productRoutes.get(
   }
 );
 
+/**
+ * GET /api/admin/products/:productId/suppliers
+ * Retourne les fournisseurs associés à un parfum.
+ */
+productRoutes.get(
+  "/:productId/suppliers",
+  async (request, response) => {
+    try {
+      const parameterSchema = z.object({
+        productId: z.string().uuid(),
+      });
+
+      const validation =
+        parameterSchema.safeParse(
+          request.params
+        );
+
+      if (!validation.success) {
+        return response
+          .status(400)
+          .json({
+            success: false,
+            error: "Invalid product ID",
+          });
+      }
+
+      const { productId } =
+        validation.data;
+
+      const {
+        data: product,
+        error: productError,
+      } = await supabaseAdmin
+        .from("products")
+        .select("id")
+        .eq("id", productId)
+        .maybeSingle();
+
+      if (productError) {
+        console.error(
+          "Product verification error:",
+          productError
+        );
+
+        return response
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Unable to verify product",
+          });
+      }
+
+      if (!product) {
+        return response
+          .status(404)
+          .json({
+            success: false,
+            error: "Product not found",
+          });
+      }
+
+      const {
+        data: associations,
+        error,
+      } = await supabaseAdmin
+        .from("product_suppliers")
+        .select(`
+          product_id,
+          supplier_id,
+          supplier_reference,
+          last_purchase_price,
+          created_at,
+          supplier:suppliers (
+            id,
+            name,
+            phone,
+            email,
+            address,
+            comment,
+            is_active,
+            created_at,
+            updated_at
+          )
+        `)
+        .eq("product_id", productId)
+        .order("created_at", {
+          ascending: false,
+        });
+
+      if (error) {
+        console.error(
+          "Product suppliers retrieval error:",
+          error
+        );
+
+        return response
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Unable to retrieve product suppliers",
+          });
+      }
+
+      return response
+        .status(200)
+        .json({
+          success: true,
+          suppliers:
+            associations ?? [],
+        });
+    } catch (error) {
+      console.error(
+        "Product suppliers route error:",
+        error
+      );
+
+      return response
+        .status(500)
+        .json({
+          success: false,
+          error:
+            "Unable to retrieve product suppliers",
+        });
+    }
+  }
+);
+
 export default productRoutes;
