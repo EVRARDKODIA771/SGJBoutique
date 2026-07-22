@@ -88,9 +88,16 @@ export async function signIn(
   };
 }
 
+/*
+ * Récupère le rôle et le statut administratif
+ * de l’utilisateur actuellement connecté.
+ *
+ * Cette adresse peu profonde réutilise la
+ * fonction Vercel dynamique des produits.
+ */
 export async function getAdminAccessStatus() {
   const result = await apiRequest(
-    "/api/admin/auth/access/status",
+    "/api/admin/products/access-status",
     {
       requiresCompanySession: false,
     }
@@ -105,9 +112,16 @@ export async function getAdminAccessStatus() {
   return result;
 }
 
+/*
+ * Enregistre une demande d’accès pour un
+ * utilisateur qui n’est pas encore membre.
+ *
+ * Le compte owner approuvé n’utilisera pas
+ * cette fonction.
+ */
 export async function requestAdminAccess() {
   const result = await apiRequest(
-    "/api/admin/auth/access/request",
+    "/api/admin/products/access-request",
     {
       method: "POST",
       requiresCompanySession: false,
@@ -127,8 +141,10 @@ export async function verifyCompanyPassword(
     {
       method: "POST",
       requiresCompanySession: false,
+
       body: {
         password,
+
         deviceLabel:
           `gestion-stock-${Platform.OS}`,
       },
