@@ -41,6 +41,9 @@ import ProductFormScreen from
 import ProductsScreen from
   "./src/screens/ProductsScreen.js";
 
+import ProductSuppliersScreen from
+  "./src/screens/ProductSuppliersScreen.js";
+
 import StockMovementScreen from
   "./src/screens/StockMovementScreen.js";
 
@@ -83,7 +86,6 @@ function LoadingScreen() {
 
 function SectionPlaceholder({
   section,
-  selectedProduct,
   onBack,
 }) {
   const sectionNames = {
@@ -92,17 +94,7 @@ function SectionPlaceholder({
       "Gestion des catégories",
     suppliers:
       "Gestion des fournisseurs",
-    "product-suppliers":
-      "Fournisseurs du parfum",
   };
-
-  const isProductSection = [
-    "product-suppliers",
-  ].includes(section);
-
-  const backLabel = isProductSection
-    ? "Retour à la fiche du parfum"
-    : "Retour au tableau de bord";
 
   return (
     <View
@@ -121,15 +113,6 @@ function SectionPlaceholder({
           {sectionNames[section] ??
             "Section"}
         </Text>
-
-        {isProductSection &&
-        selectedProduct ? (
-          <Text
-            style={styles.selectedItem}
-          >
-            {selectedProduct.name}
-          </Text>
-        ) : null}
 
         <Text
           style={
@@ -152,7 +135,7 @@ function SectionPlaceholder({
           <Text
             style={styles.backButtonText}
           >
-            {backLabel}
+            Retour au tableau de bord
           </Text>
         </Pressable>
       </View>
@@ -395,7 +378,6 @@ function ApplicationContent() {
     activeSection ===
       "product-stock" &&
     selectedProduct
- selectedProduct
   ) {
     return (
       <StockMovementScreen
@@ -408,6 +390,23 @@ function ApplicationContent() {
         onRecorded={(product) => {
           setSelectedProduct(product);
 
+          setActiveSection(
+            "product-detail"
+          );
+        }}
+      />
+    );
+  }
+
+  if (
+    activeSection ===
+      "product-suppliers" &&
+    selectedProduct
+  ) {
+    return (
+      <ProductSuppliersScreen
+        product={selectedProduct}
+        onBack={() => {
           setActiveSection(
             "product-detail"
           );
@@ -468,27 +467,7 @@ function ApplicationContent() {
     return (
       <SectionPlaceholder
         section={activeSection}
-        selectedProduct={
-          selectedProduct
-        }
         onBack={() => {
-          const productSections = [
-            "product-suppliers",
-          ];
-
-          if (
-            productSections.includes(
-              activeSection
-            ) &&
-            selectedProduct
-          ) {
-            setActiveSection(
-              "product-detail"
-            );
-
-            return;
-          }
-
           setActiveSection(
             "dashboard"
           );
@@ -603,14 +582,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  selectedItem: {
-    marginTop: 9,
-    color: colors.secondaryDark,
-    fontSize: 18,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-
   placeholderDescription: {
     marginTop: 12,
     color: colors.textMuted,
@@ -639,7 +610,3 @@ const styles = StyleSheet.create({
     opacity: 0.84,
   },
 });
-
-
-
-
