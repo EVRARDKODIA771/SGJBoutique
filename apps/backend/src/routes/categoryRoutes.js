@@ -83,8 +83,11 @@ categoryRoutes.get(
         limit,
       } = validation.data;
 
-      const start = (page - 1) * limit;
-      const end = start + limit - 1;
+      const start =
+        (page - 1) * limit;
+
+      const end =
+        start + limit - 1;
 
       let databaseQuery = supabaseAdmin
         .from("categories")
@@ -138,6 +141,7 @@ categoryRoutes.get(
           page,
           limit,
           total: count ?? 0,
+
           totalPages: Math.ceil(
             (count ?? 0) / limit
           ),
@@ -276,19 +280,30 @@ categoryRoutes.post(
 );
 
 /**
+ * PATCH /api/admin/categories
  * PATCH /api/admin/categories/:categoryId
+ *
  * Modifie, active ou désactive une catégorie.
+ *
+ * Sur la route principale, categoryId doit
+ * être transmis dans le corps JSON.
+ *
+ * L’ancienne route avec :categoryId reste
+ * provisoirement compatible.
  */
 categoryRoutes.patch(
-  "/:categoryId",
+  ["/", "/:categoryId"],
   async (request, response) => {
     try {
-      const parameterSchema = z.object({
-        categoryId: z.string().uuid(),
-      });
-
       const updateSchema = z
         .object({
+          categoryId: z
+            .string()
+            .uuid(
+              "Invalid category ID"
+            )
+            .optional(),
+
           name: z
             .string()
             .trim()
@@ -309,23 +324,6 @@ categoryRoutes.patch(
         })
         .strict();
 
-      const parameterValidation =
-        parameterSchema.safeParse(
-          request.params
-        );
-
-      if (
-        !parameterValidation.success
-      ) {
-        return response
-          .status(400)
-          .json({
-            success: false,
-            error:
-              "Invalid category ID",
-          });
-      }
-
       const bodyValidation =
         updateSchema.safeParse(
           request.body
@@ -343,10 +341,34 @@ categoryRoutes.patch(
           });
       }
 
+      const categoryId =
+        request.params.categoryId ??
+        bodyValidation.data.categoryId;
+
+      const identifierValidation = z
+        .string()
+        .uuid()
+        .safeParse(categoryId);
+
       if (
-        Object.keys(
-          bodyValidation.data
-        ).length === 0
+        !identifierValidation.success
+      ) {
+        return response
+          .status(400)
+          .json({
+            success: false,
+            error:
+              "Invalid category ID",
+          });
+      }
+
+      const {
+        categoryId: ignoredCategoryId,
+        ...update
+      } = bodyValidation.data;
+
+      if (
+        Object.keys(update).length === 0
       ) {
         return response
           .status(400)
@@ -356,12 +378,6 @@ categoryRoutes.patch(
               "At least one modification is required",
           });
       }
-
-      const { categoryId } =
-        parameterValidation.data;
-
-      const update =
-        bodyValidation.data;
 
       const categoryUpdates = {};
 
@@ -390,7 +406,9 @@ categoryRoutes.patch(
       } = await request.auth.supabase.rpc(
         "update_category",
         {
-          category_id: categoryId,
+          category_id:
+            identifierValidation.data,
+
           category_updates:
             categoryUpdates,
         }
