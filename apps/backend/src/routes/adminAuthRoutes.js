@@ -48,7 +48,10 @@ const newCompanyPasswordSchema = z.object({
  * d’adhésion administrative.
  */
 router.post(
-  "/access/request",
+    [
+    "/access/request",
+    "/access-request",
+  ],
   authenticateUser,
   async (request, response) => {
     try {
@@ -124,7 +127,10 @@ router.post(
  * directement son rôle et son statut.
  */
 router.get(
-  "/access/status",
+ [
+    "/access/status",
+    "/access-status",
+  ],
   authenticateUser,
   async (request, response) => {
     try {
