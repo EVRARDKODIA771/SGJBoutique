@@ -32,6 +32,9 @@ import DashboardScreen from
 import LoginScreen from
   "./src/screens/LoginScreen.js";
 
+import ProductDetailScreen from
+  "./src/screens/ProductDetailScreen.js";
+
 import ProductFormScreen from
   "./src/screens/ProductFormScreen.js";
 
@@ -86,14 +89,23 @@ function SectionPlaceholder({
       "Gestion des catégories",
     suppliers:
       "Gestion des fournisseurs",
-    "product-detail":
-      "Fiche du parfum",
+    "product-edit":
+      "Modification du parfum",
+    "product-stock":
+      "Mouvement de stock",
+    "product-suppliers":
+      "Fournisseurs du parfum",
   };
 
-  const backLabel =
-    section === "product-detail"
-      ? "Retour aux parfums"
-      : "Retour au tableau de bord";
+  const isProductSection = [
+    "product-edit",
+    "product-stock",
+    "product-suppliers",
+  ].includes(section);
+
+  const backLabel = isProductSection
+    ? "Retour à la fiche du parfum"
+    : "Retour au tableau de bord";
 
   return (
     <View
@@ -113,7 +125,7 @@ function SectionPlaceholder({
             "Section"}
         </Text>
 
-        {section === "product-detail" &&
+        {isProductSection &&
         selectedProduct ? (
           <Text
             style={styles.selectedItem}
@@ -358,6 +370,54 @@ function ApplicationContent() {
     );
   }
 
+  if (
+    activeSection ===
+      "product-detail" &&
+    selectedProduct
+  ) {
+    return (
+      <ProductDetailScreen
+        productId={selectedProduct.id}
+        initialProduct={
+          selectedProduct
+        }
+        onBack={() => {
+          setActiveSection(
+            "products"
+          );
+        }}
+        onEdit={(product) => {
+          setSelectedProduct(product);
+
+          setActiveSection(
+            "product-edit"
+          );
+        }}
+        onStockMovement={(
+          product
+        ) => {
+          setSelectedProduct(product);
+
+          setActiveSection(
+            "product-stock"
+          );
+        }}
+        onSuppliers={(product) => {
+          setSelectedProduct(product);
+
+          setActiveSection(
+            "product-suppliers"
+          );
+        }}
+        onProductChanged={(
+          product
+        ) => {
+          setSelectedProduct(product);
+        }}
+      />
+    );
+  }
+
   if (activeSection !== "dashboard") {
     return (
       <SectionPlaceholder
@@ -366,12 +426,20 @@ function ApplicationContent() {
           selectedProduct
         }
         onBack={() => {
+          const productSections = [
+            "product-edit",
+            "product-stock",
+            "product-suppliers",
+          ];
+
           if (
-            activeSection ===
-            "product-detail"
+            productSections.includes(
+              activeSection
+            ) &&
+            selectedProduct
           ) {
             setActiveSection(
-              "products"
+              "product-detail"
             );
 
             return;
