@@ -685,7 +685,6 @@ const styles = StyleSheet.create({
   statLabel: {
     color: colors.textMuted,
     fontSize: 13,
-,
     fontWeight: "600",
   },
 
