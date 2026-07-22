@@ -201,15 +201,18 @@ export function createCategory(
   );
 }
 
-export function updateCategory(
-  categoryId,
-  categoryData
+export function updateSupplier(
+  supplierId,
+  supplierData
 ) {
   return apiRequest(
-    `/api/admin/categories/${categoryId}`,
+    "/api/admin/suppliers",
     {
       method: "PATCH",
-      body: categoryData,
+      body: {
+        supplierId,
+        ...supplierData,
+      },
     }
   );
 }
