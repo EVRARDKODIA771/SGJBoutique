@@ -1,7 +1,15 @@
 {
   "name": "gestion-stock",
   "version": "1.0.0",
-  "main": "index.ts",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "build": "expo export --platform web"
+  },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.6",
     "@hookform/resolvers": "^5.4.0",
@@ -30,12 +38,5 @@
   "devDependencies": {
     "@types/react": "~19.2.2",
     "typescript": "~6.0.3"
-  },
-  "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
-  },
-  "private": true
+  }
 }
