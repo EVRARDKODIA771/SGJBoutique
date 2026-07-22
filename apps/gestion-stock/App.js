@@ -32,6 +32,9 @@ import DashboardScreen from
 import LoginScreen from
   "./src/screens/LoginScreen.js";
 
+import ProductFormScreen from
+  "./src/screens/ProductFormScreen.js";
+
 import ProductsScreen from
   "./src/screens/ProductsScreen.js";
 
@@ -83,14 +86,11 @@ function SectionPlaceholder({
       "Gestion des catégories",
     suppliers:
       "Gestion des fournisseurs",
-    "product-create":
-      "Création d’un parfum",
     "product-detail":
       "Fiche du parfum",
   };
 
   const backLabel =
-    section === "product-create" ||
     section === "product-detail"
       ? "Retour aux parfums"
       : "Retour au tableau de bord";
@@ -336,6 +336,28 @@ function ApplicationContent() {
     );
   }
 
+  if (
+    activeSection ===
+    "product-create"
+  ) {
+    return (
+      <ProductFormScreen
+        onBack={() => {
+          setActiveSection(
+            "products"
+          );
+        }}
+        onCreated={(product) => {
+          setSelectedProduct(product);
+
+          setActiveSection(
+            "product-detail"
+          );
+        }}
+      />
+    );
+  }
+
   if (activeSection !== "dashboard") {
     return (
       <SectionPlaceholder
@@ -346,9 +368,7 @@ function ApplicationContent() {
         onBack={() => {
           if (
             activeSection ===
-              "product-create" ||
-            activeSection ===
-              "product-detail"
+            "product-detail"
           ) {
             setActiveSection(
               "products"
