@@ -56,6 +56,7 @@ app.use(
         new Error("Origin not allowed")
       );
     },
+
     credentials: true,
   })
 );
@@ -71,6 +72,7 @@ const apiLimiter = rateLimit({
   limit: 200,
   standardHeaders: "draft-8",
   legacyHeaders: false,
+
   message: {
     success: false,
     error:
@@ -80,47 +82,70 @@ const apiLimiter = rateLimit({
 
 app.use("/api", apiLimiter);
 
-// Routes d’authentification administrative
+/*
+ * Authentification administrative.
+ *
+ * Ces routes profondes restent disponibles
+ * pour les points d’entrée Vercel exacts déjà
+ * créés, notamment le mot de passe entreprise.
+ */
 app.use(
   "/api/admin/auth",
   adminAuthRoutes
 );
 
-// Routes de gestion des catégories
+/*
+ * Catégories.
+ */
 app.use(
   "/api/admin/categories",
   categoryRoutes
 );
 
-// Historique global des mouvements de stock.
-//
-// Cette route est volontairement placée
-// sous /products afin de réutiliser la
-// fonction Vercel dynamique existante :
-// api/admin/products/[productId].js.
-//
-// Elle doit être montée avant productRoutes,
-// sinon "stock-history" pourrait être traité
-// comme un identifiant de parfum.
+/*
+ * Alias plats d’authentification.
+ *
+ * Ils réutilisent la fonction Vercel :
+ * api/admin/products/[productId].js
+ *
+ * Ce montage doit rester avant stockRoutes
+ * et productRoutes.
+ */
+app.use(
+  "/api/admin/products",
+  adminAuthRoutes
+);
+
+/*
+ * Historique global des mouvements de stock.
+ *
+ * Cette route doit également rester avant
+ * productRoutes pour que "stock-history" ne
+ * soit pas interprété comme un UUID produit.
+ */
 app.use(
   "/api/admin/products/stock-history",
   stockRoutes
 );
 
-// Routes de gestion des parfums
+/*
+ * Gestion des parfums.
+ */
 app.use(
   "/api/admin/products",
   productRoutes
 );
 
-// Routes de gestion des fournisseurs
+/*
+ * Gestion des fournisseurs.
+ */
 app.use(
   "/api/admin/suppliers",
   supplierRoutes
 );
 
 app.get("/", (request, response) => {
-  response.status(200).json({
+  return response.status(200).json({
     success: true,
     application: "SGJ Boutique API",
     version: "1.0.0",
@@ -130,7 +155,7 @@ app.get("/", (request, response) => {
 app.get(
   "/api/health",
   (request, response) => {
-    response.status(200).json({
+    return response.status(200).json({
       success: true,
       status: "healthy",
       environment: env.NODE_ENV,
@@ -139,16 +164,20 @@ app.get(
   }
 );
 
-// Cette route doit rester après
-// toutes les routes API.
+/*
+ * Cette route doit rester après toutes
+ * les routes de l’API.
+ */
 app.use((request, response) => {
-  response.status(404).json({
+  return response.status(404).json({
     success: false,
     error: "Route not found",
   });
 });
 
-// Gestion centralisée des erreurs.
+/*
+ * Gestion centralisée des erreurs.
+ */
 app.use(
   (
     error,
