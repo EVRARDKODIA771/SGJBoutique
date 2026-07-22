@@ -89,8 +89,6 @@ function SectionPlaceholder({
       "Gestion des catégories",
     suppliers:
       "Gestion des fournisseurs",
-    "product-edit":
-      "Modification du parfum",
     "product-stock":
       "Mouvement de stock",
     "product-suppliers":
@@ -98,7 +96,6 @@ function SectionPlaceholder({
   };
 
   const isProductSection = [
-    "product-edit",
     "product-stock",
     "product-suppliers",
   ].includes(section);
@@ -372,6 +369,30 @@ function ApplicationContent() {
 
   if (
     activeSection ===
+      "product-edit" &&
+    selectedProduct
+  ) {
+    return (
+      <ProductFormScreen
+        product={selectedProduct}
+        onBack={() => {
+          setActiveSection(
+            "product-detail"
+          );
+        }}
+        onUpdated={(product) => {
+          setSelectedProduct(product);
+
+          setActiveSection(
+            "product-detail"
+          );
+        }}
+      />
+    );
+  }
+
+  if (
+    activeSection ===
       "product-detail" &&
     selectedProduct
   ) {
@@ -427,7 +448,6 @@ function ApplicationContent() {
         }
         onBack={() => {
           const productSections = [
-            "product-edit",
             "product-stock",
             "product-suppliers",
           ];
