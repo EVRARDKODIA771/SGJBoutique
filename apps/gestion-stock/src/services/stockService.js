@@ -144,6 +144,10 @@ export function recordStockMovement(
 
 /*
  * Historique global de tous les parfums.
+ *
+ * Cette URL réutilise le point d’entrée
+ * Vercel dynamique déjà existant :
+ * api/admin/products/[productId].js.
  */
 export function getGlobalStockMovements({
   movementType,
@@ -159,7 +163,7 @@ export function getGlobalStockMovements({
   });
 
   return apiRequest(
-    `/api/admin/stock-movements${query}`
+    `/api/admin/products/stock-history${query}`
   );
 }
 
