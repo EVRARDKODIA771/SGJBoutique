@@ -1,14 +1,18 @@
-import { Platform } from
-  "react-native";
+import {
+  Platform,
+} from "react-native";
 
-import { apiRequest } from
-  "../lib/api.js";
+import {
+  apiRequest,
+} from "../lib/api.js";
 
-import { supabase } from
-  "../lib/supabase.js";
+import {
+  supabase,
+} from "../lib/supabase.js";
 
-import { useAuthStore } from
-  "../store/authStore.js";
+import {
+  useAuthStore,
+} from "../store/authStore.js";
 
 export async function initializeAuth() {
   const authStore =
@@ -89,11 +93,11 @@ export async function signIn(
 }
 
 /*
- * Récupère le rôle et le statut administratif
- * de l’utilisateur actuellement connecté.
+ * Récupération du statut administratif.
  *
- * Cette adresse peu profonde réutilise la
- * fonction Vercel dynamique des produits.
+ * Ces routes peu profondes restent utilisées
+ * afin de conserver la compatibilité avec
+ * l’organisation actuelle du backend Vercel.
  */
 export async function getAdminAccessStatus() {
   const result = await apiRequest(
@@ -113,11 +117,7 @@ export async function getAdminAccessStatus() {
 }
 
 /*
- * Enregistre une demande d’accès pour un
- * utilisateur qui n’est pas encore membre.
- *
- * Le compte owner approuvé n’utilisera pas
- * cette fonction.
+ * Enregistrement d’une demande d’accès.
  */
 export async function requestAdminAccess() {
   const result = await apiRequest(
@@ -131,6 +131,106 @@ export async function requestAdminAccess() {
   await getAdminAccessStatus();
 
   return result;
+}
+
+/*
+ * Construit les paramètres utilisés par les
+ * deux pages d’administration.
+ */
+function buildAdminQuery({
+  search,
+  page = 1,
+  limit = 20,
+} = {}) {
+  const parameters =
+    new URLSearchParams();
+
+  if (search?.trim()) {
+    parameters.set(
+      "search",
+      search.trim()
+    );
+  }
+
+  parameters.set(
+    "page",
+    String(page)
+  );
+
+  parameters.set(
+    "limit",
+    String(limit)
+  );
+
+  return `?${parameters.toString()}`;
+}
+
+/*
+ * Liste des demandes d’accès en attente.
+ */
+export function getAccessRequests({
+  search,
+  page = 1,
+  limit = 20,
+} = {}) {
+  const query = buildAdminQuery({
+    search,
+    page,
+    limit,
+  });
+
+  return apiRequest(
+    `/api/admin/auth/access-requests${query}`
+  );
+}
+
+/*
+ * Liste des utilisateurs déjà autorisés.
+ */
+export function getAuthorizedUsers({
+  search,
+  page = 1,
+  limit = 20,
+} = {}) {
+  const query = buildAdminQuery({
+    search,
+    page,
+    limit,
+  });
+
+  return apiRequest(
+    `/api/admin/auth/authorized-users${query}`
+  );
+}
+
+/*
+ * Approuve, suspend, réactive ou révoque
+ * l’accès administratif d’un utilisateur.
+ */
+export function manageAdminUser(
+  userId,
+  {
+    action,
+    role,
+    displayName,
+    staffCode,
+    skuPrefix,
+  }
+) {
+  return apiRequest(
+    `/api/admin/auth/users/${userId}/action`,
+    {
+      method: "POST",
+
+      body: {
+        action,
+        role,
+        displayName,
+        staffCode,
+        skuPrefix,
+      },
+    }
+  );
 }
 
 export async function verifyCompanyPassword(
