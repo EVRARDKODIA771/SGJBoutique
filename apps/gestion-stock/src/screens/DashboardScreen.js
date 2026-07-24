@@ -375,7 +375,11 @@ export default function DashboardScreen({
 
   return (
     <View style={styles.appShell}>
-      <View style={styles.sidebar}>
+      <View
+        style={
+          styles.dashboardLegacySidebar
+        }
+      >
         <View style={styles.sidebarBrand}>
           <Image
             source={require(
@@ -764,6 +768,10 @@ export default function DashboardScreen({
 }
 
 const styles = StyleSheet.create({
+  dashboardLegacySidebar: {
+    display: "none",
+  },
+
   appShell: {
     flex: 1,
     flexDirection: "row",
