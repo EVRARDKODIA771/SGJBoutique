@@ -127,6 +127,7 @@ function isItemActive(
 function MenuItem({
   item,
   active,
+  onNavigate,
 }) {
   const nested = !item.symbol;
 
@@ -142,6 +143,8 @@ function MenuItem({
         if (!active) {
           router.push(item.route);
         }
+
+        onNavigate?.();
       }}
     >
       {nested ? (
@@ -180,7 +183,9 @@ function MenuItem({
   );
 }
 
-export default function AdminSidebar() {
+export default function AdminSidebar({
+  onNavigate,
+}) {
   const pathname = usePathname();
 
   const role =
@@ -249,6 +254,9 @@ export default function AdminSidebar() {
                         pathname,
                         item
                       )}
+                      onNavigate={
+                        onNavigate
+                      }
                     />
                   )
                 )}
