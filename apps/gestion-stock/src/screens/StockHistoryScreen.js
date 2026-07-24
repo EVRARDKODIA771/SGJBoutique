@@ -18,8 +18,9 @@ import {
   getProducts,
 } from "../services/stockService.js";
 
-import { colors } from
-  "../theme/colors.js";
+import {
+  colors,
+} from "../theme/colors.js";
 
 const movementTypes = [
   {
@@ -204,7 +205,7 @@ export default function StockHistoryScreen({
 
       setRequestError(
         error?.message ||
-          "Impossible de charger lâ€™historique des entrÃ©es et sorties."
+          "Impossible de charger l’historique des entrées et sorties."
       );
 
       setMovements([]);
@@ -276,7 +277,7 @@ export default function StockHistoryScreen({
                 styles.backButtonText
               }
             >
-              â€¹ Retour au tableau de bord
+              ‹ Retour au tableau de bord
             </Text>
           </Pressable>
         </View>
@@ -287,13 +288,13 @@ export default function StockHistoryScreen({
           </Text>
 
           <Text style={styles.title}>
-            Historique des entrÃ©es et sorties
+            Historique des entrées et sorties
           </Text>
 
           <Text style={styles.subtitle}>
-            Consultez toutes les entrÃ©es,
-            sorties et corrections
-            enregistrÃ©es pour les parfums.
+            Consultez toutes les entrées,
+            sorties et corrections enregistrées
+            pour les parfums.
           </Text>
         </View>
 
@@ -312,7 +313,7 @@ export default function StockHistoryScreen({
                   styles.retryButtonText
                 }
               >
-                RÃ©essayer
+                Réessayer
               </Text>
             </Pressable>
           </View>
@@ -323,7 +324,7 @@ export default function StockHistoryScreen({
             <Text
               style={styles.summaryLabel}
             >
-              OpÃ©rations trouvÃ©es
+              Opérations trouvées
             </Text>
 
             <Text
@@ -337,7 +338,7 @@ export default function StockHistoryScreen({
             <Text
               style={styles.summaryLabel}
             >
-              EntrÃ©es sur cette page
+              Entrées sur cette page
             </Text>
 
             <Text
@@ -363,14 +364,14 @@ export default function StockHistoryScreen({
                 styles.exitValue,
               ]}
             >
-              âˆ’{pageTotals.exits}
+              −{pageTotals.exits}
             </Text>
           </View>
         </View>
 
         <View style={styles.filterCard}>
           <View style={styles.filterHeader}>
-            <View>
+            <View style={styles.filterHeading}>
               <Text
                 style={
                   styles.sectionTitle
@@ -384,7 +385,7 @@ export default function StockHistoryScreen({
                   styles.sectionDescription
                 }
               >
-                Filtrez par type dâ€™entrÃ©e
+                Filtrez par type d’entrée
                 ou de sortie, ou par parfum.
               </Text>
             </View>
@@ -403,14 +404,14 @@ export default function StockHistoryScreen({
                     styles.clearButtonText
                   }
                 >
-                  RÃ©initialiser
+                  Réinitialiser
                 </Text>
               </Pressable>
             ) : null}
           </View>
 
           <Text style={styles.filterLabel}>
-            Type dâ€™entrÃ©e ou de sortie
+            Type d’entrée ou de sortie
           </Text>
 
           <View style={styles.chipList}>
@@ -516,13 +517,13 @@ export default function StockHistoryScreen({
 
         <View style={styles.historyCard}>
           <View style={styles.historyHeader}>
-            <View>
+            <View style={styles.historyHeading}>
               <Text
                 style={
                   styles.sectionTitle
                 }
               >
-                EntrÃ©es et sorties enregistrÃ©es
+                Entrées et sorties enregistrées
               </Text>
 
               <Text
@@ -568,8 +569,7 @@ export default function StockHistoryScreen({
               <Text
                 style={styles.loadingText}
               >
-                Chargement de
-                lâ€™historiqueâ€¦
+                Chargement de l’historique…
               </Text>
             </View>
           ) : movements.length === 0 ? (
@@ -577,15 +577,15 @@ export default function StockHistoryScreen({
               <Text
                 style={styles.emptyTitle}
               >
-                Aucune entrÃ©e ou sortie
+                Aucune entrée ou sortie
               </Text>
 
               <Text
                 style={styles.emptyText}
               >
-                Aucune entrÃ©e ou sortie ne
+                Aucune entrée ou sortie ne
                 correspond aux filtres
-                sÃ©lectionnÃ©s.
+                sélectionnés.
               </Text>
             </View>
           ) : (
@@ -685,7 +685,7 @@ export default function StockHistoryScreen({
                           }
                         >
                           {product?.name ||
-                            "Parfum supprimÃ©"}
+                            "Parfum supprimé"}
                         </Text>
 
                         <Text
@@ -694,10 +694,10 @@ export default function StockHistoryScreen({
                           }
                         >
                           {product?.brand ||
-                            "Marque non renseignÃ©e"}
+                            "Marque non renseignée"}
 
                           {product?.sku
-                            ? ` â€¢ ${product.sku}`
+                            ? ` • ${product.sku}`
                             : ""}
                         </Text>
                       </Pressable>
@@ -734,7 +734,7 @@ export default function StockHistoryScreen({
                             styles.stockArrow
                           }
                         >
-                          â†’
+                          →
                         </Text>
 
                         <View
@@ -747,7 +747,7 @@ export default function StockHistoryScreen({
                               styles.stockLabel
                             }
                           >
-                            AprÃ¨s
+                            Après
                           </Text>
 
                           <Text
@@ -796,7 +796,7 @@ export default function StockHistoryScreen({
                                   styles.detailLabel
                                 }
                               >
-                                RÃ©fÃ©rence
+                                Référence
                               </Text>
 
                               <Text
@@ -845,7 +845,7 @@ export default function StockHistoryScreen({
                     styles.pageButtonText
                   }
                 >
-                  â€¹ PrÃ©cÃ©dent
+                  ‹ Précédent
                 </Text>
               </Pressable>
 
@@ -881,7 +881,7 @@ export default function StockHistoryScreen({
                     styles.pageButtonText
                   }
                 >
-                  Suivant â€º
+                  Suivant ›
                 </Text>
               </Pressable>
             </View>
@@ -895,7 +895,9 @@ export default function StockHistoryScreen({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background,
+
+    backgroundColor:
+      colors.background,
   },
 
   scrollContent: {
@@ -905,30 +907,46 @@ const styles = StyleSheet.create({
   container: {
     width: "100%",
     maxWidth: 1180,
+
     alignSelf: "center",
+
     paddingHorizontal: 20,
   },
 
   topBar: {
     minHeight: 76,
+
     justifyContent: "center",
+
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+
+    borderBottomColor:
+      colors.border,
   },
 
   backButton: {
     alignSelf: "flex-start",
+
     minHeight: 42,
+
     justifyContent: "center",
+
     paddingHorizontal: 14,
+
     borderRadius: 10,
+
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+
+    borderColor:
+      colors.border,
+
+    backgroundColor:
+      colors.surface,
   },
 
   backButtonText: {
     color: colors.primary,
+
     fontSize: 14,
     fontWeight: "700",
   },
@@ -939,22 +957,30 @@ const styles = StyleSheet.create({
   },
 
   eyebrow: {
-    color: colors.secondaryDark,
+    color:
+      colors.secondaryDark,
+
     fontSize: 12,
     fontWeight: "800",
+
     letterSpacing: 1.3,
   },
 
   title: {
     marginTop: 6,
-    color: colors.primaryDark,
+
+    color:
+      colors.primaryDark,
+
     fontSize: 34,
     fontWeight: "800",
   },
 
   subtitle: {
     marginTop: 7,
+
     color: colors.textMuted,
+
     fontSize: 15,
     lineHeight: 22,
   },
@@ -962,29 +988,42 @@ const styles = StyleSheet.create({
   summaryGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
+
     gap: 14,
+
     marginBottom: 20,
   },
 
   summaryCard: {
     flexGrow: 1,
     flexBasis: 220,
+
     padding: 18,
+
     borderRadius: 15,
+
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+
+    borderColor:
+      colors.border,
+
+    backgroundColor:
+      colors.surface,
   },
 
   summaryLabel: {
     color: colors.textMuted,
+
     fontSize: 12,
     fontWeight: "700",
   },
 
   summaryValue: {
     marginTop: 5,
-    color: colors.primaryDark,
+
+    color:
+      colors.primaryDark,
+
     fontSize: 27,
     fontWeight: "900",
   },
@@ -999,11 +1038,18 @@ const styles = StyleSheet.create({
 
   filterCard: {
     marginBottom: 20,
+
     padding: 21,
+
     borderRadius: 18,
+
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+
+    borderColor:
+      colors.border,
+
+    backgroundColor:
+      colors.surface,
   },
 
   filterHeader: {
@@ -1011,25 +1057,38 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "space-between",
     flexWrap: "wrap",
+
     gap: 12,
   },
 
+  filterHeading: {
+    flexGrow: 1,
+    flexShrink: 1,
+  },
+
   sectionTitle: {
-    color: colors.primaryDark,
+    color:
+      colors.primaryDark,
+
     fontSize: 20,
     fontWeight: "800",
   },
 
   sectionDescription: {
     marginTop: 5,
+
     color: colors.textMuted,
+
     fontSize: 13,
+    lineHeight: 19,
   },
 
   filterLabel: {
     marginTop: 19,
     marginBottom: 9,
+
     color: colors.text,
+
     fontSize: 13,
     fontWeight: "800",
   },
@@ -1037,56 +1096,80 @@ const styles = StyleSheet.create({
   chipList: {
     flexDirection: "row",
     flexWrap: "wrap",
+
     gap: 8,
   },
 
   chip: {
     paddingHorizontal: 13,
     paddingVertical: 9,
+
     borderRadius: 999,
+
     borderWidth: 1,
-    borderColor: colors.border,
+
+    borderColor:
+      colors.border,
+
     backgroundColor:
       colors.inputBackground,
   },
 
   chipSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary,
+    borderColor:
+      colors.primary,
+
+    backgroundColor:
+      colors.primary,
   },
 
   chipText: {
     color: colors.textMuted,
+
     fontSize: 12,
     fontWeight: "700",
   },
 
   chipTextSelected: {
-    color: colors.textOnPrimary,
+    color:
+      colors.textOnPrimary,
   },
 
   clearButton: {
     minHeight: 40,
+
     alignItems: "center",
     justifyContent: "center",
+
     paddingHorizontal: 13,
+
     borderRadius: 9,
+
     borderWidth: 1,
-    borderColor: colors.primary,
+
+    borderColor:
+      colors.primary,
   },
 
   clearButtonText: {
     color: colors.primary,
+
     fontSize: 12,
     fontWeight: "800",
   },
 
   historyCard: {
     padding: 21,
+
     borderRadius: 18,
+
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+
+    borderColor:
+      colors.border,
+
+    backgroundColor:
+      colors.surface,
   },
 
   historyHeader: {
@@ -1094,34 +1177,51 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "space-between",
     flexWrap: "wrap",
+
     gap: 12,
+
     marginBottom: 18,
+  },
+
+  historyHeading: {
+    flexGrow: 1,
+    flexShrink: 1,
   },
 
   refreshButton: {
     minHeight: 40,
+
     alignItems: "center",
     justifyContent: "center",
+
     paddingHorizontal: 14,
+
     borderRadius: 9,
-    backgroundColor: colors.primary,
+
+    backgroundColor:
+      colors.primary,
   },
 
   refreshButtonText: {
-    color: colors.textOnPrimary,
+    color:
+      colors.textOnPrimary,
+
     fontSize: 12,
     fontWeight: "800",
   },
 
   loadingBox: {
     minHeight: 230,
+
     alignItems: "center",
     justifyContent: "center",
+
     gap: 14,
   },
 
   loadingText: {
     color: colors.textMuted,
+
     fontSize: 13,
   },
 
@@ -1131,9 +1231,14 @@ const styles = StyleSheet.create({
 
   movementCard: {
     padding: 17,
+
     borderRadius: 14,
+
     borderWidth: 1,
-    borderColor: colors.border,
+
+    borderColor:
+      colors.border,
+
     backgroundColor:
       colors.inputBackground,
   },
@@ -1142,6 +1247,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
+
     gap: 12,
   },
 
@@ -1150,14 +1256,18 @@ const styles = StyleSheet.create({
   },
 
   movementType: {
-    color: colors.primaryDark,
+    color:
+      colors.primaryDark,
+
     fontSize: 16,
     fontWeight: "800",
   },
 
   movementDate: {
     marginTop: 4,
+
     color: colors.textMuted,
+
     fontSize: 11,
   },
 
@@ -1168,21 +1278,28 @@ const styles = StyleSheet.create({
 
   productArea: {
     marginTop: 14,
+
     padding: 13,
+
     borderRadius: 11,
+
     backgroundColor:
       colors.secondaryLight,
   },
 
   productName: {
-    color: colors.primaryDark,
+    color:
+      colors.primaryDark,
+
     fontSize: 15,
     fontWeight: "800",
   },
 
   productMeta: {
     marginTop: 3,
+
     color: colors.textMuted,
+
     fontSize: 11,
   },
 
@@ -1190,30 +1307,41 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+
+    flexWrap: "wrap",
+
     gap: 20,
+
     marginTop: 15,
   },
 
   stockValueBox: {
     minWidth: 90,
+
     alignItems: "center",
   },
 
   stockLabel: {
     color: colors.textMuted,
+
     fontSize: 10,
     fontWeight: "700",
   },
 
   stockValue: {
     marginTop: 3,
-    color: colors.primaryDark,
+
+    color:
+      colors.primaryDark,
+
     fontSize: 20,
     fontWeight: "900",
   },
 
   stockArrow: {
-    color: colors.secondaryDark,
+    color:
+      colors.secondaryDark,
+
     fontSize: 22,
     fontWeight: "800",
   },
@@ -1221,23 +1349,32 @@ const styles = StyleSheet.create({
   detailsBox: {
     flexDirection: "row",
     flexWrap: "wrap",
+
     gap: 20,
+
     marginTop: 15,
     paddingTop: 14,
+
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+
+    borderTopColor:
+      colors.border,
   },
 
   detailLabel: {
     color: colors.textMuted,
+
     fontSize: 10,
     fontWeight: "800",
+
     textTransform: "uppercase",
   },
 
   detailValue: {
     marginTop: 3,
+
     color: colors.text,
+
     fontSize: 12,
   },
 
@@ -1246,82 +1383,118 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flexWrap: "wrap",
+
     gap: 13,
+
     marginTop: 22,
   },
 
   pageButton: {
     minHeight: 41,
+
     alignItems: "center",
     justifyContent: "center",
+
     paddingHorizontal: 15,
+
     borderRadius: 9,
-    backgroundColor: colors.primary,
+
+    backgroundColor:
+      colors.primary,
   },
 
   pageButtonText: {
-    color: colors.textOnPrimary,
+    color:
+      colors.textOnPrimary,
+
     fontSize: 12,
     fontWeight: "800",
   },
 
   pageText: {
     color: colors.textMuted,
+
     fontSize: 12,
     fontWeight: "700",
   },
 
   emptyBox: {
     minHeight: 210,
+
     alignItems: "center",
     justifyContent: "center",
+
     padding: 25,
+
     borderRadius: 13,
+
     borderWidth: 1,
-    borderColor: colors.border,
+
+    borderColor:
+      colors.border,
+
     backgroundColor:
       colors.inputBackground,
   },
 
   emptyTitle: {
-    color: colors.primaryDark,
+    color:
+      colors.primaryDark,
+
     fontSize: 16,
     fontWeight: "800",
   },
 
   emptyText: {
     marginTop: 6,
+
     color: colors.textMuted,
+
     fontSize: 12,
+    lineHeight: 18,
+
     textAlign: "center",
   },
 
   errorBox: {
     marginBottom: 18,
+
     padding: 14,
+
     borderRadius: 12,
+
     borderWidth: 1,
-    borderColor: colors.danger,
+
+    borderColor:
+      colors.danger,
+
     backgroundColor:
       colors.dangerLight,
   },
 
   errorText: {
     color: colors.danger,
+
     fontSize: 14,
   },
 
   retryButton: {
     alignSelf: "flex-start",
+
     marginTop: 10,
+
     paddingHorizontal: 13,
     paddingVertical: 8,
+
     borderRadius: 8,
-    backgroundColor: colors.danger,
+
+    backgroundColor:
+      colors.danger,
   },
 
   retryButtonText: {
     color: "#FFFFFF",
+
     fontSize: 12,
     fontWeight: "800",
   },
