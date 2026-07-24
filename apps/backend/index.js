@@ -31,6 +31,10 @@ const port =
 /*
  * Vercel transmet les requêtes à Express
  * derrière un proxy.
+ *
+ * Cette option est également nécessaire pour
+ * que express-rate-limit identifie correctement
+ * les adresses des clients.
  */
 app.set("trust proxy", 1);
 
@@ -48,8 +52,9 @@ app.use(
 /*
  * Configuration CORS générale.
  *
- * Le middleware cors répond également aux
- * requêtes OPTIONS envoyées par le navigateur.
+ * Ce middleware répond aussi aux requêtes
+ * OPTIONS envoyées par les navigateurs avant
+ * les appels administratifs.
  */
 const corsOptions = {
   origin(origin, callback) {
@@ -63,16 +68,16 @@ const corsOptions = {
     }
 
     /*
-     * En développement, on accepte les origines
-     * locales utilisées par Expo.
+     * En développement, les origines locales
+     * utilisées par Expo sont acceptées.
      */
     if (env.NODE_ENV !== "production") {
       return callback(null, true);
     }
 
     /*
-     * En production, l’origine doit être présente
-     * dans ALLOWED_ORIGINS.
+     * En production, l’origine doit être
+     * présente dans ALLOWED_ORIGINS.
      */
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
@@ -115,10 +120,10 @@ app.use(
 );
 
 /*
- * Lecture des formulaires classiques.
+ * Lecture des formulaires URL-encoded.
  *
- * Les images multipart restent gérées par
- * Multer dans les routes concernées.
+ * Les images multipart restent prises en
+ * charge par Multer dans productRoutes.
  */
 app.use(
   express.urlencoded({
@@ -128,7 +133,7 @@ app.use(
 );
 
 /*
- * Limitation des requêtes API.
+ * Limitation globale des requêtes API.
  */
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -176,14 +181,16 @@ app.get(
 /*
  * AUTHENTIFICATION ET ADMINISTRATION
  *
- * Exemples :
+ * Routes officielles :
  *
  * GET  /api/admin/auth/access/status
  * POST /api/admin/auth/access/request
  * GET  /api/admin/auth/access-requests
  * GET  /api/admin/auth/authorized-users
  * POST /api/admin/auth/users/:userId/action
+ * POST /api/admin/auth/company-password/setup
  * POST /api/admin/auth/company-password/verify
+ * POST /api/admin/auth/company-password/logout
  */
 app.use(
   "/api/admin/auth",
@@ -207,11 +214,44 @@ app.use(
 );
 
 /*
+ * COMPATIBILITÉ AVEC LES ANCIENNES URLS
+ *
+ * Certaines parties du frontend utilisent
+ * encore des URL administratives commençant
+ * par /api/admin/products.
+ *
+ * Exemples encore pris en charge :
+ *
+ * GET  /api/admin/products/access-status
+ * POST /api/admin/products/access-request
+ * GET  /api/admin/products/access-requests
+ * GET  /api/admin/products/authorized-users
+ * POST /api/admin/products/users/:userId/action
+ * POST /api/admin/products/company-password/setup
+ * POST /api/admin/products/company-password/verify
+ * POST /api/admin/products/company-password/logout
+ *
+ * Ce montage doit rester avant stockRoutes
+ * et productRoutes.
+ *
+ * Lorsqu’une route ne correspond pas à
+ * adminAuthRoutes, Express continue vers
+ * les routeurs suivants.
+ */
+app.use(
+  "/api/admin/products",
+  adminAuthRoutes
+);
+
+/*
  * HISTORIQUE GLOBAL DU STOCK
  *
- * Ce montage doit rester avant productRoutes.
- * Sinon, "stock-history" pourrait être traité
- * comme un productId.
+ * Cette route doit rester avant productRoutes
+ * afin que "stock-history" ne soit jamais
+ * interprété comme un productId.
+ *
+ * Route :
+ * GET /api/admin/products/stock-history
  */
 app.use(
   "/api/admin/products/stock-history",
@@ -221,9 +261,13 @@ app.use(
 /*
  * PARFUMS
  *
- * Ce routeur peut contenir des routes dynamiques
- * comme /:productId. Il doit donc rester après
- * la route fixe /stock-history.
+ * Ce routeur contient notamment des routes
+ * dynamiques utilisant /:productId.
+ *
+ * Il doit donc rester après :
+ *
+ * 1. l’alias administratif ;
+ * 2. la route fixe stock-history.
  */
 app.use(
   "/api/admin/products",
@@ -233,8 +277,8 @@ app.use(
 /*
  * Route inexistante.
  *
- * Ce middleware doit rester après tous les
- * routeurs de l’application.
+ * Ce middleware doit obligatoirement rester
+ * après tous les routeurs de l’application.
  */
 app.use((request, response) => {
   return response.status(404).json({
@@ -248,7 +292,8 @@ app.use((request, response) => {
 /*
  * Gestion centralisée des erreurs.
  *
- * Ce middleware doit rester en dernière position.
+ * Ce middleware doit rester en dernière
+ * position.
  */
 app.use(
   (
@@ -263,7 +308,7 @@ app.use(
     );
 
     /*
-     * Origine non autorisée par CORS.
+     * Origine refusée par CORS.
      */
     if (
       error.message ===
@@ -299,8 +344,8 @@ app.use(
 /*
  * Démarrage local uniquement.
  *
- * Vercel définit automatiquement VERCEL="1".
- * Sur Vercel, l’application est donc exportée
+ * Sur Vercel, la variable VERCEL vaut "1".
+ * Dans ce cas, l’application est exportée
  * sans ouvrir manuellement un port.
  */
 if (process.env.VERCEL !== "1") {
