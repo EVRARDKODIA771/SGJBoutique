@@ -204,7 +204,7 @@ export default function StockHistoryScreen({
 
       setRequestError(
         error?.message ||
-          "Impossible de charger l’historique du stock."
+          "Impossible de charger lâ€™historique des entrÃ©es et sorties."
       );
 
       setMovements([]);
@@ -276,7 +276,7 @@ export default function StockHistoryScreen({
                 styles.backButtonText
               }
             >
-              ‹ Retour au tableau de bord
+              â€¹ Retour au tableau de bord
             </Text>
           </Pressable>
         </View>
@@ -287,13 +287,13 @@ export default function StockHistoryScreen({
           </Text>
 
           <Text style={styles.title}>
-            Historique du stock
+            Historique des entrÃ©es et sorties
           </Text>
 
           <Text style={styles.subtitle}>
-            Consultez toutes les entrées,
+            Consultez toutes les entrÃ©es,
             sorties et corrections
-            enregistrées pour les parfums.
+            enregistrÃ©es pour les parfums.
           </Text>
         </View>
 
@@ -312,7 +312,7 @@ export default function StockHistoryScreen({
                   styles.retryButtonText
                 }
               >
-                Réessayer
+                RÃ©essayer
               </Text>
             </Pressable>
           </View>
@@ -323,7 +323,7 @@ export default function StockHistoryScreen({
             <Text
               style={styles.summaryLabel}
             >
-              Mouvements trouvés
+              OpÃ©rations trouvÃ©es
             </Text>
 
             <Text
@@ -337,7 +337,7 @@ export default function StockHistoryScreen({
             <Text
               style={styles.summaryLabel}
             >
-              Entrées sur cette page
+              EntrÃ©es sur cette page
             </Text>
 
             <Text
@@ -363,7 +363,7 @@ export default function StockHistoryScreen({
                 styles.exitValue,
               ]}
             >
-              −{pageTotals.exits}
+              âˆ’{pageTotals.exits}
             </Text>
           </View>
         </View>
@@ -384,8 +384,8 @@ export default function StockHistoryScreen({
                   styles.sectionDescription
                 }
               >
-                Filtrez par type de
-                mouvement ou par parfum.
+                Filtrez par type dâ€™entrÃ©e
+                ou de sortie, ou par parfum.
               </Text>
             </View>
 
@@ -403,14 +403,14 @@ export default function StockHistoryScreen({
                     styles.clearButtonText
                   }
                 >
-                  Réinitialiser
+                  RÃ©initialiser
                 </Text>
               </Pressable>
             ) : null}
           </View>
 
           <Text style={styles.filterLabel}>
-            Type de mouvement
+            Type dâ€™entrÃ©e ou de sortie
           </Text>
 
           <View style={styles.chipList}>
@@ -522,7 +522,7 @@ export default function StockHistoryScreen({
                   styles.sectionTitle
                 }
               >
-                Mouvements enregistrés
+                EntrÃ©es et sorties enregistrÃ©es
               </Text>
 
               <Text
@@ -569,7 +569,7 @@ export default function StockHistoryScreen({
                 style={styles.loadingText}
               >
                 Chargement de
-                l’historique…
+                lâ€™historiqueâ€¦
               </Text>
             </View>
           ) : movements.length === 0 ? (
@@ -577,15 +577,15 @@ export default function StockHistoryScreen({
               <Text
                 style={styles.emptyTitle}
               >
-                Aucun mouvement
+                Aucune entrÃ©e ou sortie
               </Text>
 
               <Text
                 style={styles.emptyText}
               >
-                Aucun mouvement ne
+                Aucune entrÃ©e ou sortie ne
                 correspond aux filtres
-                sélectionnés.
+                sÃ©lectionnÃ©s.
               </Text>
             </View>
           ) : (
@@ -685,7 +685,7 @@ export default function StockHistoryScreen({
                           }
                         >
                           {product?.name ||
-                            "Parfum supprimé"}
+                            "Parfum supprimÃ©"}
                         </Text>
 
                         <Text
@@ -694,10 +694,10 @@ export default function StockHistoryScreen({
                           }
                         >
                           {product?.brand ||
-                            "Marque non renseignée"}
+                            "Marque non renseignÃ©e"}
 
                           {product?.sku
-                            ? ` • ${product.sku}`
+                            ? ` â€¢ ${product.sku}`
                             : ""}
                         </Text>
                       </Pressable>
@@ -734,7 +734,7 @@ export default function StockHistoryScreen({
                             styles.stockArrow
                           }
                         >
-                          →
+                          â†’
                         </Text>
 
                         <View
@@ -747,7 +747,7 @@ export default function StockHistoryScreen({
                               styles.stockLabel
                             }
                           >
-                            Après
+                            AprÃ¨s
                           </Text>
 
                           <Text
@@ -796,7 +796,7 @@ export default function StockHistoryScreen({
                                   styles.detailLabel
                                 }
                               >
-                                Référence
+                                RÃ©fÃ©rence
                               </Text>
 
                               <Text
@@ -845,7 +845,7 @@ export default function StockHistoryScreen({
                     styles.pageButtonText
                   }
                 >
-                  ‹ Précédent
+                  â€¹ PrÃ©cÃ©dent
                 </Text>
               </Pressable>
 
@@ -881,7 +881,7 @@ export default function StockHistoryScreen({
                     styles.pageButtonText
                   }
                 >
-                  Suivant ›
+                  Suivant â€º
                 </Text>
               </Pressable>
             </View>
