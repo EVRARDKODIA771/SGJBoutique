@@ -8,26 +8,35 @@ import {
   allowedOrigins,
 } from "./src/config/env.js";
 
-import adminAuthRoutes
-  from "./src/routes/adminAuthRoutes.js";
+import adminAuthRoutes from
+  "./src/routes/adminAuthRoutes.js";
 
-import categoryRoutes
-  from "./src/routes/categoryRoutes.js";
+import categoryRoutes from
+  "./src/routes/categoryRoutes.js";
 
-import productRoutes
-  from "./src/routes/productRoutes.js";
+import productRoutes from
+  "./src/routes/productRoutes.js";
 
-import stockRoutes
-  from "./src/routes/stockRoutes.js";
+import stockRoutes from
+  "./src/routes/stockRoutes.js";
 
-import supplierRoutes
-  from "./src/routes/supplierRoutes.js";
+import supplierRoutes from
+  "./src/routes/supplierRoutes.js";
 
 const app = express();
-const port = process.env.PORT || 3000;
 
+const port =
+  Number(process.env.PORT) || 3000;
+
+/*
+ * Vercel transmet les requêtes à Express
+ * derrière un proxy.
+ */
 app.set("trust proxy", 1);
 
+/*
+ * En-têtes de sécurité.
+ */
 app.use(
   helmet({
     crossOriginResourcePolicy: {
@@ -36,40 +45,95 @@ app.use(
   })
 );
 
-app.use(
-  cors({
-    origin(origin, callback) {
-      // Applications mobiles, outils serveur
-      // et accès direct sans en-tête Origin.
-      if (!origin) {
-        return callback(null, true);
-      }
+/*
+ * Configuration CORS générale.
+ *
+ * Le middleware cors répond également aux
+ * requêtes OPTIONS envoyées par le navigateur.
+ */
+const corsOptions = {
+  origin(origin, callback) {
+    /*
+     * Les applications mobiles, les outils
+     * serveur et certaines requêtes directes
+     * peuvent ne pas envoyer d’en-tête Origin.
+     */
+    if (!origin) {
+      return callback(null, true);
+    }
 
-      if (
-        env.NODE_ENV !== "production" ||
-        allowedOrigins.includes(origin)
-      ) {
-        return callback(null, true);
-      }
+    /*
+     * En développement, on accepte les origines
+     * locales utilisées par Expo.
+     */
+    if (env.NODE_ENV !== "production") {
+      return callback(null, true);
+    }
 
-      return callback(
-        new Error("Origin not allowed")
-      );
-    },
+    /*
+     * En production, l’origine doit être présente
+     * dans ALLOWED_ORIGINS.
+     */
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
 
-    credentials: true,
-  })
-);
+    return callback(
+      new Error("Origin not allowed")
+    );
+  },
 
+  credentials: true,
+
+  methods: [
+    "GET",
+    "POST",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS",
+  ],
+
+  allowedHeaders: [
+    "Authorization",
+    "Content-Type",
+    "X-Company-Session-ID",
+  ],
+
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+
+/*
+ * Lecture des corps JSON.
+ */
 app.use(
   express.json({
     limit: "1mb",
   })
 );
 
+/*
+ * Lecture des formulaires classiques.
+ *
+ * Les images multipart restent gérées par
+ * Multer dans les routes concernées.
+ */
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "1mb",
+  })
+);
+
+/*
+ * Limitation des requêtes API.
+ */
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 200,
+
   standardHeaders: "draft-8",
   legacyHeaders: false,
 
@@ -83,67 +147,8 @@ const apiLimiter = rateLimit({
 app.use("/api", apiLimiter);
 
 /*
- * Authentification administrative.
- *
- * Ces routes profondes restent disponibles
- * pour les points d’entrée Vercel exacts déjà
- * créés, notamment le mot de passe entreprise.
+ * Informations publiques du backend.
  */
-app.use(
-  "/api/admin/auth",
-  adminAuthRoutes
-);
-
-/*
- * Catégories.
- */
-app.use(
-  "/api/admin/categories",
-  categoryRoutes
-);
-
-/*
- * Alias plats d’authentification.
- *
- * Ils réutilisent la fonction Vercel :
- * api/admin/products/[productId].js
- *
- * Ce montage doit rester avant stockRoutes
- * et productRoutes.
- */
-app.use(
-  "/api/admin/products",
-  adminAuthRoutes
-);
-
-/*
- * Historique global des mouvements de stock.
- *
- * Cette route doit également rester avant
- * productRoutes pour que "stock-history" ne
- * soit pas interprété comme un UUID produit.
- */
-app.use(
-  "/api/admin/products/stock-history",
-  stockRoutes
-);
-
-/*
- * Gestion des parfums.
- */
-app.use(
-  "/api/admin/products",
-  productRoutes
-);
-
-/*
- * Gestion des fournisseurs.
- */
-app.use(
-  "/api/admin/suppliers",
-  supplierRoutes
-);
-
 app.get("/", (request, response) => {
   return response.status(200).json({
     success: true,
@@ -152,6 +157,9 @@ app.get("/", (request, response) => {
   });
 });
 
+/*
+ * Vérification de disponibilité.
+ */
 app.get(
   "/api/health",
   (request, response) => {
@@ -159,24 +167,88 @@ app.get(
       success: true,
       status: "healthy",
       environment: env.NODE_ENV,
-      timestamp: new Date().toISOString(),
+      timestamp:
+        new Date().toISOString(),
     });
   }
 );
 
 /*
- * Cette route doit rester après toutes
- * les routes de l’API.
+ * AUTHENTIFICATION ET ADMINISTRATION
+ *
+ * Exemples :
+ *
+ * GET  /api/admin/auth/access/status
+ * POST /api/admin/auth/access/request
+ * GET  /api/admin/auth/access-requests
+ * GET  /api/admin/auth/authorized-users
+ * POST /api/admin/auth/users/:userId/action
+ * POST /api/admin/auth/company-password/verify
+ */
+app.use(
+  "/api/admin/auth",
+  adminAuthRoutes
+);
+
+/*
+ * CATÉGORIES
+ */
+app.use(
+  "/api/admin/categories",
+  categoryRoutes
+);
+
+/*
+ * FOURNISSEURS
+ */
+app.use(
+  "/api/admin/suppliers",
+  supplierRoutes
+);
+
+/*
+ * HISTORIQUE GLOBAL DU STOCK
+ *
+ * Ce montage doit rester avant productRoutes.
+ * Sinon, "stock-history" pourrait être traité
+ * comme un productId.
+ */
+app.use(
+  "/api/admin/products/stock-history",
+  stockRoutes
+);
+
+/*
+ * PARFUMS
+ *
+ * Ce routeur peut contenir des routes dynamiques
+ * comme /:productId. Il doit donc rester après
+ * la route fixe /stock-history.
+ */
+app.use(
+  "/api/admin/products",
+  productRoutes
+);
+
+/*
+ * Route inexistante.
+ *
+ * Ce middleware doit rester après tous les
+ * routeurs de l’application.
  */
 app.use((request, response) => {
   return response.status(404).json({
     success: false,
     error: "Route not found",
+    method: request.method,
+    path: request.originalUrl,
   });
 });
 
 /*
  * Gestion centralisée des erreurs.
+ *
+ * Ce middleware doit rester en dernière position.
  */
 app.use(
   (
@@ -185,8 +257,14 @@ app.use(
     response,
     next
   ) => {
-    console.error(error);
+    console.error(
+      "Unhandled backend error:",
+      error
+    );
 
+    /*
+     * Origine non autorisée par CORS.
+     */
     if (
       error.message ===
       "Origin not allowed"
@@ -197,6 +275,20 @@ app.use(
       });
     }
 
+    /*
+     * Corps JSON invalide.
+     */
+    if (
+      error instanceof SyntaxError &&
+      error.status === 400 &&
+      "body" in error
+    ) {
+      return response.status(400).json({
+        success: false,
+        error: "Invalid JSON body",
+      });
+    }
+
     return response.status(500).json({
       success: false,
       error: "Internal server error",
@@ -204,7 +296,14 @@ app.use(
   }
 );
 
-if (env.NODE_ENV !== "production") {
+/*
+ * Démarrage local uniquement.
+ *
+ * Vercel définit automatiquement VERCEL="1".
+ * Sur Vercel, l’application est donc exportée
+ * sans ouvrir manuellement un port.
+ */
+if (process.env.VERCEL !== "1") {
   app.listen(port, () => {
     console.log(
       `SGJ Boutique API running on port ${port}`
@@ -212,4 +311,8 @@ if (env.NODE_ENV !== "production") {
   });
 }
 
+/*
+ * Point d’entrée Express unique utilisé
+ * automatiquement par Vercel.
+ */
 export default app;
