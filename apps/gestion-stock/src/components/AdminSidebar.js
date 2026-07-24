@@ -16,112 +16,178 @@ import {
   useAuthStore,
 } from "../store/authStore.js";
 
-import { colors } from
-  "../theme/colors.js";
+import {
+  colors,
+} from "../theme/colors.js";
 
 const menuSections = [
   {
     title: null,
+
     items: [
       {
         label: "Tableau de bord",
         symbol: "T",
         route: "/dashboard",
+        exact: true,
       },
     ],
   },
+
   {
     title: "PARFUMS",
+
     items: [
       {
         label: "Tous les parfums",
         route: "/products",
         exact: true,
       },
+
       {
         label: "Ajouter un parfum",
         route: "/products/new",
+        exact: true,
       },
+
       {
         label: "Parfums vendus",
         route: "/products/sold",
+        exact: true,
       },
+
       {
         label:
           "Parfums achetés chez les fournisseurs",
+
         route:
           "/products/supplier-purchases",
+
+        exact: true,
       },
     ],
   },
+
   {
     title: "GESTION DU STOCK",
+
     items: [
       {
         label:
           "Ajouter ou retirer des parfums",
-        route: "/stock",
+
+        route: "/stock/manage",
+        exact: true,
       },
+
       {
         label:
           "Historique des entrées et sorties",
+
         route: "/stock",
+        exact: true,
       },
+
       {
         label:
           "Parfums bientôt épuisés",
+
         route: "/products/low-stock",
+        exact: true,
       },
+
       {
         label: "Parfums épuisés",
+
         route:
           "/products/out-of-stock",
+
+        exact: true,
       },
     ],
   },
+
   {
     title: "ORGANISATION",
+
     items: [
       {
         label: "Catégories",
         symbol: "C",
         route: "/categories",
+        exact: true,
       },
+
       {
         label: "Fournisseurs",
         symbol: "F",
         route: "/suppliers",
+        exact: true,
       },
     ],
   },
+
   {
     title: "ADMINISTRATION",
     ownerOnly: true,
+
     items: [
       {
         label: "Demandes d’accès",
+
         route:
           "/administration/access-requests",
+
+        exact: true,
       },
+
       {
         label:
           "Utilisateurs autorisés",
+
         route:
           "/administration/authorized-users",
+
+        exact: true,
       },
     ],
   },
 ];
 
+function normalizePathname(pathname) {
+  if (
+    !pathname ||
+    pathname === "/"
+  ) {
+    return pathname || "/";
+  }
+
+  return pathname.replace(
+    /\/+$/,
+    ""
+  );
+}
+
 function isItemActive(
   pathname,
   item
 ) {
+  const currentPath =
+    normalizePathname(pathname);
+
+  const itemRoute =
+    normalizePathname(item.route);
+
   if (item.exact) {
-    return pathname === item.route;
+    return currentPath === itemRoute;
   }
 
-  return pathname === item.route;
+  return (
+    currentPath === itemRoute ||
+    currentPath.startsWith(
+      `${itemRoute}/`
+    )
+  );
 }
 
 function MenuItem({
@@ -131,28 +197,46 @@ function MenuItem({
 }) {
   const nested = !item.symbol;
 
+  function handlePress() {
+    if (!active) {
+      router.push(item.route);
+    }
+
+    /*
+     * Sur smartphone, cette fonction
+     * referme le menu après navigation.
+     */
+    onNavigate?.();
+  }
+
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityState={{
+        selected: active,
+      }}
       style={({ pressed }) => [
         styles.item,
         nested && styles.subItem,
         active && styles.activeItem,
         pressed && styles.pressedItem,
       ]}
-      onPress={() => {
-        if (!active) {
-          router.push(item.route);
-        }
-
-        onNavigate?.();
-      }}
+      onPress={handlePress}
     >
       {nested ? (
-        <View style={styles.subDot} />
+        <View
+          style={[
+            styles.subDot,
+
+            active &&
+              styles.activeSubDot,
+          ]}
+        />
       ) : (
         <View
           style={[
             styles.symbol,
+
             active &&
               styles.activeSymbol,
           ]}
@@ -160,6 +244,7 @@ function MenuItem({
           <Text
             style={[
               styles.symbolText,
+
               active &&
                 styles.activeSymbolText,
             ]}
@@ -172,7 +257,10 @@ function MenuItem({
       <Text
         style={[
           styles.itemText,
-          nested && styles.subItemText,
+
+          nested &&
+            styles.subItemText,
+
           active &&
             styles.activeItemText,
         ]}
@@ -188,11 +276,10 @@ export default function AdminSidebar({
 }) {
   const pathname = usePathname();
 
-  const role =
-    useAuthStore(
-      (state) =>
-        state.adminMembership?.role
-    );
+  const role = useAuthStore(
+    (state) =>
+      state.adminMembership?.role
+  );
 
   return (
     <View style={styles.sidebar}>
@@ -203,6 +290,7 @@ export default function AdminSidebar({
           )}
           style={styles.logo}
           resizeMode="contain"
+          accessibilityLabel="Logo JDE Parfum d’Exception"
         />
 
         <Text style={styles.brandName}>
@@ -220,7 +308,10 @@ export default function AdminSidebar({
         }
       >
         {menuSections.map(
-          (section, sectionIndex) => {
+          (
+            section,
+            sectionIndex
+          ) => {
             if (
               section.ownerOnly &&
               role !== "owner"
@@ -246,9 +337,14 @@ export default function AdminSidebar({
                 ) : null}
 
                 {section.items.map(
-                  (item, itemIndex) => (
+                  (
+                    item,
+                    itemIndex
+                  ) => (
                     <MenuItem
-                      key={`${item.route}-${itemIndex}`}
+                      key={
+                        `${item.route}-${itemIndex}`
+                      }
                       item={item}
                       active={isItemActive(
                         pathname,
@@ -273,111 +369,163 @@ const styles = StyleSheet.create({
   sidebar: {
     width: 292,
     flexShrink: 0,
+
     backgroundColor:
       colors.brandBlueDark,
+
     borderRightWidth: 4,
+
     borderRightColor:
       colors.secondaryDark,
   },
+
   brand: {
     minHeight: 135,
+
     alignItems: "center",
     justifyContent: "center",
+
     paddingHorizontal: 18,
     paddingVertical: 15,
+
     borderBottomWidth: 1,
+
     borderBottomColor:
       "rgba(255,255,255,0.16)",
-    backgroundColor: colors.surface,
+
+    backgroundColor:
+      colors.surface,
   },
+
   logo: {
     width: 155,
     height: 72,
   },
+
   brandName: {
     marginTop: 4,
-    color: colors.brandBlueDark,
+
+    color:
+      colors.brandBlueDark,
+
     fontSize: 13,
     fontWeight: "800",
   },
+
   scroll: {
     flex: 1,
   },
+
   content: {
     paddingHorizontal: 11,
     paddingTop: 15,
     paddingBottom: 30,
   },
+
   sectionTitle: {
     marginTop: 19,
     marginBottom: 7,
+
     paddingHorizontal: 11,
+
     color: colors.secondary,
+
     fontSize: 10,
     fontWeight: "900",
     letterSpacing: 1,
   },
+
   item: {
     minHeight: 46,
+
     flexDirection: "row",
     alignItems: "center",
+
     gap: 11,
+
     paddingHorizontal: 11,
     paddingVertical: 8,
+
     borderRadius: 9,
   },
+
   subItem: {
     minHeight: 42,
     paddingLeft: 22,
   },
+
   activeItem: {
     backgroundColor:
       colors.secondaryDark,
   },
+
   pressedItem: {
-    backgroundColor:
-      "rgba(255,255,255,0.12)",
+    opacity: 0.82,
   },
+
   symbol: {
     width: 28,
     height: 28,
+
     alignItems: "center",
     justifyContent: "center",
+
     borderRadius: 8,
+
     backgroundColor:
       "rgba(255,255,255,0.12)",
   },
+
   activeSymbol: {
-    backgroundColor: colors.surface,
+    backgroundColor:
+      colors.surface,
   },
+
   symbolText: {
     color: colors.surface,
+
     fontSize: 12,
     fontWeight: "900",
   },
+
   activeSymbolText: {
-    color: colors.secondaryDark,
+    color:
+      colors.secondaryDark,
   },
+
   subDot: {
     width: 6,
     height: 6,
+
     borderRadius: 999,
+
     backgroundColor:
       colors.secondary,
   },
+
+  activeSubDot: {
+    backgroundColor:
+      colors.surface,
+  },
+
   itemText: {
     flex: 1,
+
     color: colors.surface,
+
     fontSize: 13,
     fontWeight: "700",
     lineHeight: 18,
   },
+
   subItemText: {
     color:
       "rgba(255,255,255,0.86)",
+
     fontSize: 12,
     fontWeight: "600",
   },
+
   activeItemText: {
     color: colors.surface,
     fontWeight: "900",
