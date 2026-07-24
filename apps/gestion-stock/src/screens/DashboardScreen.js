@@ -162,12 +162,16 @@ function MenuButton({
       </View>
 
       <View style={styles.menuContent}>
-        <Text style={styles.menuTitle}>
+        <Text
+          style={styles.menuTitle}
+          numberOfLines={2}
+        >
           {title}
         </Text>
 
         <Text
           style={styles.menuDescription}
+          numberOfLines={2}
         >
           {description}
         </Text>
@@ -1051,17 +1055,18 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 14,
+    gap: 10,
   },
 
   statCard: {
     position: "relative",
     flexGrow: 1,
     flexBasis: 230,
-    minHeight: 145,
+    minHeight: 76,
     overflow: "hidden",
-    padding: 20,
-    borderRadius: 17,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 13,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1072,104 +1077,113 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     bottom: 0,
-    width: 5,
+    width: 4,
   },
 
   statLabel: {
     color: colors.textMuted,
-    fontSize: 13,
+    fontSize: 12,
+    lineHeight: 14,
     fontWeight: "600",
   },
 
   statValue: {
-    marginTop: 11,
+    marginTop: 2,
     color: colors.primaryDark,
-    fontSize: 27,
+    fontSize: 22,
+    lineHeight: 25,
     fontWeight: "800",
   },
 
   statDetail: {
-    marginTop: 8,
+    marginTop: 1,
     color: colors.textMuted,
-    fontSize: 12,
+    fontSize: 11,
+    lineHeight: 14,
   },
 
   statArrow: {
     position: "absolute",
-    right: 15,
-    bottom: 11,
+    right: 12,
+    bottom: 5,
     color: colors.secondaryDark,
-    fontSize: 25,
+    fontSize: 21,
     fontWeight: "800",
   },
 
   section: {
-    marginTop: 34,
+    marginTop: 18,
   },
 
   sectionTitle: {
-    marginBottom: 15,
+    marginBottom: 10,
     color: colors.primaryDark,
-    fontSize: 22,
+    fontSize: 20,
+    lineHeight: 24,
     fontWeight: "800",
   },
 
   menuGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 14,
+    gap: 10,
   },
 
   menuButton: {
     flexGrow: 1,
     flexBasis: 310,
-    minHeight: 112,
+    minHeight: 66,
     flexDirection: "row",
     alignItems: "center",
-    gap: 15,
-    padding: 18,
-    borderRadius: 17,
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 13,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
   },
 
   menuSymbol: {
-    width: 48,
-    height: 48,
+    width: 38,
+    height: 38,
+    flexShrink: 0,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 14,
+    borderRadius: 11,
     backgroundColor:
       colors.primaryLight,
   },
 
   menuSymbolText: {
     color: colors.primary,
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "900",
   },
 
   menuContent: {
     flex: 1,
+    justifyContent: "center",
   },
 
   menuTitle: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 14,
+    lineHeight: 18,
     fontWeight: "800",
   },
 
   menuDescription: {
-    marginTop: 5,
+    marginTop: 2,
     color: colors.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 11,
+    lineHeight: 15,
   },
 
   menuArrow: {
+    flexShrink: 0,
     color: colors.primary,
-    fontSize: 28,
+    fontSize: 22,
   },
 
   pressed: {
