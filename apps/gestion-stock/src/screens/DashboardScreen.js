@@ -13,6 +13,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 
@@ -40,11 +41,14 @@ function StatCard({
   detail,
   accentColor,
   onPress,
+  compact = false,
 }) {
   return (
     <Pressable
       style={({ pressed }) => [
         styles.statCard,
+        compact &&
+          styles.statCardCompact,
         pressed &&
           Boolean(onPress) &&
           styles.pressed,
@@ -62,19 +66,43 @@ function StatCard({
         ]}
       />
 
-      <Text style={styles.statLabel}>
+      <Text
+        style={[
+          styles.statLabel,
+          compact &&
+            styles.statLabelCompact,
+        ]}
+      >
         {label}
       </Text>
 
-      <Text style={styles.statValue}>
+      <Text
+        style={[
+          styles.statValue,
+          compact &&
+            styles.statValueCompact,
+        ]}
+      >
         {value}
       </Text>
 
-      <Text style={styles.statDetail}>
+      <Text
+        style={[
+          styles.statDetail,
+          compact &&
+            styles.statDetailCompact,
+        ]}
+      >
         {detail}
       </Text>
       {onPress ? (
-        <Text style={styles.statArrow}>
+        <Text
+          style={[
+            styles.statArrow,
+            compact &&
+              styles.statArrowCompact,
+          ]}
+        >
           ›
         </Text>
       ) : null}
@@ -144,18 +172,31 @@ function MenuButton({
   description,
   symbol,
   onPress,
+  compact = false,
 }) {
   return (
     <Pressable
       style={({ pressed }) => [
         styles.menuButton,
+        compact &&
+          styles.menuButtonCompact,
         pressed && styles.pressed,
       ]}
       onPress={onPress}
     >
-      <View style={styles.menuSymbol}>
+      <View
+        style={[
+          styles.menuSymbol,
+          compact &&
+            styles.menuSymbolCompact,
+        ]}
+      >
         <Text
-          style={styles.menuSymbolText}
+          style={[
+            styles.menuSymbolText,
+            compact &&
+              styles.menuSymbolTextCompact,
+          ]}
         >
           {symbol}
         </Text>
@@ -163,21 +204,35 @@ function MenuButton({
 
       <View style={styles.menuContent}>
         <Text
-          style={styles.menuTitle}
+          style={[
+            styles.menuTitle,
+            compact &&
+              styles.menuTitleCompact,
+          ]}
           numberOfLines={2}
         >
           {title}
         </Text>
 
         <Text
-          style={styles.menuDescription}
+          style={[
+            styles.menuDescription,
+            compact &&
+              styles.menuDescriptionCompact,
+          ]}
           numberOfLines={2}
         >
           {description}
         </Text>
       </View>
 
-      <Text style={styles.menuArrow}>
+      <Text
+        style={[
+          styles.menuArrow,
+          compact &&
+            styles.menuArrowCompact,
+        ]}
+      >
         ›
       </Text>
     </Pressable>
@@ -190,6 +245,12 @@ export default function DashboardScreen({
   onNavigate,
   onSignedOut,
 }) {
+  const { width } =
+    useWindowDimensions();
+
+  const isCompact =
+    width < 600;
+
   const [products, setProducts] =
     useState([]);
 
@@ -645,8 +706,15 @@ export default function DashboardScreen({
           </View>
         ) : null}
 
-        <View style={styles.statsGrid}>
+        <View
+          style={[
+            styles.statsGrid,
+            isCompact &&
+              styles.statsGridCompact,
+          ]}
+        >
           <StatCard
+            compact={isCompact}
             label="Parfums"
             value={productTotal}
             detail="Produits enregistrés"
@@ -657,6 +725,7 @@ export default function DashboardScreen({
           />
 
           <StatCard
+            compact={isCompact}
             label="Unités en stock"
             value={
               statistics.stockQuantity
@@ -666,6 +735,7 @@ export default function DashboardScreen({
           />
 
           <StatCard
+            compact={isCompact}
             label="Parfums bientôt épuisés"
             value={
               statistics.lowStockCount
@@ -682,6 +752,7 @@ export default function DashboardScreen({
           />
 
           <StatCard
+            compact={isCompact}
             label="Catégories"
             value={categoryTotal}
             detail="Catégories enregistrées"
@@ -692,6 +763,7 @@ export default function DashboardScreen({
           />
 
           <StatCard
+            compact={isCompact}
             label="Fournisseurs"
             value={supplierTotal}
             detail="Partenaires enregistrés"
@@ -704,6 +776,7 @@ export default function DashboardScreen({
           />
 
           <StatCard
+            compact={isCompact}
             label="Valeur d’achat"
             value={formatCurrency(
               statistics.purchaseValue
@@ -713,6 +786,7 @@ export default function DashboardScreen({
           />
 
           <StatCard
+            compact={isCompact}
             label="Valeur de vente"
             value={formatCurrency(
               statistics.saleValue
@@ -722,13 +796,32 @@ export default function DashboardScreen({
           />
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
+        <View
+          style={[
+            styles.section,
+            isCompact &&
+              styles.sectionCompact,
+          ]}
+        >
+          <Text
+            style={[
+              styles.sectionTitle,
+              isCompact &&
+                styles.sectionTitleCompact,
+            ]}
+          >
             Gestion rapide
           </Text>
 
-          <View style={styles.menuGrid}>
+          <View
+            style={[
+              styles.menuGrid,
+              isCompact &&
+                styles.menuGridCompact,
+            ]}
+          >
             <MenuButton
+              compact={isCompact}
               title="Parfums"
               description="Créer, consulter et modifier les parfums."
               symbol="P"
@@ -738,6 +831,7 @@ export default function DashboardScreen({
             />
 
             <MenuButton
+              compact={isCompact}
               title="Historique des entrées et sorties"
               description="Consulter les achats, ventes et ajustements du stock."
               symbol="S"
@@ -747,6 +841,7 @@ export default function DashboardScreen({
             />
 
             <MenuButton
+              compact={isCompact}
               title="Catégories"
               description="Organiser le catalogue de parfums."
               symbol="C"
@@ -756,6 +851,7 @@ export default function DashboardScreen({
             />
 
             <MenuButton
+              compact={isCompact}
               title="Fournisseurs"
               description="Gérer les partenaires et leurs coordonnées."
               symbol="F"
@@ -1058,6 +1154,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
 
+  statsGridCompact: {
+    gap: 7,
+  },
+
   statCard: {
     position: "relative",
     flexGrow: 1,
@@ -1070,6 +1170,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+
+  statCardCompact: {
+    minHeight: 58,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 11,
   },
 
   statAccent: {
@@ -1087,6 +1194,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
+  statLabelCompact: {
+    fontSize: 10,
+    lineHeight: 12,
+  },
+
   statValue: {
     marginTop: 2,
     color: colors.primaryDark,
@@ -1095,11 +1207,23 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
+  statValueCompact: {
+    marginTop: 1,
+    fontSize: 18,
+    lineHeight: 21,
+  },
+
   statDetail: {
     marginTop: 1,
     color: colors.textMuted,
     fontSize: 11,
     lineHeight: 14,
+  },
+
+  statDetailCompact: {
+    marginTop: 0,
+    fontSize: 9,
+    lineHeight: 11,
   },
 
   statArrow: {
@@ -1111,8 +1235,18 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
+  statArrowCompact: {
+    right: 9,
+    bottom: 3,
+    fontSize: 17,
+  },
+
   section: {
     marginTop: 18,
+  },
+
+  sectionCompact: {
+    marginTop: 12,
   },
 
   sectionTitle: {
@@ -1123,10 +1257,20 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
+  sectionTitleCompact: {
+    marginBottom: 7,
+    fontSize: 16,
+    lineHeight: 20,
+  },
+
   menuGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
+  },
+
+  menuGridCompact: {
+    gap: 7,
   },
 
   menuButton: {
@@ -1144,6 +1288,14 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
 
+  menuButtonCompact: {
+    minHeight: 52,
+    gap: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 11,
+  },
+
   menuSymbol: {
     width: 38,
     height: 38,
@@ -1155,10 +1307,20 @@ const styles = StyleSheet.create({
       colors.primaryLight,
   },
 
+  menuSymbolCompact: {
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+  },
+
   menuSymbolText: {
     color: colors.primary,
     fontSize: 15,
     fontWeight: "900",
+  },
+
+  menuSymbolTextCompact: {
+    fontSize: 12,
   },
 
   menuContent: {
@@ -1173,6 +1335,11 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
+  menuTitleCompact: {
+    fontSize: 12,
+    lineHeight: 15,
+  },
+
   menuDescription: {
     marginTop: 2,
     color: colors.textMuted,
@@ -1180,10 +1347,20 @@ const styles = StyleSheet.create({
     lineHeight: 15,
   },
 
+  menuDescriptionCompact: {
+    marginTop: 1,
+    fontSize: 9,
+    lineHeight: 12,
+  },
+
   menuArrow: {
     flexShrink: 0,
     color: colors.primary,
     fontSize: 22,
+  },
+
+  menuArrowCompact: {
+    fontSize: 18,
   },
 
   pressed: {
