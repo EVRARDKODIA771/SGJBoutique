@@ -12,6 +12,7 @@ import {
 
 import {
   Stack,
+  usePathname,
 } from "expo-router";
 
 import {
@@ -22,6 +23,9 @@ import {
 import {
   StatusBar,
 } from "expo-status-bar";
+
+import AdminSidebar from
+  "../src/components/AdminSidebar.js";
 
 import {
   initializeAuth,
@@ -71,11 +75,48 @@ function LoadingScreen() {
   );
 }
 
+function isAdministrationPage(
+  pathname
+) {
+  return (
+    pathname.startsWith("/products") ||
+    pathname.startsWith("/stock") ||
+    pathname.startsWith(
+      "/categories"
+    ) ||
+    pathname.startsWith(
+      "/suppliers"
+    ) ||
+    pathname.startsWith(
+      "/administration"
+    )
+  );
+}
+
 export default function RootLayout() {
+  const pathname = usePathname();
+
   const isInitializing =
     useAuthStore(
       (state) =>
         state.isInitializing
+    );
+
+  const session =
+    useAuthStore(
+      (state) => state.session
+    );
+
+  const adminMembership =
+    useAuthStore(
+      (state) =>
+        state.adminMembership
+    );
+
+  const companySessionId =
+    useAuthStore(
+      (state) =>
+        state.companySessionId
     );
 
   const setSession =
@@ -138,6 +179,13 @@ export default function RootLayout() {
     );
   }
 
+  const showSidebar =
+    Boolean(session) &&
+    adminMembership?.status ===
+      "approved" &&
+    Boolean(companySessionId) &&
+    isAdministrationPage(pathname);
+
   return (
     <SafeAreaProvider>
       <SafeAreaView
@@ -156,15 +204,23 @@ export default function RootLayout() {
           }
         />
 
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: {
-              backgroundColor:
-                colors.background,
-            },
-          }}
-        />
+        <View style={styles.appShell}>
+          {showSidebar ? (
+            <AdminSidebar />
+          ) : null}
+
+          <View style={styles.pageContent}>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: {
+                  backgroundColor:
+                    colors.background,
+                },
+              }}
+            />
+          </View>
+        </View>
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -173,6 +229,20 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    backgroundColor:
+      colors.background,
+  },
+
+  appShell: {
+    flex: 1,
+    flexDirection: "row",
+    backgroundColor:
+      colors.background,
+  },
+
+  pageContent: {
+    flex: 1,
+    minWidth: 0,
     backgroundColor:
       colors.background,
   },

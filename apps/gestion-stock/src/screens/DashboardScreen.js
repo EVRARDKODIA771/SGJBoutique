@@ -39,9 +39,19 @@ function StatCard({
   value,
   detail,
   accentColor,
+  onPress,
 }) {
   return (
-    <View style={styles.statCard}>
+    <Pressable
+      style={({ pressed }) => [
+        styles.statCard,
+        pressed &&
+          Boolean(onPress) &&
+          styles.pressed,
+      ]}
+      onPress={onPress}
+      disabled={!onPress}
+    >
       <View
         style={[
           styles.statAccent,
@@ -63,7 +73,69 @@ function StatCard({
       <Text style={styles.statDetail}>
         {detail}
       </Text>
-    </View>
+      {onPress ? (
+        <Text style={styles.statArrow}>
+          ›
+        </Text>
+      ) : null}
+    </Pressable>
+  );
+}
+
+function SidebarItem({
+  label,
+  symbol,
+  active = false,
+  nested = false,
+  onPress,
+}) {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.sidebarItem,
+        nested && styles.sidebarSubItem,
+        active &&
+          styles.sidebarItemActive,
+        pressed && styles.sidebarPressed,
+      ]}
+      onPress={onPress}
+    >
+      {!nested ? (
+        <View
+          style={[
+            styles.sidebarSymbol,
+            active &&
+              styles.sidebarSymbolActive,
+          ]}
+        >
+          <Text
+            style={[
+              styles.sidebarSymbolText,
+              active &&
+                styles.sidebarSymbolTextActive,
+            ]}
+          >
+            {symbol}
+          </Text>
+        </View>
+      ) : (
+        <View
+          style={styles.sidebarSubDot}
+        />
+      )}
+
+      <Text
+        style={[
+          styles.sidebarItemText,
+          nested &&
+            styles.sidebarSubItemText,
+          active &&
+            styles.sidebarItemTextActive,
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -302,21 +374,185 @@ export default function DashboardScreen({
   }
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={
-        styles.scrollContent
-      }
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={refreshDashboard}
-          tintColor={colors.primary}
-          colors={[colors.primary]}
-        />
-      }
-    >
-      <View style={styles.container}>
+    <View style={styles.appShell}>
+      <View style={styles.sidebar}>
+        <View style={styles.sidebarBrand}>
+          <Image
+            source={require(
+              "../../assets/jde-logo.png"
+            )}
+            style={styles.sidebarLogo}
+            resizeMode="contain"
+          />
+
+          <Text style={styles.sidebarName}>
+            Gestion de la boutique
+          </Text>
+        </View>
+
+        <ScrollView
+          style={styles.sidebarScroll}
+          contentContainerStyle={
+            styles.sidebarContent
+          }
+          showsVerticalScrollIndicator={
+            false
+          }
+        >
+          <SidebarItem
+            label="Tableau de bord"
+            symbol="T"
+            active
+            onPress={() =>
+              onNavigate?.("dashboard")
+            }
+          />
+
+          <Text
+            style={styles.sidebarSection}
+          >
+            PARFUMS
+          </Text>
+
+          <SidebarItem
+            label="Tous les parfums"
+            nested
+            onPress={() =>
+              onNavigate?.("products")
+            }
+          />
+
+          <SidebarItem
+            label="Ajouter un parfum"
+            nested
+            onPress={() =>
+              onNavigate?.("newProduct")
+            }
+          />
+
+          <SidebarItem
+            label="Parfums vendus"
+            nested
+            onPress={() =>
+              onNavigate?.(
+                "soldProducts"
+              )
+            }
+          />
+
+          <SidebarItem
+            label="Parfums achetés chez les fournisseurs"
+            nested
+            onPress={() =>
+              onNavigate?.(
+                "supplierPurchases"
+              )
+            }
+          />
+
+          <Text
+            style={styles.sidebarSection}
+          >
+            GESTION DU STOCK
+          </Text>
+
+          <SidebarItem
+            label="Ajouter ou retirer des parfums"
+            nested
+            onPress={() =>
+              onNavigate?.("stock")
+            }
+          />
+
+          <SidebarItem
+            label="Historique des entrées et sorties"
+            nested
+            onPress={() =>
+              onNavigate?.("stock")
+            }
+          />
+
+          <SidebarItem
+            label="Parfums bientôt épuisés"
+            nested
+            onPress={() =>
+              onNavigate?.("lowStock")
+            }
+          />
+
+          <SidebarItem
+            label="Parfums épuisés"
+            nested
+            onPress={() =>
+              onNavigate?.("outOfStock")
+            }
+          />
+
+          <Text
+            style={styles.sidebarSection}
+          >
+            ORGANISATION
+          </Text>
+
+          <SidebarItem
+            label="Catégories"
+            symbol="C"
+            onPress={() =>
+              onNavigate?.("categories")
+            }
+          />
+
+          <SidebarItem
+            label="Fournisseurs"
+            symbol="F"
+            onPress={() =>
+              onNavigate?.("suppliers")
+            }
+          />
+
+          <Text
+            style={styles.sidebarSection}
+          >
+            ADMINISTRATION
+          </Text>
+
+          <SidebarItem
+            label="Demandes d’accès"
+            nested
+            onPress={() =>
+              onNavigate?.(
+                "accessRequests"
+              )
+            }
+          />
+
+          <SidebarItem
+            label="Utilisateurs autorisés"
+            nested
+            onPress={() =>
+              onNavigate?.(
+                "authorizedUsers"
+              )
+            }
+          />
+        </ScrollView>
+      </View>
+
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={
+          styles.scrollContent
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refreshDashboard}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+      >
+        <View style={styles.container}>
         <View style={styles.header}>
           <Image
             source={require(
@@ -407,6 +643,9 @@ export default function DashboardScreen({
             value={productTotal}
             detail="Produits enregistrés"
             accentColor={colors.primary}
+            onPress={() =>
+              onNavigate?.("products")
+            }
           />
 
           <StatCard
@@ -419,15 +658,18 @@ export default function DashboardScreen({
           />
 
           <StatCard
-            label="Stock faible"
+            label="Parfums bientôt épuisés"
             value={
               statistics.lowStockCount
             }
-            detail="Produits à surveiller"
+            detail="Parfums à surveiller"
             accentColor={
               statistics.lowStockCount > 0
                 ? colors.warning
                 : colors.success
+            }
+            onPress={() =>
+              onNavigate?.("lowStock")
             }
           />
 
@@ -436,6 +678,9 @@ export default function DashboardScreen({
             value={categoryTotal}
             detail="Catégories enregistrées"
             accentColor={colors.info}
+            onPress={() =>
+              onNavigate?.("categories")
+            }
           />
 
           <StatCard
@@ -444,6 +689,9 @@ export default function DashboardScreen({
             detail="Partenaires enregistrés"
             accentColor={
               colors.secondaryDark
+            }
+            onPress={() =>
+              onNavigate?.("suppliers")
             }
           />
 
@@ -482,8 +730,8 @@ export default function DashboardScreen({
             />
 
             <MenuButton
-              title="Mouvements de stock"
-              description="Enregistrer les achats, ventes et ajustements."
+              title="Historique des entrées et sorties"
+              description="Consulter les achats, ventes et ajustements du stock."
               symbol="S"
               onPress={() =>
                 onNavigate?.("stock")
@@ -509,12 +757,149 @@ export default function DashboardScreen({
             />
           </View>
         </View>
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  appShell: {
+    flex: 1,
+    flexDirection: "row",
+    backgroundColor: colors.background,
+  },
+
+  sidebar: {
+    width: 292,
+    flexShrink: 0,
+    backgroundColor:
+      colors.brandBlueDark,
+    borderRightWidth: 4,
+    borderRightColor:
+      colors.secondaryDark,
+  },
+
+  sidebarBrand: {
+    minHeight: 135,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 18,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor:
+      "rgba(255,255,255,0.16)",
+    backgroundColor: colors.surface,
+  },
+
+  sidebarLogo: {
+    width: 155,
+    height: 72,
+  },
+
+  sidebarName: {
+    marginTop: 4,
+    color: colors.brandBlueDark,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  sidebarScroll: {
+    flex: 1,
+  },
+
+  sidebarContent: {
+    paddingHorizontal: 11,
+    paddingTop: 15,
+    paddingBottom: 30,
+  },
+
+  sidebarSection: {
+    marginTop: 19,
+    marginBottom: 7,
+    paddingHorizontal: 11,
+    color: colors.secondary,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1,
+  },
+
+  sidebarItem: {
+    minHeight: 46,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 11,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+    borderRadius: 9,
+  },
+
+  sidebarSubItem: {
+    minHeight: 42,
+    paddingLeft: 22,
+  },
+
+  sidebarItemActive: {
+    backgroundColor:
+      colors.secondaryDark,
+  },
+
+  sidebarPressed: {
+    backgroundColor:
+      "rgba(255,255,255,0.12)",
+  },
+
+  sidebarSymbol: {
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    backgroundColor:
+      "rgba(255,255,255,0.12)",
+  },
+
+  sidebarSymbolActive: {
+    backgroundColor: colors.surface,
+  },
+
+  sidebarSymbolText: {
+    color: colors.surface,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  sidebarSymbolTextActive: {
+    color: colors.secondaryDark,
+  },
+
+  sidebarSubDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 999,
+    backgroundColor:
+      colors.secondary,
+  },
+
+  sidebarItemText: {
+    flex: 1,
+    color: colors.surface,
+    fontSize: 13,
+    fontWeight: "700",
+    lineHeight: 18,
+  },
+
+  sidebarSubItemText: {
+    color: "rgba(255,255,255,0.86)",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  sidebarItemTextActive: {
+    color: colors.surface,
+    fontWeight: "900",
+  },
+
   screen: {
     flex: 1,
     backgroundColor: colors.background,
@@ -699,6 +1084,15 @@ const styles = StyleSheet.create({
     marginTop: 8,
     color: colors.textMuted,
     fontSize: 12,
+  },
+
+  statArrow: {
+    position: "absolute",
+    right: 15,
+    bottom: 11,
+    color: colors.secondaryDark,
+    fontSize: 25,
+    fontWeight: "800",
   },
 
   section: {

@@ -214,8 +214,584 @@ productRoutes.get(
 );
 
 /**
+ * GET /api/admin/products/sold
+ * Retourne les parfums vendus, du plus récent au moins récent.
+ *
+ * La recherche porte notamment sur le nom, la marque, le SKU,
+ * la date, la référence et la personne ayant enregistré la vente.
+ */
+productRoutes.get(
+  "/sold",
+  async (request, response) => {
+    try {
+      const querySchema = z.object({
+        search: z
+          .string()
+          .trim()
+          .max(150)
+          .optional(),
+
+        startDate: z
+          .string()
+          .datetime({ offset: true })
+          .optional(),
+
+        endDate: z
+          .string()
+          .datetime({ offset: true })
+          .optional(),
+
+        page: z.coerce
+          .number()
+          .int()
+          .min(1)
+          .default(1),
+
+        limit: z.coerce
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .default(20),
+      });
+
+      const validation =
+        querySchema.safeParse(
+          request.query
+        );
+
+      if (!validation.success) {
+        return response.status(400).json({
+          success: false,
+          error:
+            "Invalid sales query parameters",
+          details:
+            validation.error.flatten(),
+        });
+      }
+
+      const {
+        search,
+        startDate,
+        endDate,
+        page,
+        limit,
+      } = validation.data;
+
+      if (
+        startDate &&
+        endDate &&
+        new Date(startDate) >
+          new Date(endDate)
+      ) {
+        return response.status(400).json({
+          success: false,
+          error:
+            "Start date must be before end date",
+        });
+      }
+
+      const {
+        data,
+        error,
+      } = await request.auth.supabase.rpc(
+        "search_product_movements",
+        {
+          movement_view: "sold",
+          search_text: search ?? null,
+          selected_supplier_id: null,
+          start_date: startDate ?? null,
+          end_date: endDate ?? null,
+          page_number: page,
+          page_size: limit,
+        }
+      );
+
+      if (error) {
+        console.error(
+          "Sold products search error:",
+          error
+        );
+
+        if (
+          error.message?.includes(
+            "Administrative access required"
+          )
+        ) {
+          return response
+            .status(403)
+            .json({
+              success: false,
+              error:
+                "Administrative access required",
+            });
+        }
+
+        return response
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Unable to retrieve sold products",
+          });
+      }
+
+      return response.status(200).json({
+        success: true,
+        soldProducts: data?.items ?? [],
+        pagination:
+          data?.pagination ?? {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+          },
+      });
+    } catch (error) {
+      console.error(
+        "Sold products route error:",
+        error
+      );
+
+      return response.status(500).json({
+        success: false,
+        error:
+          "Unable to retrieve sold products",
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/admin/products/supplier-purchases
+ * Retourne les parfums achetés chez les fournisseurs.
+ *
+ * supplierId permet d’afficher les achats d’un fournisseur précis.
+ */
+productRoutes.get(
+  "/supplier-purchases",
+  async (request, response) => {
+    try {
+      const querySchema = z.object({
+        supplierId: z
+          .string()
+          .uuid("Invalid supplier ID")
+          .optional(),
+
+        search: z
+          .string()
+          .trim()
+          .max(150)
+          .optional(),
+
+        startDate: z
+          .string()
+          .datetime({ offset: true })
+          .optional(),
+
+        endDate: z
+          .string()
+          .datetime({ offset: true })
+          .optional(),
+
+        page: z.coerce
+          .number()
+          .int()
+          .min(1)
+          .default(1),
+
+        limit: z.coerce
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .default(20),
+      });
+
+      const validation =
+        querySchema.safeParse(
+          request.query
+        );
+
+      if (!validation.success) {
+        return response.status(400).json({
+          success: false,
+          error:
+            "Invalid supplier purchase query parameters",
+          details:
+            validation.error.flatten(),
+        });
+      }
+
+      const {
+        supplierId,
+        search,
+        startDate,
+        endDate,
+        page,
+        limit,
+      } = validation.data;
+
+      if (
+        startDate &&
+        endDate &&
+        new Date(startDate) >
+          new Date(endDate)
+      ) {
+        return response.status(400).json({
+          success: false,
+          error:
+            "Start date must be before end date",
+        });
+      }
+
+      if (supplierId) {
+        const {
+          data: supplier,
+          error: supplierError,
+        } = await supabaseAdmin
+          .from("suppliers")
+          .select("id, name, is_active")
+          .eq("id", supplierId)
+          .maybeSingle();
+
+        if (supplierError) {
+          console.error(
+            "Supplier verification error:",
+            supplierError
+          );
+
+          return response
+            .status(500)
+            .json({
+              success: false,
+              error:
+                "Unable to verify supplier",
+            });
+        }
+
+        if (!supplier) {
+          return response
+            .status(404)
+            .json({
+              success: false,
+              error: "Supplier not found",
+            });
+        }
+      }
+
+      const {
+        data,
+        error,
+      } = await request.auth.supabase.rpc(
+        "search_product_movements",
+        {
+          movement_view:
+            "supplier_purchases",
+          search_text: search ?? null,
+          selected_supplier_id:
+            supplierId ?? null,
+          start_date: startDate ?? null,
+          end_date: endDate ?? null,
+          page_number: page,
+          page_size: limit,
+        }
+      );
+
+      if (error) {
+        console.error(
+          "Supplier purchases search error:",
+          error
+        );
+
+        if (
+          error.message?.includes(
+            "Administrative access required"
+          )
+        ) {
+          return response
+            .status(403)
+            .json({
+              success: false,
+              error:
+                "Administrative access required",
+            });
+        }
+
+        return response
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Unable to retrieve supplier purchases",
+          });
+      }
+
+      return response.status(200).json({
+        success: true,
+        purchases: data?.items ?? [],
+        pagination:
+          data?.pagination ?? {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+          },
+      });
+    } catch (error) {
+      console.error(
+        "Supplier purchases route error:",
+        error
+      );
+
+      return response.status(500).json({
+        success: false,
+        error:
+          "Unable to retrieve supplier purchases",
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/admin/products/low-stock
+ * Retourne les parfums bientôt épuisés.
+ */
+productRoutes.get(
+  "/low-stock",
+  async (request, response) => {
+    try {
+      const querySchema = z.object({
+        search: z
+          .string()
+          .trim()
+          .max(150)
+          .optional(),
+
+        page: z.coerce
+          .number()
+          .int()
+          .min(1)
+          .default(1),
+
+        limit: z.coerce
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .default(20),
+      });
+
+      const validation =
+        querySchema.safeParse(
+          request.query
+        );
+
+      if (!validation.success) {
+        return response.status(400).json({
+          success: false,
+          error:
+            "Invalid low stock query parameters",
+          details:
+            validation.error.flatten(),
+        });
+      }
+
+      const {
+        search,
+        page,
+        limit,
+      } = validation.data;
+
+      const {
+        data,
+        error,
+      } = await request.auth.supabase.rpc(
+        "search_stock_alert_products",
+        {
+          stock_view: "low",
+          search_text: search ?? null,
+          page_number: page,
+          page_size: limit,
+        }
+      );
+
+      if (error) {
+        console.error(
+          "Low stock products search error:",
+          error
+        );
+
+        if (
+          error.message?.includes(
+            "Administrative access required"
+          )
+        ) {
+          return response
+            .status(403)
+            .json({
+              success: false,
+              error:
+                "Administrative access required",
+            });
+        }
+
+        return response
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Unable to retrieve low stock products",
+          });
+      }
+
+      return response.status(200).json({
+        success: true,
+        products: data?.items ?? [],
+        pagination:
+          data?.pagination ?? {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+          },
+      });
+    } catch (error) {
+      console.error(
+        "Low stock products route error:",
+        error
+      );
+
+      return response.status(500).json({
+        success: false,
+        error:
+          "Unable to retrieve low stock products",
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/admin/products/out-of-stock
+ * Retourne les parfums épuisés.
+ */
+productRoutes.get(
+  "/out-of-stock",
+  async (request, response) => {
+    try {
+      const querySchema = z.object({
+        search: z
+          .string()
+          .trim()
+          .max(150)
+          .optional(),
+
+        page: z.coerce
+          .number()
+          .int()
+          .min(1)
+          .default(1),
+
+        limit: z.coerce
+          .number()
+          .int()
+          .min(1)
+          .max(100)
+          .default(20),
+      });
+
+      const validation =
+        querySchema.safeParse(
+          request.query
+        );
+
+      if (!validation.success) {
+        return response.status(400).json({
+          success: false,
+          error:
+            "Invalid out of stock query parameters",
+          details:
+            validation.error.flatten(),
+        });
+      }
+
+      const {
+        search,
+        page,
+        limit,
+      } = validation.data;
+
+      const {
+        data,
+        error,
+      } = await request.auth.supabase.rpc(
+        "search_stock_alert_products",
+        {
+          stock_view: "out",
+          search_text: search ?? null,
+          page_number: page,
+          page_size: limit,
+        }
+      );
+
+      if (error) {
+        console.error(
+          "Out of stock products search error:",
+          error
+        );
+
+        if (
+          error.message?.includes(
+            "Administrative access required"
+          )
+        ) {
+          return response
+            .status(403)
+            .json({
+              success: false,
+              error:
+                "Administrative access required",
+            });
+        }
+
+        return response
+          .status(500)
+          .json({
+            success: false,
+            error:
+              "Unable to retrieve out of stock products",
+          });
+      }
+
+      return response.status(200).json({
+        success: true,
+        products: data?.items ?? [],
+        pagination:
+          data?.pagination ?? {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+          },
+      });
+    } catch (error) {
+      console.error(
+        "Out of stock products route error:",
+        error
+      );
+
+      return response.status(500).json({
+        success: false,
+        error:
+          "Unable to retrieve out of stock products",
+      });
+    }
+  }
+);
+
+/**
  * POST /api/admin/products
- * Crée un parfum et son stock initial.
+ * CrÃ©e un parfum et son stock initial.
  */
 productRoutes.post(
   "/",
@@ -241,6 +817,19 @@ productRoutes.post(
         categoryId: z
           .string()
           .uuid("Invalid category ID")
+          .nullable()
+          .optional(),
+
+        supplierId: z
+          .string()
+          .uuid("Invalid supplier ID")
+          .nullable()
+          .optional(),
+
+        supplierReference: z
+          .string()
+          .trim()
+          .max(150)
           .nullable()
           .optional(),
 
@@ -321,7 +910,7 @@ productRoutes.post(
 
       /*
        * Ce client transmet le JWT de
-       * l’utilisateur à la fonction SQL.
+       * lâ€™utilisateur Ã  la fonction SQL.
        */
       const {
         data: createdProduct,
@@ -337,6 +926,13 @@ productRoutes.post(
 
           product_category_id:
             product.categoryId ?? null,
+
+          product_supplier_id:
+            product.supplierId ?? null,
+
+          product_supplier_reference:
+            product.supplierReference ??
+            null,
 
           product_description:
             product.description ?? null,
@@ -402,6 +998,65 @@ productRoutes.post(
             });
         }
 
+        if (
+          error.message?.includes(
+            "Supplier not found"
+          )
+        ) {
+          return response
+            .status(404)
+            .json({
+              success: false,
+              error:
+                "The selected supplier does not exist",
+            });
+        }
+
+        if (
+          error.message?.includes(
+            "Supplier is inactive"
+          )
+        ) {
+          return response
+            .status(409)
+            .json({
+              success: false,
+              error:
+                "The selected supplier is inactive",
+            });
+        }
+
+        if (
+          error.message?.includes(
+            "Active staff profile required"
+          ) ||
+          error.message?.includes(
+            "Staff business profile is not configured"
+          )
+        ) {
+          return response
+            .status(403)
+            .json({
+              success: false,
+              error:
+                "Your staff profile is not configured",
+            });
+        }
+
+        if (
+          error.message?.includes(
+            "Supplier reference requires a supplier"
+          )
+        ) {
+          return response
+            .status(400)
+            .json({
+              success: false,
+              error:
+                "A supplier must be selected when a supplier reference is provided",
+            });
+        }
+
         return response
           .status(500)
           .json({
@@ -434,10 +1089,10 @@ productRoutes.post(
 
 /**
  * POST /api/admin/products/:productId/images
- * Ajoute une image à un parfum.
+ * Ajoute une image Ã  un parfum.
  *
- * La première image devient automatiquement
- * l’image principale.
+ * La premiÃ¨re image devient automatiquement
+ * lâ€™image principale.
  */
 productRoutes.post(
   "/:productId/images",
@@ -685,9 +1340,9 @@ productRoutes.post(
 
 /**
  * PATCH /api/admin/products/:productId
- * Modifie les informations d’un parfum.
+ * Modifie les informations dâ€™un parfum.
  *
- * Le stock ne peut pas être modifié ici.
+ * Le stock ne peut pas Ãªtre modifiÃ© ici.
  */
 productRoutes.patch(
   "/:productId",
@@ -1126,8 +1781,8 @@ productRoutes.patch(
  * POST /api/admin/products/:productId/stock-movements
  * Enregistre un mouvement de stock.
  *
- * La quantité reçue par l’API est toujours positive.
- * Le backend détermine automatiquement son signe.
+ * La quantitÃ© reÃ§ue par lâ€™API est toujours positive.
+ * Le backend dÃ©termine automatiquement son signe.
  */
 productRoutes.post(
   "/:productId/stock-movements",
@@ -1152,6 +1807,24 @@ productRoutes.post(
             .number()
             .int()
             .positive(),
+
+          supplierId: z
+            .string()
+            .uuid(
+              "Invalid supplier ID"
+            )
+            .nullable()
+            .optional(),
+
+          unitPrice: z
+            .number()
+            .int()
+            .min(
+              0,
+              "Unit price cannot be negative"
+            )
+            .nullable()
+            .optional(),
 
           adjustmentDirection: z
             .enum([
@@ -1204,6 +1877,32 @@ productRoutes.post(
               ],
               message:
                 "Adjustment direction is only allowed for adjustments",
+            });
+          }
+
+          if (
+            movement.movementType ===
+              "purchase" &&
+            !movement.supplierId
+          ) {
+            context.addIssue({
+              code: "custom",
+              path: ["supplierId"],
+              message:
+                "A supplier is required for a purchase",
+            });
+          }
+
+          if (
+            movement.movementType !==
+              "purchase" &&
+            movement.supplierId
+          ) {
+            context.addIssue({
+              code: "custom",
+              path: ["supplierId"],
+              message:
+                "A supplier can only be selected for a purchase",
             });
           }
         });
@@ -1287,6 +1986,12 @@ productRoutes.post(
             movement.reason ?? null,
           movement_reference:
             movement.reference ?? null,
+
+          target_supplier_id:
+            movement.supplierId ?? null,
+
+          movement_unit_price:
+            movement.unitPrice ?? null,
         }
       );
 
@@ -1337,6 +2042,32 @@ productRoutes.post(
             });
         }
 
+        if (
+          error.message?.includes(
+            "Supplier not found"
+          )
+        ) {
+          return response
+            .status(404)
+            .json({
+              success: false,
+              error: "Supplier not found",
+            });
+        }
+
+        if (
+          error.message?.includes(
+            "Supplier is inactive"
+          )
+        ) {
+          return response
+            .status(409)
+            .json({
+              success: false,
+              error: "Supplier is inactive",
+            });
+        }
+
         return response
           .status(500)
           .json({
@@ -1358,6 +2089,12 @@ productRoutes.post(
             movement.reason ?? null,
           reference:
             movement.reference ?? null,
+
+          supplierId:
+            movement.supplierId ?? null,
+
+          unitPrice:
+            movement.unitPrice ?? null,
         },
         product: updatedProduct,
       });
@@ -1378,7 +2115,7 @@ productRoutes.post(
 
 /**
  * GET /api/admin/products/:productId/stock-movements
- * Retourne l’historique paginé du stock.
+ * Retourne lâ€™historique paginÃ© du stock.
  */
 productRoutes.get(
   "/:productId/stock-movements",
@@ -1540,7 +2277,7 @@ productRoutes.get(
 
 /**
  * GET /api/admin/products/:productId
- * Retourne un parfum précis avec ses images.
+ * Retourne un parfum prÃ©cis avec ses images.
  */
 productRoutes.get(
   "/:productId",
@@ -1653,7 +2390,7 @@ productRoutes.get(
 
 /**
  * GET /api/admin/products/:productId/suppliers
- * Retourne les fournisseurs associés à un parfum.
+ * Retourne les fournisseurs associÃ©s Ã  un parfum.
  */
 productRoutes.get(
   "/:productId/suppliers",
@@ -1782,10 +2519,10 @@ productRoutes.get(
 
 /**
  * POST /api/admin/products/:productId/suppliers
- * Associe un fournisseur à un parfum.
+ * Associe un fournisseur Ã  un parfum.
  *
- * Si l’association existe déjà,
- * ses informations sont mises à jour.
+ * Si lâ€™association existe dÃ©jÃ ,
+ * ses informations sont mises Ã  jour.
  */
 productRoutes.post(
   "/:productId/suppliers",
@@ -1977,9 +2714,9 @@ productRoutes.post(
 );
 /**
  * DELETE /api/admin/products/:productId/suppliers/:supplierId
- * Retire un fournisseur d’un parfum.
+ * Retire un fournisseur dâ€™un parfum.
  *
- * Le fournisseur lui-même n’est pas supprimé.
+ * Le fournisseur lui-mÃªme nâ€™est pas supprimÃ©.
  */
 productRoutes.delete(
   "/:productId/suppliers/:supplierId",

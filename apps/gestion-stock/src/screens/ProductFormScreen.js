@@ -26,6 +26,7 @@ import { z } from "zod";
 import {
   createProduct,
   getCategories,
+  getSuppliers,
   updateProduct,
 } from "../services/stockService.js";
 
@@ -112,6 +113,31 @@ const sharedProductSchema = z.object({
 const createProductSchema =
   sharedProductSchema.extend({
     initialQuantity: integerText,
+
+    supplierId: z
+      .string()
+      .uuid()
+      .nullable(),
+
+    supplierReference: z
+      .string()
+      .trim()
+      .max(
+        150,
+        "La référence ne doit pas dépasser 150 caractères"
+      ),
+  }).superRefine((values, context) => {
+    if (
+      values.supplierReference !== "" &&
+      !values.supplierId
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["supplierReference"],
+        message:
+          "Sélectionnez d’abord un fournisseur",
+      });
+    }
   });
 
 const updateProductSchema =
@@ -209,10 +235,23 @@ export default function ProductFormScreen({
   const [categories, setCategories] =
     useState([]);
 
+  const [suppliers, setSuppliers] =
+    useState([]);
+
   const [
     isLoadingCategories,
     setIsLoadingCategories,
   ] = useState(true);
+
+  const [
+    isLoadingSuppliers,
+    setIsLoadingSuppliers,
+  ] = useState(!isEditing);
+
+  const [
+    isSupplierMenuOpen,
+    setIsSupplierMenuOpen,
+  ] = useState(false);
 
   const [requestError, setRequestError] =
     useState("");
@@ -272,11 +311,24 @@ export default function ProductFormScreen({
       adminRating: valueToText(
         product?.admin_rating
       ),
+
+      supplierId: null,
+      supplierReference: "",
     },
   });
 
   const selectedCategoryId =
     watch("categoryId");
+
+  const selectedSupplierId =
+    watch("supplierId");
+
+  const selectedSupplier =
+    suppliers.find(
+      (supplier) =>
+        supplier.id ===
+        selectedSupplierId
+    ) ?? null;
 
   useEffect(() => {
     let isMounted = true;
@@ -323,6 +375,55 @@ export default function ProductFormScreen({
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (isEditing) {
+      setIsLoadingSuppliers(false);
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    async function loadSuppliers() {
+      try {
+        const result =
+          await getSuppliers({
+            isActive: true,
+            page: 1,
+            limit: 100,
+          });
+
+        if (!isMounted) {
+          return;
+        }
+
+        setSuppliers(
+          result.suppliers ?? []
+        );
+      } catch (error) {
+        console.error(
+          "Suppliers loading error:",
+          error
+        );
+
+        if (isMounted) {
+          setRequestError(
+            "Impossible de charger les fournisseurs actifs."
+          );
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingSuppliers(false);
+        }
+      }
+    }
+
+    loadSuppliers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isEditing]);
 
   async function submitProduct(values) {
     setRequestError("");
@@ -388,6 +489,13 @@ export default function ProductFormScreen({
           initialQuantity: Number(
             values.initialQuantity
           ),
+
+          supplierId:
+            values.supplierId,
+
+          supplierReference:
+            values.supplierReference
+              .trim() || null,
         });
 
       onCreated?.(result.product);
@@ -410,6 +518,18 @@ export default function ProductFormScreen({
       ) {
         setRequestError(
           "La catégorie sélectionnée n’existe plus."
+        );
+
+        return;
+      }
+
+      if (
+        errorMessage
+          .toLowerCase()
+          .includes("supplier")
+      ) {
+        setRequestError(
+          "Le fournisseur sélectionné n’est plus disponible."
         );
 
         return;
@@ -598,6 +718,225 @@ export default function ProductFormScreen({
               </View>
             )}
           </View>
+
+          {!isEditing ? (
+            <>
+              <View style={styles.divider} />
+
+              <Text
+                style={styles.sectionTitle}
+              >
+                Fournisseur
+              </Text>
+
+              <Text
+                style={
+                  styles.sectionDescription
+                }
+              >
+                Sélectionnez le fournisseur
+                auprès duquel ce parfum a
+                été acheté.
+              </Text>
+
+              <View
+                style={styles.supplierArea}
+              >
+                <Text style={styles.label}>
+                  Fournisseur
+                </Text>
+
+                {isLoadingSuppliers ? (
+                  <View
+                    style={
+                      styles.supplierLoading
+                    }
+                  >
+                    <ActivityIndicator
+                      color={colors.primary}
+                    />
+
+                    <Text
+                      style={
+                        styles.supplierLoadingText
+                      }
+                    >
+                      Chargement des
+                      fournisseurs…
+                    </Text>
+                  </View>
+                ) : (
+                  <>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.supplierSelect,
+                        pressed &&
+                          styles.pressed,
+                        isSupplierMenuOpen &&
+                          styles.supplierSelectOpen,
+                      ]}
+                      onPress={() =>
+                        setIsSupplierMenuOpen(
+                          (current) =>
+                            !current
+                        )
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.supplierSelectText,
+                          !selectedSupplier &&
+                            styles.supplierPlaceholder,
+                        ]}
+                      >
+                        {selectedSupplier
+                          ? selectedSupplier.name
+                          : "Sélectionner un fournisseur"}
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.supplierArrow
+                        }
+                      >
+                        {isSupplierMenuOpen
+                          ? "▲"
+                          : "▼"}
+                      </Text>
+                    </Pressable>
+
+                    {isSupplierMenuOpen ? (
+                      <View
+                        style={
+                          styles.supplierOptions
+                        }
+                      >
+                        <Pressable
+                          style={({ pressed }) => [
+                            styles.supplierOption,
+                            selectedSupplierId ===
+                              null &&
+                              styles.supplierOptionSelected,
+                            pressed &&
+                              styles.pressed,
+                          ]}
+                          onPress={() => {
+                            setValue(
+                              "supplierId",
+                              null,
+                              {
+                                shouldValidate:
+                                  true,
+                              }
+                            );
+
+                            setValue(
+                              "supplierReference",
+                              "",
+                              {
+                                shouldValidate:
+                                  true,
+                              }
+                            );
+
+                            setIsSupplierMenuOpen(
+                              false
+                            );
+                          }}
+                        >
+                          <Text
+                            style={[
+                              styles.supplierOptionText,
+                              selectedSupplierId ===
+                                null &&
+                                styles.supplierOptionTextSelected,
+                            ]}
+                          >
+                            Aucun fournisseur
+                          </Text>
+                        </Pressable>
+
+                        {suppliers.map(
+                          (supplier) => {
+                            const isSelected =
+                              selectedSupplierId ===
+                              supplier.id;
+
+                            return (
+                              <Pressable
+                                key={
+                                  supplier.id
+                                }
+                                style={({
+                                  pressed,
+                                }) => [
+                                  styles.supplierOption,
+                                  isSelected &&
+                                    styles.supplierOptionSelected,
+                                  pressed &&
+                                    styles.pressed,
+                                ]}
+                                onPress={() => {
+                                  setValue(
+                                    "supplierId",
+                                    supplier.id,
+                                    {
+                                      shouldValidate:
+                                        true,
+                                    }
+                                  );
+
+                                  setIsSupplierMenuOpen(
+                                    false
+                                  );
+                                }}
+                              >
+                                <Text
+                                  style={[
+                                    styles.supplierOptionText,
+                                    isSelected &&
+                                      styles.supplierOptionTextSelected,
+                                  ]}
+                                >
+                                  {
+                                    supplier.name
+                                  }
+                                </Text>
+                              </Pressable>
+                            );
+                          }
+                        )}
+
+                        {suppliers.length ===
+                        0 ? (
+                          <Text
+                            style={
+                              styles.emptySuppliersText
+                            }
+                          >
+                            Aucun fournisseur
+                            actif enregistré.
+                          </Text>
+                        ) : null}
+                      </View>
+                    ) : null}
+                  </>
+                )}
+
+                {selectedSupplier ? (
+                  <FormInput
+                    control={control}
+                    name="supplierReference"
+                    label="Référence fournisseur"
+                    placeholder="Exemple : CMD-2026-001"
+                    error={
+                      errors.supplierReference
+                    }
+                  />
+                ) : null}
+              </View>
+            </>
+          ) : null}
 
           <View style={styles.divider} />
 
@@ -883,6 +1222,14 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
+  sectionDescription: {
+    marginTop: -10,
+    marginBottom: 16,
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+
   formGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -966,6 +1313,101 @@ const styles = StyleSheet.create({
 
   categoryChipTextSelected: {
     color: colors.textOnPrimary,
+  },
+
+  supplierArea: {
+    gap: 10,
+  },
+
+  supplierLoading: {
+    minHeight: 51,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 14,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor:
+      colors.inputBackground,
+  },
+
+  supplierLoadingText: {
+    color: colors.textMuted,
+    fontSize: 14,
+  },
+
+  supplierSelect: {
+    minHeight: 51,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    paddingHorizontal: 14,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor:
+      colors.inputBackground,
+  },
+
+  supplierSelectOpen: {
+    borderColor: colors.primary,
+  },
+
+  supplierSelectText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+
+  supplierPlaceholder: {
+    color: colors.textMuted,
+    fontWeight: "400",
+  },
+
+  supplierArrow: {
+    color: colors.primary,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+
+  supplierOptions: {
+    overflow: "hidden",
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+
+  supplierOption: {
+    minHeight: 46,
+    justifyContent: "center",
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+
+  supplierOptionSelected: {
+    backgroundColor: colors.primary,
+  },
+
+  supplierOptionText: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  supplierOptionTextSelected: {
+    color: colors.textOnPrimary,
+  },
+
+  emptySuppliersText: {
+    padding: 14,
+    color: colors.textMuted,
+    fontSize: 13,
+    fontStyle: "italic",
   },
 
   divider: {

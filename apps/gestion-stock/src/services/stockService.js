@@ -39,6 +39,80 @@ export function getProducts({
   );
 }
 
+export function getSoldProducts({
+  search,
+  startDate,
+  endDate,
+  page = 1,
+  limit = 20,
+} = {}) {
+  const query = buildQuery({
+    search,
+    startDate,
+    endDate,
+    page,
+    limit,
+  });
+
+  return apiRequest(
+    `/api/admin/products/sold${query}`
+  );
+}
+
+export function getSupplierPurchases({
+  supplierId,
+  search,
+  startDate,
+  endDate,
+  page = 1,
+  limit = 20,
+} = {}) {
+  const query = buildQuery({
+    supplierId,
+    search,
+    startDate,
+    endDate,
+    page,
+    limit,
+  });
+
+  return apiRequest(
+    `/api/admin/products/supplier-purchases${query}`
+  );
+}
+
+export function getLowStockProducts({
+  search,
+  page = 1,
+  limit = 20,
+} = {}) {
+  const query = buildQuery({
+    search,
+    page,
+    limit,
+  });
+
+  return apiRequest(
+    `/api/admin/products/low-stock${query}`
+  );
+}
+
+export function getOutOfStockProducts({
+  search,
+  page = 1,
+  limit = 20,
+} = {}) {
+  const query = buildQuery({
+    search,
+    page,
+    limit,
+  });
+
+  return apiRequest(
+    `/api/admin/products/out-of-stock${query}`
+  );
+}
+
 export function getProduct(productId) {
   return apiRequest(
     `/api/admin/products/${productId}`
@@ -103,7 +177,7 @@ export function uploadProductImage(
 }
 
 /*
- * MOUVEMENTS DE STOCK
+ * HISTORIQUE DES ENTRÃ‰ES ET SORTIES
  */
 
 export function getStockMovements(
@@ -155,7 +229,7 @@ export function getGlobalStockMovements({
 }
 
 /*
- * CATÉGORIES
+ * CATÃ‰GORIES
  */
 
 export function getCategories({
@@ -255,7 +329,7 @@ export function updateSupplier(
 }
 
 /*
- * FOURNISSEURS ASSOCIÉS À UN PARFUM
+ * FOURNISSEURS ASSOCIÃ‰S Ã€ UN PARFUM
  */
 
 export function getProductSuppliers(

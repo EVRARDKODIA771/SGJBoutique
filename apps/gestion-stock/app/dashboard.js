@@ -62,10 +62,24 @@ export default function DashboardPage() {
       membership={adminMembership}
       onNavigate={(section) => {
         const routes = {
+          dashboard: "/dashboard",
           products: "/products",
+          newProduct: "/products/new",
+          soldProducts:
+            "/products/sold",
+          supplierPurchases:
+            "/products/supplier-purchases",
           stock: "/stock",
+          lowStock:
+            "/products/low-stock",
+          outOfStock:
+            "/products/out-of-stock",
           categories: "/categories",
           suppliers: "/suppliers",
+          accessRequests:
+            "/administration/access-requests",
+          authorizedUsers:
+            "/administration/authorized-users",
         };
 
         const destination =
