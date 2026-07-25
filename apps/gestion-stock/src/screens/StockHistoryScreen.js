@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -76,13 +77,99 @@ function formatDate(value) {
     return new Intl.DateTimeFormat(
       "fr-FR",
       {
-        dateStyle: "medium",
+        dateStyle: "short",
         timeStyle: "short",
       }
     ).format(new Date(value));
   } catch {
     return value;
   }
+}
+
+function FilterChip({
+  label,
+  selected,
+  onPress,
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{
+        selected,
+      }}
+      style={({ pressed }) => [
+        styles.filterChip,
+        selected &&
+          styles.filterChipSelected,
+        pressed && styles.pressed,
+      ]}
+      onPress={onPress}
+    >
+      <Text
+        style={[
+          styles.filterChipText,
+          selected &&
+            styles.filterChipTextSelected,
+        ]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function SummaryItem({
+  label,
+  value,
+  valueStyle,
+}) {
+  return (
+    <View style={styles.summaryItem}>
+      <Text
+        style={styles.summaryLabel}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+
+      <Text
+        style={[
+          styles.summaryValue,
+          valueStyle,
+        ]}
+        numberOfLines={1}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function TableCell({
+  style,
+  textStyle,
+  children,
+  numberOfLines = 1,
+}) {
+  return (
+    <View
+      style={[
+        styles.tableCell,
+        style,
+      ]}
+    >
+      <Text
+        style={[
+          styles.cellText,
+          textStyle,
+        ]}
+        numberOfLines={numberOfLines}
+      >
+        {children}
+      </Text>
+    </View>
+  );
 }
 
 export default function StockHistoryScreen({
@@ -131,9 +218,7 @@ export default function StockHistoryScreen({
 
         if (quantity > 0) {
           totals.entries += quantity;
-        }
-
-        if (quantity < 0) {
+        } else if (quantity < 0) {
           totals.exits +=
             Math.abs(quantity);
         }
@@ -147,84 +232,90 @@ export default function StockHistoryScreen({
     );
   }, [movements]);
 
-  async function loadProducts() {
-    try {
-      const result =
-        await getProducts({
-          page: 1,
-          limit: 100,
-        });
+  const loadProducts = useCallback(
+    async () => {
+      try {
+        const result =
+          await getProducts({
+            page: 1,
+            limit: 100,
+          });
 
-      setProducts(
-        result.products ?? []
-      );
-    } catch (error) {
-      console.error(
-        "Stock products loading error:",
-        error
-      );
-    }
-  }
+        setProducts(
+          result.products ?? []
+        );
+      } catch (error) {
+        console.error(
+          "Stock products loading error:",
+          error
+        );
+      }
+    },
+    []
+  );
 
-  async function loadMovements() {
-    setIsLoading(true);
-    setRequestError("");
+  const loadMovements = useCallback(
+    async () => {
+      setIsLoading(true);
+      setRequestError("");
 
-    try {
-      const result =
-        await getGlobalStockMovements({
-          movementType:
-            selectedMovementType ||
-            undefined,
+      try {
+        const result =
+          await getGlobalStockMovements({
+            movementType:
+              selectedMovementType ||
+              undefined,
 
-          productId:
-            selectedProductId ||
-            undefined,
+            productId:
+              selectedProductId ||
+              undefined,
 
-          page,
-          limit: 20,
-        });
+            page,
+            limit: 20,
+          });
 
-      setMovements(
-        result.movements ?? []
-      );
+        setMovements(
+          result.movements ?? []
+        );
 
-      setPagination(
-        result.pagination ?? {
-          page,
-          limit: 20,
-          total: 0,
-          totalPages: 0,
-        }
-      );
-    } catch (error) {
-      console.error(
-        "Global stock movements loading error:",
-        error
-      );
+        setPagination(
+          result.pagination ?? {
+            page,
+            limit: 20,
+            total: 0,
+            totalPages: 0,
+          }
+        );
+      } catch (error) {
+        console.error(
+          "Global stock movements loading error:",
+          error
+        );
 
-      setRequestError(
-        error?.message ||
-          "Impossible de charger l’historique des entrées et sorties."
-      );
+        setRequestError(
+          error?.message ||
+            "Impossible de charger l’historique des entrées et sorties."
+        );
 
-      setMovements([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }
+        setMovements([]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [
+      page,
+      selectedMovementType,
+      selectedProductId,
+    ]
+  );
 
   useEffect(() => {
     loadProducts();
-  }, []);
+  }, [loadProducts]);
 
   useEffect(() => {
     loadMovements();
-  }, [
-    page,
-    selectedMovementType,
-    selectedProductId,
-  ]);
+  }, [loadMovements]);
 
   function selectMovementType(
     movementType
@@ -232,7 +323,6 @@ export default function StockHistoryScreen({
     setSelectedMovementType(
       movementType
     );
-
     setPage(1);
   }
 
@@ -242,7 +332,6 @@ export default function StockHistoryScreen({
     setSelectedProductId(
       productId
     );
-
     setPage(1);
   }
 
@@ -273,11 +362,28 @@ export default function StockHistoryScreen({
             onPress={onBack}
           >
             <Text
+              style={styles.backButtonText}
+            >
+              ‹ Tableau de bord
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.refreshButton,
+              pressed && styles.pressed,
+              isLoading &&
+                styles.disabledButton,
+            ]}
+            disabled={isLoading}
+            onPress={loadMovements}
+          >
+            <Text
               style={
-                styles.backButtonText
+                styles.refreshButtonText
               }
             >
-              ‹ Retour au tableau de bord
+              Actualiser
             </Text>
           </Pressable>
         </View>
@@ -292,10 +398,143 @@ export default function StockHistoryScreen({
           </Text>
 
           <Text style={styles.subtitle}>
-            Consultez toutes les entrées,
-            sorties et corrections enregistrées
-            pour les parfums.
+            Consultez toutes les opérations
+            enregistrées pour les parfums.
           </Text>
+        </View>
+
+        <View style={styles.filtersCard}>
+          <View style={styles.filterLine}>
+            <Text
+              style={styles.filterLabel}
+            >
+              Type
+            </Text>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={
+                false
+              }
+              contentContainerStyle={
+                styles.filterChipList
+              }
+            >
+              {movementTypes.map(
+                (movementType) => (
+                  <FilterChip
+                    key={
+                      movementType.value ||
+                      "all"
+                    }
+                    label={
+                      movementType.label
+                    }
+                    selected={
+                      selectedMovementType ===
+                      movementType.value
+                    }
+                    onPress={() =>
+                      selectMovementType(
+                        movementType.value
+                      )
+                    }
+                  />
+                )
+              )}
+            </ScrollView>
+          </View>
+
+          <View style={styles.filterLine}>
+            <Text
+              style={styles.filterLabel}
+            >
+              Parfum
+            </Text>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={
+                false
+              }
+              contentContainerStyle={
+                styles.filterChipList
+              }
+            >
+              <FilterChip
+                label="Tous les parfums"
+                selected={
+                  selectedProductId === ""
+                }
+                onPress={() =>
+                  selectProduct("")
+                }
+              />
+
+              {products.map(
+                (product) => (
+                  <FilterChip
+                    key={product.id}
+                    label={product.name}
+                    selected={
+                      selectedProductId ===
+                      product.id
+                    }
+                    onPress={() =>
+                      selectProduct(
+                        product.id
+                      )
+                    }
+                  />
+                )
+              )}
+            </ScrollView>
+          </View>
+
+          {hasFilters ? (
+            <Pressable
+              style={({ pressed }) => [
+                styles.clearButton,
+                pressed && styles.pressed,
+              ]}
+              onPress={clearFilters}
+            >
+              <Text
+                style={
+                  styles.clearButtonText
+                }
+              >
+                Réinitialiser les filtres
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+        <View style={styles.summaryBar}>
+          <SummaryItem
+            label="Opérations"
+            value={pagination.total ?? 0}
+          />
+
+          <View
+            style={styles.summaryDivider}
+          />
+
+          <SummaryItem
+            label="Entrées sur la page"
+            value={`+${pageTotals.entries}`}
+            valueStyle={styles.entryText}
+          />
+
+          <View
+            style={styles.summaryDivider}
+          />
+
+          <SummaryItem
+            label="Sorties sur la page"
+            value={`−${pageTotals.exits}`}
+            valueStyle={styles.exitText}
+          />
         </View>
 
         {requestError ? (
@@ -319,504 +558,302 @@ export default function StockHistoryScreen({
           </View>
         ) : null}
 
-        <View style={styles.summaryGrid}>
-          <View style={styles.summaryCard}>
+        <View style={styles.tableCard}>
+          <View style={styles.tableTop}>
             <Text
-              style={styles.summaryLabel}
+              style={styles.tableTitle}
             >
-              Opérations trouvées
+              Tableau récapitulatif
             </Text>
 
             <Text
-              style={styles.summaryValue}
+              style={styles.pageIndicator}
             >
-              {pagination.total ?? 0}
+              Page {pagination.page ?? page}
+              {" sur "}
+              {Math.max(
+                pagination.totalPages ?? 0,
+                1
+              )}
             </Text>
-          </View>
-
-          <View style={styles.summaryCard}>
-            <Text
-              style={styles.summaryLabel}
-            >
-              Entrées sur cette page
-            </Text>
-
-            <Text
-              style={[
-                styles.summaryValue,
-                styles.entryValue,
-              ]}
-            >
-              +{pageTotals.entries}
-            </Text>
-          </View>
-
-          <View style={styles.summaryCard}>
-            <Text
-              style={styles.summaryLabel}
-            >
-              Sorties sur cette page
-            </Text>
-
-            <Text
-              style={[
-                styles.summaryValue,
-                styles.exitValue,
-              ]}
-            >
-              −{pageTotals.exits}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.filterCard}>
-          <View style={styles.filterHeader}>
-            <View style={styles.filterHeading}>
-              <Text
-                style={
-                  styles.sectionTitle
-                }
-              >
-                Filtres
-              </Text>
-
-              <Text
-                style={
-                  styles.sectionDescription
-                }
-              >
-                Filtrez par type d’entrée
-                ou de sortie, ou par parfum.
-              </Text>
-            </View>
-
-            {hasFilters ? (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.clearButton,
-                  pressed &&
-                    styles.pressed,
-                ]}
-                onPress={clearFilters}
-              >
-                <Text
-                  style={
-                    styles.clearButtonText
-                  }
-                >
-                  Réinitialiser
-                </Text>
-              </Pressable>
-            ) : null}
-          </View>
-
-          <Text style={styles.filterLabel}>
-            Type d’entrée ou de sortie
-          </Text>
-
-          <View style={styles.chipList}>
-            {movementTypes.map(
-              (movementType) => {
-                const isSelected =
-                  selectedMovementType ===
-                  movementType.value;
-
-                return (
-                  <Pressable
-                    key={
-                      movementType.value ||
-                      "all"
-                    }
-                    style={[
-                      styles.chip,
-                      isSelected &&
-                        styles.chipSelected,
-                    ]}
-                    onPress={() =>
-                      selectMovementType(
-                        movementType.value
-                      )
-                    }
-                  >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        isSelected &&
-                          styles.chipTextSelected,
-                      ]}
-                    >
-                      {movementType.label}
-                    </Text>
-                  </Pressable>
-                );
-              }
-            )}
-          </View>
-
-          <Text style={styles.filterLabel}>
-            Parfum
-          </Text>
-
-          <View style={styles.chipList}>
-            <Pressable
-              style={[
-                styles.chip,
-                selectedProductId ===
-                  "" &&
-                  styles.chipSelected,
-              ]}
-              onPress={() =>
-                selectProduct("")
-              }
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  selectedProductId ===
-                    "" &&
-                    styles.chipTextSelected,
-                ]}
-              >
-                Tous les parfums
-              </Text>
-            </Pressable>
-
-            {products.map((product) => {
-              const isSelected =
-                selectedProductId ===
-                product.id;
-
-              return (
-                <Pressable
-                  key={product.id}
-                  style={[
-                    styles.chip,
-                    isSelected &&
-                      styles.chipSelected,
-                  ]}
-                  onPress={() =>
-                    selectProduct(
-                      product.id
-                    )
-                  }
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      isSelected &&
-                        styles.chipTextSelected,
-                    ]}
-                  >
-                    {product.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-
-        <View style={styles.historyCard}>
-          <View style={styles.historyHeader}>
-            <View style={styles.historyHeading}>
-              <Text
-                style={
-                  styles.sectionTitle
-                }
-              >
-                Entrées et sorties enregistrées
-              </Text>
-
-              <Text
-                style={
-                  styles.sectionDescription
-                }
-              >
-                Page {pagination.page ?? page}
-                {" sur "}
-                {Math.max(
-                  pagination.totalPages ??
-                    0,
-                  1
-                )}
-              </Text>
-            </View>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.refreshButton,
-                pressed && styles.pressed,
-              ]}
-              onPress={loadMovements}
-              disabled={isLoading}
-            >
-              <Text
-                style={
-                  styles.refreshButtonText
-                }
-              >
-                Actualiser
-              </Text>
-            </Pressable>
           </View>
 
           {isLoading ? (
-            <View style={styles.loadingBox}>
+            <View style={styles.stateBox}>
               <ActivityIndicator
-                size="large"
+                size="small"
                 color={colors.primary}
               />
 
               <Text
-                style={styles.loadingText}
+                style={styles.stateText}
               >
-                Chargement de l’historique…
+                Chargement…
               </Text>
             </View>
           ) : movements.length === 0 ? (
-            <View style={styles.emptyBox}>
+            <View style={styles.stateBox}>
               <Text
                 style={styles.emptyTitle}
               >
-                Aucune entrée ou sortie
+                Aucune opération trouvée
               </Text>
 
               <Text
-                style={styles.emptyText}
+                style={styles.stateText}
               >
-                Aucune entrée ou sortie ne
-                correspond aux filtres
-                sélectionnés.
+                Modifiez les filtres pour
+                afficher d’autres résultats.
               </Text>
             </View>
           ) : (
-            <View style={styles.movementList}>
-              {movements.map(
-                (movement) => {
-                  const quantity = Number(
-                    movement.quantity_change ??
-                      0
-                  );
+            <ScrollView
+              horizontal
+              nestedScrollEnabled
+              showsHorizontalScrollIndicator
+            >
+              <View style={styles.table}>
+                <View
+                  style={[
+                    styles.tableRow,
+                    styles.tableHeader,
+                  ]}
+                >
+                  <TableCell
+                    style={styles.dateColumn}
+                    textStyle={
+                      styles.headerText
+                    }
+                  >
+                    Date
+                  </TableCell>
 
-                  const isEntry =
-                    quantity > 0;
+                  <TableCell
+                    style={
+                      styles.productColumn
+                    }
+                    textStyle={
+                      styles.headerText
+                    }
+                  >
+                    Parfum
+                  </TableCell>
 
-                  const product =
-                    movement.product;
+                  <TableCell
+                    style={styles.typeColumn}
+                    textStyle={
+                      styles.headerText
+                    }
+                  >
+                    Type
+                  </TableCell>
 
-                  return (
-                    <View
-                      key={movement.id}
-                      style={
-                        styles.movementCard
-                      }
-                    >
+                  <TableCell
+                    style={
+                      styles.quantityColumn
+                    }
+                    textStyle={
+                      styles.headerText
+                    }
+                  >
+                    Quantité
+                  </TableCell>
+
+                  <TableCell
+                    style={styles.stockColumn}
+                    textStyle={
+                      styles.headerText
+                    }
+                  >
+                    Avant
+                  </TableCell>
+
+                  <TableCell
+                    style={styles.stockColumn}
+                    textStyle={
+                      styles.headerText
+                    }
+                  >
+                    Après
+                  </TableCell>
+
+                  <TableCell
+                    style={styles.reasonColumn}
+                    textStyle={
+                      styles.headerText
+                    }
+                  >
+                    Motif ou référence
+                  </TableCell>
+
+                  <TableCell
+                    style={styles.actionColumn}
+                    textStyle={
+                      styles.headerText
+                    }
+                  >
+                    Fiche
+                  </TableCell>
+                </View>
+
+                {movements.map(
+                  (movement, index) => {
+                    const quantity = Number(
+                      movement.quantity_change ??
+                        0
+                    );
+
+                    const isEntry =
+                      quantity > 0;
+
+                    const product =
+                      movement.product;
+
+                    const details = [
+                      movement.reason,
+                      movement.reference,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ");
+
+                    return (
                       <View
-                        style={
-                          styles.movementTop
-                        }
-                      >
-                        <View
-                          style={
-                            styles.movementIdentity
-                          }
-                        >
-                          <Text
-                            style={
-                              styles.movementType
-                            }
-                          >
-                            {movementLabels[
-                              movement
-                                .movement_type
-                            ] ||
-                              movement.movement_type}
-                          </Text>
-
-                          <Text
-                            style={
-                              styles.movementDate
-                            }
-                          >
-                            {formatDate(
-                              movement.created_at
-                            )}
-                          </Text>
-                        </View>
-
-                        <Text
-                          style={[
-                            styles.quantityChange,
-                            isEntry
-                              ? styles.entryValue
-                              : styles.exitValue,
-                          ]}
-                        >
-                          {quantity > 0
-                            ? `+${quantity}`
-                            : quantity}
-                        </Text>
-                      </View>
-
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.productArea,
-                          pressed &&
-                            onOpenProduct &&
-                            styles.pressed,
+                        key={movement.id}
+                        style={[
+                          styles.tableRow,
+                          index % 2 === 1 &&
+                            styles.alternateRow,
                         ]}
-                        onPress={() => {
-                          if (
-                            product &&
-                            onOpenProduct
-                          ) {
-                            onOpenProduct(
-                              product
-                            );
-                          }
-                        }}
-                        disabled={
-                          !product ||
-                          !onOpenProduct
-                        }
                       >
-                        <Text
+                        <TableCell
                           style={
-                            styles.productName
+                            styles.dateColumn
+                          }
+                        >
+                          {formatDate(
+                            movement.created_at
+                          )}
+                        </TableCell>
+
+                        <TableCell
+                          style={
+                            styles.productColumn
+                          }
+                          textStyle={
+                            styles.productText
                           }
                         >
                           {product?.name ||
                             "Parfum supprimé"}
-                        </Text>
+                        </TableCell>
 
-                        <Text
+                        <TableCell
                           style={
-                            styles.productMeta
+                            styles.typeColumn
                           }
                         >
-                          {product?.brand ||
-                            "Marque non renseignée"}
+                          {movementLabels[
+                            movement
+                              .movement_type
+                          ] ||
+                            movement.movement_type}
+                        </TableCell>
 
-                          {product?.sku
-                            ? ` • ${product.sku}`
-                            : ""}
-                        </Text>
-                      </Pressable>
+                        <TableCell
+                          style={
+                            styles.quantityColumn
+                          }
+                          textStyle={
+                            isEntry
+                              ? styles.entryText
+                              : styles.exitText
+                          }
+                        >
+                          {quantity > 0
+                            ? `+${quantity}`
+                            : quantity}
+                        </TableCell>
 
-                      <View
-                        style={styles.stockFlow}
-                      >
+                        <TableCell
+                          style={
+                            styles.stockColumn
+                          }
+                          textStyle={
+                            styles.centerText
+                          }
+                        >
+                          {movement.quantity_before ??
+                            "—"}
+                        </TableCell>
+
+                        <TableCell
+                          style={
+                            styles.stockColumn
+                          }
+                          textStyle={
+                            styles.centerText
+                          }
+                        >
+                          {movement.quantity_after ??
+                            "—"}
+                        </TableCell>
+
+                        <TableCell
+                          style={
+                            styles.reasonColumn
+                          }
+                        >
+                          {details || "—"}
+                        </TableCell>
+
                         <View
-                          style={
-                            styles.stockValueBox
-                          }
+                          style={[
+                            styles.tableCell,
+                            styles.actionColumn,
+                          ]}
                         >
-                          <Text
-                            style={
-                              styles.stockLabel
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={
+                              product
+                                ? `Ouvrir ${product.name}`
+                                : "Parfum indisponible"
+                            }
+                            style={({
+                              pressed,
+                            }) => [
+                              styles.openButton,
+                              pressed &&
+                                styles.pressed,
+                              (!product ||
+                                !onOpenProduct) &&
+                                styles.disabledButton,
+                            ]}
+                            disabled={
+                              !product ||
+                              !onOpenProduct
+                            }
+                            onPress={() =>
+                              onOpenProduct?.(
+                                product
+                              )
                             }
                           >
-                            Avant
-                          </Text>
-
-                          <Text
-                            style={
-                              styles.stockValue
-                            }
-                          >
-                            {
-                              movement.quantity_before
-                            }
-                          </Text>
-                        </View>
-
-                        <Text
-                          style={
-                            styles.stockArrow
-                          }
-                        >
-                          →
-                        </Text>
-
-                        <View
-                          style={
-                            styles.stockValueBox
-                          }
-                        >
-                          <Text
-                            style={
-                              styles.stockLabel
-                            }
-                          >
-                            Après
-                          </Text>
-
-                          <Text
-                            style={
-                              styles.stockValue
-                            }
-                          >
-                            {
-                              movement.quantity_after
-                            }
-                          </Text>
+                            <Text
+                              style={
+                                styles.openButtonText
+                              }
+                            >
+                              ›
+                            </Text>
+                          </Pressable>
                         </View>
                       </View>
-
-                      {movement.reason ||
-                      movement.reference ? (
-                        <View
-                          style={
-                            styles.detailsBox
-                          }
-                        >
-                          {movement.reason ? (
-                            <View>
-                              <Text
-                                style={
-                                  styles.detailLabel
-                                }
-                              >
-                                Raison
-                              </Text>
-
-                              <Text
-                                style={
-                                  styles.detailValue
-                                }
-                              >
-                                {movement.reason}
-                              </Text>
-                            </View>
-                          ) : null}
-
-                          {movement.reference ? (
-                            <View>
-                              <Text
-                                style={
-                                  styles.detailLabel
-                                }
-                              >
-                                Référence
-                              </Text>
-
-                              <Text
-                                style={
-                                  styles.detailValue
-                                }
-                              >
-                                {
-                                  movement.reference
-                                }
-                              </Text>
-                            </View>
-                          ) : null}
-                        </View>
-                      ) : null}
-                    </View>
-                  );
-                }
-              )}
-            </View>
+                    );
+                  }
+                )}
+              </View>
+            </ScrollView>
           )}
 
           {!isLoading &&
@@ -830,6 +867,7 @@ export default function StockHistoryScreen({
                   page <= 1 &&
                     styles.disabledButton,
                 ]}
+                disabled={page <= 1}
                 onPress={() =>
                   setPage((current) =>
                     Math.max(
@@ -838,7 +876,6 @@ export default function StockHistoryScreen({
                     )
                   )
                 }
-                disabled={page <= 1}
               >
                 <Text
                   style={
@@ -852,7 +889,7 @@ export default function StockHistoryScreen({
               <Text
                 style={styles.pageText}
               >
-                Page {page} sur{" "}
+                {page} /{" "}
                 {pagination.totalPages}
               </Text>
 
@@ -863,6 +900,10 @@ export default function StockHistoryScreen({
                     pagination.totalPages &&
                     styles.disabledButton,
                 ]}
+                disabled={
+                  page >=
+                  pagination.totalPages
+                }
                 onPress={() =>
                   setPage((current) =>
                     Math.min(
@@ -870,10 +911,6 @@ export default function StockHistoryScreen({
                       pagination.totalPages
                     )
                   )
-                }
-                disabled={
-                  page >=
-                  pagination.totalPages
                 }
               >
                 <Text
@@ -895,615 +932,420 @@ export default function StockHistoryScreen({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-
     backgroundColor:
       colors.background,
   },
 
   scrollContent: {
-    paddingBottom: 45,
+    paddingBottom: 30,
   },
 
   container: {
     width: "100%",
-    maxWidth: 1180,
-
+    maxWidth: 1380,
     alignSelf: "center",
-
-    paddingHorizontal: 20,
+    paddingHorizontal: 14,
   },
 
   topBar: {
-    minHeight: 76,
-
-    justifyContent: "center",
-
+    minHeight: 58,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
     borderBottomWidth: 1,
-
-    borderBottomColor:
-      colors.border,
+    borderBottomColor: colors.border,
   },
 
   backButton: {
-    alignSelf: "flex-start",
-
-    minHeight: 42,
-
+    minHeight: 36,
     justifyContent: "center",
-
-    paddingHorizontal: 14,
-
-    borderRadius: 10,
-
+    paddingHorizontal: 12,
+    borderRadius: 9,
     borderWidth: 1,
-
-    borderColor:
-      colors.border,
-
-    backgroundColor:
-      colors.surface,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
 
   backButtonText: {
     color: colors.primary,
+    fontSize: 13,
+    fontWeight: "800",
+  },
 
-    fontSize: 14,
-    fontWeight: "700",
+  refreshButton: {
+    minHeight: 36,
+    justifyContent: "center",
+    paddingHorizontal: 13,
+    borderRadius: 9,
+    backgroundColor: colors.primary,
+  },
+
+  refreshButtonText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: "800",
   },
 
   heading: {
-    paddingTop: 31,
-    paddingBottom: 23,
+    paddingVertical: 15,
   },
 
   eyebrow: {
-    color:
-      colors.secondaryDark,
-
-    fontSize: 12,
-    fontWeight: "800",
-
-    letterSpacing: 1.3,
+    color: colors.secondaryDark,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1,
   },
 
   title: {
-    marginTop: 6,
-
-    color:
-      colors.primaryDark,
-
-    fontSize: 34,
-    fontWeight: "800",
-  },
-
-  subtitle: {
-    marginTop: 7,
-
-    color: colors.textMuted,
-
-    fontSize: 15,
-    lineHeight: 22,
-  },
-
-  summaryGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-
-    gap: 14,
-
-    marginBottom: 20,
-  },
-
-  summaryCard: {
-    flexGrow: 1,
-    flexBasis: 220,
-
-    padding: 18,
-
-    borderRadius: 15,
-
-    borderWidth: 1,
-
-    borderColor:
-      colors.border,
-
-    backgroundColor:
-      colors.surface,
-  },
-
-  summaryLabel: {
-    color: colors.textMuted,
-
-    fontSize: 12,
-    fontWeight: "700",
-  },
-
-  summaryValue: {
-    marginTop: 5,
-
-    color:
-      colors.primaryDark,
-
+    marginTop: 4,
+    color: colors.primaryDark,
     fontSize: 27,
     fontWeight: "900",
   },
 
-  entryValue: {
-    color: "#34734A",
-  },
-
-  exitValue: {
-    color: colors.danger,
-  },
-
-  filterCard: {
-    marginBottom: 20,
-
-    padding: 21,
-
-    borderRadius: 18,
-
-    borderWidth: 1,
-
-    borderColor:
-      colors.border,
-
-    backgroundColor:
-      colors.surface,
-  },
-
-  filterHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-
-    gap: 12,
-  },
-
-  filterHeading: {
-    flexGrow: 1,
-    flexShrink: 1,
-  },
-
-  sectionTitle: {
-    color:
-      colors.primaryDark,
-
-    fontSize: 20,
-    fontWeight: "800",
-  },
-
-  sectionDescription: {
-    marginTop: 5,
-
+  subtitle: {
+    marginTop: 4,
     color: colors.textMuted,
-
     fontSize: 13,
-    lineHeight: 19,
+  },
+
+  filtersCard: {
+    gap: 8,
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+
+  filterLine: {
+    minHeight: 34,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
   },
 
   filterLabel: {
-    marginTop: 19,
-    marginBottom: 9,
-
-    color: colors.text,
-
-    fontSize: 13,
-    fontWeight: "800",
-  },
-
-  chipList: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-
-    gap: 8,
-  },
-
-  chip: {
-    paddingHorizontal: 13,
-    paddingVertical: 9,
-
-    borderRadius: 999,
-
-    borderWidth: 1,
-
-    borderColor:
-      colors.border,
-
-    backgroundColor:
-      colors.inputBackground,
-  },
-
-  chipSelected: {
-    borderColor:
-      colors.primary,
-
-    backgroundColor:
-      colors.primary,
-  },
-
-  chipText: {
-    color: colors.textMuted,
-
+    width: 58,
+    flexShrink: 0,
+    color: colors.primaryDark,
     fontSize: 12,
+    fontWeight: "900",
+  },
+
+  filterChipList: {
+    alignItems: "center",
+    gap: 6,
+    paddingRight: 5,
+  },
+
+  filterChip: {
+    height: 30,
+    justifyContent: "center",
+    paddingHorizontal: 11,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+
+  filterChipSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
+  },
+
+  filterChipText: {
+    color: colors.textMuted,
+    fontSize: 11,
     fontWeight: "700",
   },
 
-  chipTextSelected: {
-    color:
-      colors.textOnPrimary,
+  filterChipTextSelected: {
+    color: colors.white,
   },
 
   clearButton: {
-    minHeight: 40,
-
-    alignItems: "center",
+    alignSelf: "flex-end",
+    minHeight: 30,
     justifyContent: "center",
-
-    paddingHorizontal: 13,
-
-    borderRadius: 9,
-
-    borderWidth: 1,
-
-    borderColor:
-      colors.primary,
+    paddingHorizontal: 11,
+    borderRadius: 8,
+    backgroundColor:
+      colors.surfaceMuted,
   },
 
   clearButtonText: {
     color: colors.primary,
-
-    fontSize: 12,
-    fontWeight: "800",
-  },
-
-  historyCard: {
-    padding: 21,
-
-    borderRadius: 18,
-
-    borderWidth: 1,
-
-    borderColor:
-      colors.border,
-
-    backgroundColor:
-      colors.surface,
-  },
-
-  historyHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-
-    gap: 12,
-
-    marginBottom: 18,
-  },
-
-  historyHeading: {
-    flexGrow: 1,
-    flexShrink: 1,
-  },
-
-  refreshButton: {
-    minHeight: 40,
-
-    alignItems: "center",
-    justifyContent: "center",
-
-    paddingHorizontal: 14,
-
-    borderRadius: 9,
-
-    backgroundColor:
-      colors.primary,
-  },
-
-  refreshButtonText: {
-    color:
-      colors.textOnPrimary,
-
-    fontSize: 12,
-    fontWeight: "800",
-  },
-
-  loadingBox: {
-    minHeight: 230,
-
-    alignItems: "center",
-    justifyContent: "center",
-
-    gap: 14,
-  },
-
-  loadingText: {
-    color: colors.textMuted,
-
-    fontSize: 13,
-  },
-
-  movementList: {
-    gap: 12,
-  },
-
-  movementCard: {
-    padding: 17,
-
-    borderRadius: 14,
-
-    borderWidth: 1,
-
-    borderColor:
-      colors.border,
-
-    backgroundColor:
-      colors.inputBackground,
-  },
-
-  movementTop: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-
-    gap: 12,
-  },
-
-  movementIdentity: {
-    flexShrink: 1,
-  },
-
-  movementType: {
-    color:
-      colors.primaryDark,
-
-    fontSize: 16,
-    fontWeight: "800",
-  },
-
-  movementDate: {
-    marginTop: 4,
-
-    color: colors.textMuted,
-
     fontSize: 11,
+    fontWeight: "800",
   },
 
-  quantityChange: {
-    fontSize: 22,
+  summaryBar: {
+    minHeight: 58,
+    flexDirection: "row",
+    alignItems: "stretch",
+    marginTop: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    overflow: "hidden",
+  },
+
+  summaryItem: {
+    flex: 1,
+    minWidth: 95,
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+
+  summaryDivider: {
+    width: 1,
+    backgroundColor: colors.border,
+  },
+
+  summaryLabel: {
+    color: colors.textMuted,
+    fontSize: 10,
+  },
+
+  summaryValue: {
+    marginTop: 2,
+    color: colors.primaryDark,
+    fontSize: 18,
     fontWeight: "900",
   },
 
-  productArea: {
-    marginTop: 14,
-
-    padding: 13,
-
-    borderRadius: 11,
-
-    backgroundColor:
-      colors.secondaryLight,
+  entryText: {
+    color: colors.success,
+    fontWeight: "900",
   },
 
-  productName: {
-    color:
-      colors.primaryDark,
+  exitText: {
+    color: colors.danger,
+    fontWeight: "900",
+  },
 
+  errorBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    backgroundColor: colors.dangerLight,
+  },
+
+  errorText: {
+    flex: 1,
+    color: colors.danger,
+    fontSize: 12,
+  },
+
+  retryButton: {
+    minHeight: 32,
+    justifyContent: "center",
+    paddingHorizontal: 11,
+    borderRadius: 8,
+    backgroundColor: colors.danger,
+  },
+
+  retryButtonText: {
+    color: colors.white,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+
+  tableCard: {
+    marginTop: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    overflow: "hidden",
+  },
+
+  tableTop: {
+    minHeight: 46,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+
+  tableTitle: {
+    flex: 1,
+    color: colors.primaryDark,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+
+  pageIndicator: {
+    color: colors.textMuted,
+    fontSize: 11,
+  },
+
+  table: {
+    minWidth: 1130,
+  },
+
+  tableRow: {
+    height: 56,
+    flexDirection: "row",
+    alignItems: "stretch",
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+
+  tableHeader: {
+    height: 38,
+    backgroundColor:
+      colors.surfaceMuted,
+  },
+
+  alternateRow: {
+    backgroundColor: colors.background,
+  },
+
+  tableCell: {
+    justifyContent: "center",
+    paddingHorizontal: 9,
+    borderRightWidth: 1,
+    borderRightColor: colors.border,
+  },
+
+  cellText: {
+    color: colors.text,
+    fontSize: 11,
+  },
+
+  headerText: {
+    color: colors.primaryDark,
+    fontSize: 10,
+    fontWeight: "900",
+    textTransform: "uppercase",
+  },
+
+  productText: {
+    color: colors.primaryDark,
+    fontWeight: "800",
+  },
+
+  centerText: {
+    textAlign: "center",
+    fontWeight: "800",
+  },
+
+  dateColumn: {
+    width: 150,
+  },
+
+  productColumn: {
+    width: 205,
+  },
+
+  typeColumn: {
+    width: 125,
+  },
+
+  quantityColumn: {
+    width: 85,
+  },
+
+  stockColumn: {
+    width: 75,
+  },
+
+  reasonColumn: {
+    width: 330,
+  },
+
+  actionColumn: {
+    width: 70,
+    alignItems: "center",
+  },
+
+  openButton: {
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    backgroundColor:
+      colors.primaryLight,
+  },
+
+  openButtonText: {
+    color: colors.primary,
+    fontSize: 20,
+    fontWeight: "900",
+    lineHeight: 21,
+  },
+
+  stateBox: {
+    minHeight: 150,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 18,
+  },
+
+  emptyTitle: {
+    color: colors.primaryDark,
     fontSize: 15,
     fontWeight: "800",
   },
 
-  productMeta: {
-    marginTop: 3,
-
+  stateText: {
     color: colors.textMuted,
-
-    fontSize: 11,
-  },
-
-  stockFlow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-
-    flexWrap: "wrap",
-
-    gap: 20,
-
-    marginTop: 15,
-  },
-
-  stockValueBox: {
-    minWidth: 90,
-
-    alignItems: "center",
-  },
-
-  stockLabel: {
-    color: colors.textMuted,
-
-    fontSize: 10,
-    fontWeight: "700",
-  },
-
-  stockValue: {
-    marginTop: 3,
-
-    color:
-      colors.primaryDark,
-
-    fontSize: 20,
-    fontWeight: "900",
-  },
-
-  stockArrow: {
-    color:
-      colors.secondaryDark,
-
-    fontSize: 22,
-    fontWeight: "800",
-  },
-
-  detailsBox: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-
-    gap: 20,
-
-    marginTop: 15,
-    paddingTop: 14,
-
-    borderTopWidth: 1,
-
-    borderTopColor:
-      colors.border,
-  },
-
-  detailLabel: {
-    color: colors.textMuted,
-
-    fontSize: 10,
-    fontWeight: "800",
-
-    textTransform: "uppercase",
-  },
-
-  detailValue: {
-    marginTop: 3,
-
-    color: colors.text,
-
     fontSize: 12,
+    textAlign: "center",
   },
 
   pagination: {
+    minHeight: 52,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    flexWrap: "wrap",
-
-    gap: 13,
-
-    marginTop: 22,
+    gap: 12,
+    padding: 8,
   },
 
   pageButton: {
-    minHeight: 41,
-
-    alignItems: "center",
+    minHeight: 34,
     justifyContent: "center",
-
-    paddingHorizontal: 15,
-
-    borderRadius: 9,
-
-    backgroundColor:
-      colors.primary,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
 
   pageButtonText: {
-    color:
-      colors.textOnPrimary,
-
-    fontSize: 12,
+    color: colors.primary,
+    fontSize: 11,
     fontWeight: "800",
   },
 
   pageText: {
     color: colors.textMuted,
-
-    fontSize: 12,
-    fontWeight: "700",
-  },
-
-  emptyBox: {
-    minHeight: 210,
-
-    alignItems: "center",
-    justifyContent: "center",
-
-    padding: 25,
-
-    borderRadius: 13,
-
-    borderWidth: 1,
-
-    borderColor:
-      colors.border,
-
-    backgroundColor:
-      colors.inputBackground,
-  },
-
-  emptyTitle: {
-    color:
-      colors.primaryDark,
-
-    fontSize: 16,
-    fontWeight: "800",
-  },
-
-  emptyText: {
-    marginTop: 6,
-
-    color: colors.textMuted,
-
-    fontSize: 12,
-    lineHeight: 18,
-
-    textAlign: "center",
-  },
-
-  errorBox: {
-    marginBottom: 18,
-
-    padding: 14,
-
-    borderRadius: 12,
-
-    borderWidth: 1,
-
-    borderColor:
-      colors.danger,
-
-    backgroundColor:
-      colors.dangerLight,
-  },
-
-  errorText: {
-    color: colors.danger,
-
-    fontSize: 14,
-  },
-
-  retryButton: {
-    alignSelf: "flex-start",
-
-    marginTop: 10,
-
-    paddingHorizontal: 13,
-    paddingVertical: 8,
-
-    borderRadius: 8,
-
-    backgroundColor:
-      colors.danger,
-  },
-
-  retryButtonText: {
-    color: "#FFFFFF",
-
-    fontSize: 12,
-    fontWeight: "800",
+    fontSize: 11,
   },
 
   disabledButton: {
-    opacity: 0.5,
+    opacity: 0.45,
   },
 
   pressed: {
-    opacity: 0.83,
+    opacity: 0.75,
   },
 });
