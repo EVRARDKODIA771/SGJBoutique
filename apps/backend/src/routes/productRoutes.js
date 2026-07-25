@@ -1127,7 +1127,13 @@ productRoutes.post(
           product_admin_rating:
             product.adminRating ?? null,
 
-          product_status: "draft",
+          /*
+           * Les parfums sont immédiatement
+           * utilisables après leur création.
+           * Le statut brouillon n’est plus
+           * exposé dans l’application.
+           */
+          product_status: "active",
         }
       );
 
