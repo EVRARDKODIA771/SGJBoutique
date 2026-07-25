@@ -17,6 +17,33 @@ export class ApiError extends Error {
   }
 }
 
+/*
+ * Nettoie complètement une session devenue
+ * invalide ou impossible à renouveler.
+ *
+ * Zustand est vidé immédiatement afin que les
+ * gardes Expo Router redirigent vers /login.
+ * La déconnexion Supabase locale empêche
+ * l’ancienne session d’être restaurée après
+ * une actualisation de la page.
+ */
+async function clearExpiredAuthentication() {
+  useAuthStore
+    .getState()
+    .resetAuthentication();
+
+  try {
+    await supabase.auth.signOut({
+      scope: "local",
+    });
+  } catch (error) {
+    console.warn(
+      "Expired session cleanup error:",
+      error
+    );
+  }
+}
+
 async function getAccessToken() {
   const {
     data,
@@ -24,6 +51,8 @@ async function getAccessToken() {
   } = await supabase.auth.getSession();
 
   if (error) {
+    await clearExpiredAuthentication();
+
     throw new ApiError(
       "Unable to retrieve authentication session",
       401
@@ -34,6 +63,8 @@ async function getAccessToken() {
     data.session?.access_token;
 
   if (!accessToken) {
+    await clearExpiredAuthentication();
+
     throw new ApiError(
       "Authentication required",
       401
@@ -184,6 +215,27 @@ export async function apiRequest(
         options,
         accessToken
       ));
+    }
+
+    /*
+     * Le renouvellement a échoué ou le nouveau
+     * JWT est lui aussi refusé par le backend.
+     * L’utilisateur doit recommencer depuis
+     * la page de connexion.
+     */
+    if (
+      error ||
+      !data.session?.access_token ||
+      response.status === 401
+    ) {
+      await clearExpiredAuthentication();
+
+      throw new ApiError(
+        result?.error ??
+          "Authentication session expired",
+        401,
+        result?.details ?? null
+      );
     }
   }
 
