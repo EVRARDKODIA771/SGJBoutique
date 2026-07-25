@@ -6,6 +6,7 @@ import {
 
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -16,7 +17,10 @@ import {
   View,
 } from "react-native";
 
-import { getProducts } from
+import {
+  deleteProduct,
+  getProducts,
+} from
   "../services/stockService.js";
 
 import { colors } from
@@ -34,6 +38,7 @@ function ProductCard({
   product,
   onPress,
   onEdit,
+  onDelete,
   compact = false,
 }) {
   const stockQuantity =
@@ -48,6 +53,11 @@ function ProductCard({
   function editProduct(event) {
     event?.stopPropagation?.();
     onEdit?.(product);
+  }
+
+  function requestDeletion(event) {
+    event?.stopPropagation?.();
+    onDelete?.(product);
   }
 
   if (compact) {
@@ -157,6 +167,26 @@ function ProductCard({
           </Text>
         </Pressable>
 
+        <Pressable
+          style={({ pressed }) => [
+            styles.mobileDeleteButton,
+            pressed && styles.pressed,
+          ]}
+          onPress={requestDeletion}
+          accessibilityRole="button"
+          accessibilityLabel={
+            `Supprimer ${product.name}`
+          }
+        >
+          <Text
+            style={
+              styles.mobileDeleteIcon
+            }
+          >
+            🗑
+          </Text>
+        </Pressable>
+
         <Text
           style={
             styles.mobileProductArrow
@@ -212,6 +242,24 @@ function ProductCard({
               style={styles.editIcon}
             >
               ✎
+            </Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.deleteIconButton,
+              pressed && styles.pressed,
+            ]}
+            onPress={requestDeletion}
+            accessibilityRole="button"
+            accessibilityLabel={
+              `Supprimer ${product.name}`
+            }
+          >
+            <Text
+              style={styles.deleteIcon}
+            >
+              🗑
             </Text>
           </Pressable>
         </View>
@@ -339,6 +387,14 @@ export default function ProductsScreen({
   const [errorMessage, setErrorMessage] =
     useState("");
 
+  const [
+    productPendingDeletion,
+    setProductPendingDeletion,
+  ] = useState(null);
+
+  const [isDeleting, setIsDeleting] =
+    useState(false);
+
   const loadProducts = useCallback(
     async () => {
       setErrorMessage("");
@@ -402,6 +458,40 @@ export default function ProductsScreen({
   function refreshProducts() {
     setIsRefreshing(true);
     loadProducts();
+  }
+
+  async function confirmDeletion() {
+    if (
+      !productPendingDeletion ||
+      isDeleting
+    ) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setErrorMessage("");
+
+    try {
+      await deleteProduct(
+        productPendingDeletion.id
+      );
+
+      setProductPendingDeletion(null);
+      await loadProducts();
+    } catch (error) {
+      console.error(
+        "Product deletion error:",
+        error
+      );
+
+      setProductPendingDeletion(null);
+      setErrorMessage(
+        error?.message ||
+          "Impossible de supprimer ce parfum."
+      );
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   const hasPreviousPage =
@@ -630,6 +720,9 @@ export default function ProductsScreen({
                 onEdit={
                   onEditProduct
                 }
+                onDelete={
+                  setProductPendingDeletion
+                }
               />
             ))}
           </View>
@@ -697,6 +790,85 @@ export default function ProductsScreen({
           </View>
         ) : null}
       </View>
+
+      <Modal
+        visible={
+          productPendingDeletion !== null
+        }
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!isDeleting) {
+            setProductPendingDeletion(
+              null
+            );
+          }
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>
+              Supprimer ce parfum ?
+            </Text>
+
+            <Text
+              style={styles.modalDescription}
+            >
+              «{" "}
+              {productPendingDeletion?.name}
+              {" "}» sera définitivement
+              supprimé avec ses images, son
+              historique de stock et ses
+              associations aux fournisseurs.
+            </Text>
+
+            <View style={styles.modalActions}>
+              <Pressable
+                style={styles.modalCancelButton}
+                disabled={isDeleting}
+                onPress={() =>
+                  setProductPendingDeletion(
+                    null
+                  )
+                }
+              >
+                <Text
+                  style={
+                    styles.modalCancelText
+                  }
+                >
+                  Annuler
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.modalDeleteButton,
+                  isDeleting &&
+                    styles.disabledButton,
+                ]}
+                disabled={isDeleting}
+                onPress={confirmDeletion}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={colors.white}
+                  />
+                ) : (
+                  <Text
+                    style={
+                      styles.modalDeleteText
+                    }
+                  >
+                    Supprimer définitivement
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -981,6 +1153,21 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
 
+  mobileDeleteButton: {
+    width: 30,
+    height: 30,
+    flexShrink: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+    backgroundColor: colors.dangerLight,
+  },
+
+  mobileDeleteIcon: {
+    fontSize: 14,
+    lineHeight: 17,
+  },
+
   mobileProductArrow: {
     flexShrink: 0,
     color: colors.primary,
@@ -1037,6 +1224,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 20,
     fontWeight: "900",
+  },
+
+  deleteIconButton: {
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+    backgroundColor: colors.dangerLight,
+  },
+
+  deleteIcon: {
+    fontSize: 16,
+    lineHeight: 19,
   },
 
   productPlaceholder: {
@@ -1277,6 +1478,74 @@ const styles = StyleSheet.create({
 
   disabledButton: {
     opacity: 0.4,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+    backgroundColor:
+      "rgba(20, 16, 14, 0.58)",
+  },
+
+  modalCard: {
+    width: "100%",
+    maxWidth: 470,
+    padding: 22,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+  },
+
+  modalTitle: {
+    color: colors.primaryDark,
+    fontSize: 21,
+    fontWeight: "900",
+  },
+
+  modalDescription: {
+    marginTop: 10,
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: 22,
+  },
+
+  modalCancelButton: {
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  modalCancelText: {
+    color: colors.text,
+    fontWeight: "800",
+  },
+
+  modalDeleteButton: {
+    minHeight: 44,
+    minWidth: 185,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: colors.danger,
+  },
+
+  modalDeleteText: {
+    color: colors.white,
+    fontWeight: "900",
   },
 
   pressed: {
