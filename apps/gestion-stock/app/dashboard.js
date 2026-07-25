@@ -63,6 +63,7 @@ export default function DashboardPage() {
       onNavigate={(section) => {
         const routes = {
           dashboard: "/dashboard",
+          declareSale: "/stock/sale",
           products: "/products",
           newProduct: "/products/new",
           soldProducts:
