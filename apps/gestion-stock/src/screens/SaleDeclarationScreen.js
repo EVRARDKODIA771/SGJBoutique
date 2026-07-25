@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useMemo,
   useState,
 } from "react";
 
@@ -37,6 +38,16 @@ export default function SaleDeclarationScreen({
   const [
     clientIdentifier,
     setClientIdentifier,
+  ] = useState("");
+
+  const [
+    isProductDropdownOpen,
+    setIsProductDropdownOpen,
+  ] = useState(false);
+
+  const [
+    productSearch,
+    setProductSearch,
   ] = useState("");
 
   const [quantity, setQuantity] =
@@ -99,6 +110,42 @@ export default function SaleDeclarationScreen({
         product.id ===
         selectedProductId
     ) ?? null;
+
+  const filteredProducts =
+    useMemo(() => {
+      const normalizedSearch =
+        productSearch
+          .trim()
+          .toLocaleLowerCase(
+            "fr-FR"
+          );
+
+      if (!normalizedSearch) {
+        return products;
+      }
+
+      return products.filter(
+        (product) => {
+          const searchableText = [
+            product.name,
+            product.brand,
+            product.sku,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLocaleLowerCase(
+              "fr-FR"
+            );
+
+          return searchableText.includes(
+            normalizedSearch
+          );
+        }
+      );
+    }, [
+      productSearch,
+      products,
+    ]);
 
   async function submitSale() {
     const parsedQuantity =
@@ -240,61 +287,207 @@ export default function SaleDeclarationScreen({
               stock.
             </Text>
           ) : (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={
-                false
-              }
-              contentContainerStyle={
-                styles.productList
+            <View
+              style={
+                styles.dropdownContainer
               }
             >
-              {products.map((product) => {
-                const selected =
-                  product.id ===
-                  selectedProductId;
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{
+                  expanded:
+                    isProductDropdownOpen,
+                }}
+                style={({ pressed }) => [
+                  styles.dropdownButton,
+                  isProductDropdownOpen &&
+                    styles.dropdownButtonOpen,
+                  pressed &&
+                    styles.pressed,
+                ]}
+                onPress={() => {
+                  setIsProductDropdownOpen(
+                    (current) =>
+                      !current
+                  );
 
-                return (
-                  <Pressable
-                    key={product.id}
+                  setProductSearch("");
+                }}
+              >
+                <View
+                  style={
+                    styles.dropdownButtonTextArea
+                  }
+                >
+                  <Text
                     style={[
-                      styles.productButton,
-                      selected &&
-                        styles.productButtonSelected,
+                      styles.dropdownValue,
+                      !selectedProduct &&
+                        styles.dropdownPlaceholder,
                     ]}
-                    onPress={() =>
-                      setSelectedProductId(
-                        product.id
-                      )
-                    }
+                    numberOfLines={1}
                   >
+                    {selectedProduct
+                      ? selectedProduct.name
+                      : "Choisir un parfum"}
+                  </Text>
+
+                  {selectedProduct ? (
                     <Text
-                      style={[
-                        styles.productName,
-                        selected &&
-                          styles.productNameSelected,
-                      ]}
+                      style={
+                        styles.dropdownStock
+                      }
                       numberOfLines={1}
                     >
-                      {product.name}
-                    </Text>
-
-                    <Text
-                      style={[
-                        styles.productStock,
-                        selected &&
-                          styles.productNameSelected,
-                      ]}
-                    >
-                      Stock :{" "}
+                      {selectedProduct.brand ||
+                        "Sans marque"}
+                      {" · Stock : "}
                       {
-                        product.stock_quantity
+                        selectedProduct.stock_quantity
                       }
                     </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+                  ) : null}
+                </View>
+
+                <Text
+                  style={
+                    styles.dropdownArrow
+                  }
+                >
+                  {isProductDropdownOpen
+                    ? "⌃"
+                    : "⌄"}
+                </Text>
+              </Pressable>
+
+              {isProductDropdownOpen ? (
+                <View
+                  style={
+                    styles.dropdownPanel
+                  }
+                >
+                  <TextInput
+                    style={
+                      styles.dropdownSearch
+                    }
+                    value={productSearch}
+                    onChangeText={
+                      setProductSearch
+                    }
+                    placeholder="Rechercher par nom, marque ou SKU…"
+                    placeholderTextColor={
+                      colors.textMuted
+                    }
+                    autoFocus
+                  />
+
+                  <ScrollView
+                    style={
+                      styles.dropdownList
+                    }
+                    nestedScrollEnabled
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator
+                  >
+                    {filteredProducts.length ===
+                    0 ? (
+                      <Text
+                        style={
+                          styles.dropdownEmpty
+                        }
+                      >
+                        Aucun parfum trouvé.
+                      </Text>
+                    ) : (
+                      filteredProducts.map(
+                        (product) => {
+                          const selected =
+                            product.id ===
+                            selectedProductId;
+
+                          return (
+                            <Pressable
+                              key={
+                                product.id
+                              }
+                              style={({
+                                pressed,
+                              }) => [
+                                styles.dropdownOption,
+                                selected &&
+                                  styles.dropdownOptionSelected,
+                                pressed &&
+                                  styles.pressed,
+                              ]}
+                              onPress={() => {
+                                setSelectedProductId(
+                                  product.id
+                                );
+
+                                setIsProductDropdownOpen(
+                                  false
+                                );
+
+                                setProductSearch(
+                                  ""
+                                );
+                              }}
+                            >
+                              <View
+                                style={
+                                  styles.dropdownOptionTextArea
+                                }
+                              >
+                                <Text
+                                  style={[
+                                    styles.dropdownOptionName,
+                                    selected &&
+                                      styles.dropdownOptionNameSelected,
+                                  ]}
+                                  numberOfLines={
+                                    1
+                                  }
+                                >
+                                  {
+                                    product.name
+                                  }
+                                </Text>
+
+                                <Text
+                                  style={
+                                    styles.dropdownOptionMeta
+                                  }
+                                  numberOfLines={
+                                    1
+                                  }
+                                >
+                                  {product.brand ||
+                                    "Sans marque"}
+                                  {product.sku
+                                    ? ` · ${product.sku}`
+                                    : ""}
+                                </Text>
+                              </View>
+
+                              <Text
+                                style={
+                                  styles.dropdownOptionStock
+                                }
+                              >
+                                Stock :{" "}
+                                {
+                                  product.stock_quantity
+                                }
+                              </Text>
+                            </Pressable>
+                          );
+                        }
+                      )
+                    )}
+                  </ScrollView>
+                </View>
+              ) : null}
+            </View>
           )}
 
           <Text style={styles.label}>
@@ -474,42 +667,137 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
-  productList: {
-    gap: 8,
-    paddingRight: 4,
+  dropdownContainer: {
+    position: "relative",
+    zIndex: 20,
   },
 
-  productButton: {
-    width: 150,
-    minHeight: 60,
-    justifyContent: "center",
-    paddingHorizontal: 11,
+  dropdownButton: {
+    minHeight: 54,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor:
-      colors.background,
+      colors.inputBackground,
   },
 
-  productButtonSelected: {
+  dropdownButtonOpen: {
     borderColor: colors.primary,
-    backgroundColor: colors.primary,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
   },
 
-  productName: {
+  dropdownButtonTextArea: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  dropdownValue: {
+    color: colors.primaryDark,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  dropdownPlaceholder: {
+    color: colors.textMuted,
+    fontWeight: "500",
+  },
+
+  dropdownStock: {
+    marginTop: 2,
+    color: colors.success,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+
+  dropdownArrow: {
+    color: colors.primary,
+    fontSize: 22,
+    fontWeight: "900",
+  },
+
+  dropdownPanel: {
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: colors.primary,
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    backgroundColor: colors.surface,
+    overflow: "hidden",
+  },
+
+  dropdownSearch: {
+    minHeight: 43,
+    margin: 8,
+    paddingHorizontal: 11,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor:
+      colors.background,
+    color: colors.text,
+    fontSize: 13,
+  },
+
+  dropdownList: {
+    maxHeight: 245,
+  },
+
+  dropdownOption: {
+    minHeight: 52,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+
+  dropdownOptionSelected: {
+    backgroundColor:
+      colors.primaryLight,
+  },
+
+  dropdownOptionTextArea: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  dropdownOptionName: {
     color: colors.primaryDark,
     fontSize: 12,
     fontWeight: "800",
   },
 
-  productStock: {
-    marginTop: 3,
+  dropdownOptionNameSelected: {
+    color: colors.primary,
+  },
+
+  dropdownOptionMeta: {
+    marginTop: 2,
     color: colors.textMuted,
     fontSize: 10,
   },
 
-  productNameSelected: {
-    color: colors.white,
+  dropdownOptionStock: {
+    color: colors.success,
+    fontSize: 10,
+    fontWeight: "800",
+  },
+
+  dropdownEmpty: {
+    padding: 14,
+    color: colors.textMuted,
+    fontSize: 12,
+    textAlign: "center",
   },
 
   input: {
