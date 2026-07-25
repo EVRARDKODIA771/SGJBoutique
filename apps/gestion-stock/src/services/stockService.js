@@ -223,12 +223,14 @@ export function recordStockMovement(
 
 export function getGlobalStockMovements({
   movementType,
+  direction,
   productId,
   page = 1,
   limit = 20,
 } = {}) {
   const query = buildQuery({
     movementType,
+    direction,
     productId,
     page,
     limit,
