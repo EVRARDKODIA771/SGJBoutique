@@ -940,6 +940,22 @@ export default function DashboardScreen({
           >
             <MenuButton
               compact={isCompact}
+              title="Déclarer parfum acheté par un client"
+              description="Enregistrer un parfum acheté par un client."
+              symbol="✓"
+              iconBackgroundColor={
+                colors.successLight
+              }
+              iconColor={colors.success}
+              onPress={() =>
+                onNavigate?.(
+                  "declareSale"
+                )
+              }
+            />
+
+            <MenuButton
+              compact={isCompact}
               title="Mes parfums"
               description="Créer, consulter et modifier les parfums."
               symbol="P"
