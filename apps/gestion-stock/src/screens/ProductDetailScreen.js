@@ -7,6 +7,7 @@ import {
 import {
   ActivityIndicator,
   Image,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -16,6 +17,7 @@ import {
 } from "react-native";
 
 import {
+  deleteProduct,
   getCategories,
   getProduct,
   getProductSuppliers,
@@ -92,9 +94,9 @@ export default function ProductDetailScreen({
   initialProduct,
   onBack,
   onEdit,
-  onStockMovement,
   onSuppliers,
   onProductChanged,
+  onDeleted,
 }) {
   const [product, setProduct] =
     useState(initialProduct ?? null);
@@ -116,6 +118,14 @@ export default function ProductDetailScreen({
 
   const [errorMessage, setErrorMessage] =
     useState("");
+
+  const [
+    showDeleteConfirmation,
+    setShowDeleteConfirmation,
+  ] = useState(false);
+
+  const [isDeleting, setIsDeleting] =
+    useState(false);
 
   const resolvedProductId =
     productId ?? initialProduct?.id;
@@ -227,6 +237,37 @@ export default function ProductDetailScreen({
     loadProduct();
   }
 
+  async function confirmDeletion() {
+    if (isDeleting) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setErrorMessage("");
+
+    try {
+      await deleteProduct(
+        resolvedProductId
+      );
+
+      setShowDeleteConfirmation(false);
+      onDeleted?.(product);
+    } catch (error) {
+      console.error(
+        "Product deletion error:",
+        error
+      );
+
+      setShowDeleteConfirmation(false);
+      setErrorMessage(
+        error?.message ||
+          "Impossible de supprimer ce parfum."
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   if (isLoading && !product) {
     return (
       <View style={styles.loadingScreen}>
@@ -327,22 +368,22 @@ export default function ProductDetailScreen({
 
             <Pressable
               style={({ pressed }) => [
-                styles.primaryButton,
+                styles.deleteButton,
                 pressed &&
                   styles.pressed,
               ]}
               onPress={() =>
-                onStockMovement?.(
-                  product
+                setShowDeleteConfirmation(
+                  true
                 )
               }
             >
               <Text
                 style={
-                  styles.primaryButtonText
+                  styles.deleteButtonText
                 }
               >
-                Ajouter ou retirer
+                Supprimer ce parfum
               </Text>
             </Pressable>
           </View>
@@ -683,6 +724,82 @@ export default function ProductDetailScreen({
         </View>
 
       </View>
+
+      <Modal
+        visible={showDeleteConfirmation}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!isDeleting) {
+            setShowDeleteConfirmation(
+              false
+            );
+          }
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>
+              Supprimer ce parfum ?
+            </Text>
+
+            <Text
+              style={styles.modalDescription}
+            >
+              « {product.name} » sera
+              définitivement supprimé avec
+              ses images, son historique de
+              stock et ses associations aux
+              fournisseurs.
+            </Text>
+
+            <View style={styles.modalActions}>
+              <Pressable
+                style={styles.modalCancelButton}
+                disabled={isDeleting}
+                onPress={() =>
+                  setShowDeleteConfirmation(
+                    false
+                  )
+                }
+              >
+                <Text
+                  style={
+                    styles.modalCancelText
+                  }
+                >
+                  Annuler
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.modalDeleteButton,
+                  isDeleting &&
+                    styles.disabledButton,
+                ]}
+                disabled={isDeleting}
+                onPress={confirmDeletion}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={colors.white}
+                  />
+                ) : (
+                  <Text
+                    style={
+                      styles.modalDeleteText
+                    }
+                  >
+                    Supprimer définitivement
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -786,6 +903,21 @@ const styles = StyleSheet.create({
 
   secondaryButtonText: {
     color: colors.primary,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+
+  deleteButton: {
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 17,
+    borderRadius: 10,
+    backgroundColor: colors.danger,
+  },
+
+  deleteButtonText: {
+    color: colors.white,
     fontSize: 14,
     fontWeight: "800",
   },
@@ -1118,6 +1250,78 @@ const styles = StyleSheet.create({
   confirmArchiveText: {
     color: colors.white,
     fontWeight: "800",
+  },
+
+  modalOverlay: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+    backgroundColor:
+      "rgba(20, 16, 14, 0.58)",
+  },
+
+  modalCard: {
+    width: "100%",
+    maxWidth: 470,
+    padding: 22,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+  },
+
+  modalTitle: {
+    color: colors.primaryDark,
+    fontSize: 21,
+    fontWeight: "900",
+  },
+
+  modalDescription: {
+    marginTop: 10,
+    color: colors.textMuted,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: 22,
+  },
+
+  modalCancelButton: {
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  modalCancelText: {
+    color: colors.text,
+    fontWeight: "800",
+  },
+
+  modalDeleteButton: {
+    minHeight: 44,
+    minWidth: 185,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: colors.danger,
+  },
+
+  modalDeleteText: {
+    color: colors.white,
+    fontWeight: "900",
+  },
+
+  disabledButton: {
+    opacity: 0.55,
   },
 
   pressed: {
