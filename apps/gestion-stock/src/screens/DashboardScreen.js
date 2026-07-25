@@ -42,6 +42,7 @@ function StatCard({
   accentColor,
   onPress,
   compact = false,
+  hidden = false,
 }) {
   return (
     <Pressable
@@ -83,7 +84,7 @@ function StatCard({
             styles.statValueCompact,
         ]}
       >
-        {value}
+        {hidden ? "********" : value}
       </Text>
 
       <Text
@@ -294,6 +295,11 @@ export default function DashboardScreen({
   const [isSigningOut, setIsSigningOut] =
     useState(false);
 
+  const [
+    areValuesVisible,
+    setAreValuesVisible,
+  ] = useState(true);
+
   const loadDashboard = useCallback(
     async () => {
       setErrorMessage("");
@@ -406,6 +412,8 @@ export default function DashboardScreen({
         lowStockProducts.length,
       purchaseValue,
       saleValue,
+      profit:
+        saleValue - purchaseValue,
     };
   }, [products]);
 
@@ -725,6 +733,69 @@ export default function DashboardScreen({
           </View>
         ) : null}
 
+        {isCompact ? (
+          <View
+            style={
+              styles.mobileProfitCard
+            }
+          >
+            <View
+              style={
+                styles.mobileProfitInfo
+              }
+            >
+              <Text
+                style={
+                  styles.mobileProfitLabel
+                }
+              >
+                Bénéfice :
+              </Text>
+
+              <Text
+                style={
+                  styles.mobileProfitValue
+                }
+                numberOfLines={1}
+              >
+                {areValuesVisible
+                  ? formatCurrency(
+                      statistics.profit
+                    )
+                  : "********"}
+              </Text>
+            </View>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.visibilityButton,
+                pressed && styles.pressed,
+              ]}
+              onPress={() =>
+                setAreValuesVisible(
+                  (current) => !current
+                )
+              }
+              accessibilityRole="button"
+              accessibilityLabel={
+                areValuesVisible
+                  ? "Masquer les chiffres"
+                  : "Afficher les chiffres"
+              }
+            >
+              <Text
+                style={
+                  styles.visibilityIcon
+                }
+              >
+                {areValuesVisible
+                  ? "👁"
+                  : "⊘"}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         <View
           style={[
             styles.statsGrid,
@@ -734,6 +805,10 @@ export default function DashboardScreen({
         >
           <StatCard
             compact={isCompact}
+            hidden={
+              isCompact &&
+              !areValuesVisible
+            }
             label="Parfums"
             value={productTotal}
             detail="Produits enregistrés"
@@ -745,6 +820,10 @@ export default function DashboardScreen({
 
           <StatCard
             compact={isCompact}
+            hidden={
+              isCompact &&
+              !areValuesVisible
+            }
             label="Unités en stock"
             value={
               statistics.stockQuantity
@@ -755,6 +834,10 @@ export default function DashboardScreen({
 
           <StatCard
             compact={isCompact}
+            hidden={
+              isCompact &&
+              !areValuesVisible
+            }
             label="Parfums bientôt épuisés"
             value={
               statistics.lowStockCount
@@ -772,6 +855,10 @@ export default function DashboardScreen({
 
           <StatCard
             compact={isCompact}
+            hidden={
+              isCompact &&
+              !areValuesVisible
+            }
             label="Catégories"
             value={categoryTotal}
             detail="Catégories enregistrées"
@@ -783,6 +870,10 @@ export default function DashboardScreen({
 
           <StatCard
             compact={isCompact}
+            hidden={
+              isCompact &&
+              !areValuesVisible
+            }
             label="Fournisseurs"
             value={supplierTotal}
             detail="Partenaires enregistrés"
@@ -796,6 +887,10 @@ export default function DashboardScreen({
 
           <StatCard
             compact={isCompact}
+            hidden={
+              isCompact &&
+              !areValuesVisible
+            }
             label="Valeur d’achat"
             value={formatCurrency(
               statistics.purchaseValue
@@ -806,6 +901,10 @@ export default function DashboardScreen({
 
           <StatCard
             compact={isCompact}
+            hidden={
+              isCompact &&
+              !areValuesVisible
+            }
             label="Valeur de vente"
             value={formatCurrency(
               statistics.saleValue
@@ -841,7 +940,7 @@ export default function DashboardScreen({
           >
             <MenuButton
               compact={isCompact}
-              title="Parfums"
+              title="Mes parfums"
               description="Créer, consulter et modifier les parfums."
               symbol="P"
               iconBackgroundColor={
@@ -856,7 +955,7 @@ export default function DashboardScreen({
             {isCompact ? (
               <MenuButton
                 compact
-                title="Ajouter"
+                title="Ajouter parfum"
                 description="Ajouter un nouveau parfum."
                 symbol="+"
                 iconBackgroundColor={
@@ -1283,6 +1382,60 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
+  mobileProfitCard: {
+    minHeight: 58,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 17,
+    backgroundColor:
+      colors.brandBlueDark,
+  },
+
+  mobileProfitLabel: {
+    color:
+      "rgba(255,255,255,0.78)",
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "800",
+  },
+
+  mobileProfitInfo: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  mobileProfitValue: {
+    flexShrink: 1,
+    color: colors.surface,
+    fontSize: 14,
+    lineHeight: 17,
+    fontWeight: "900",
+  },
+
+  visibilityButton: {
+    width: 38,
+    height: 38,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 19,
+    backgroundColor:
+      "rgba(255,255,255,0.16)",
+  },
+
+  visibilityIcon: {
+    color: colors.surface,
+    fontSize: 18,
+    lineHeight: 22,
+  },
+
   statsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -1347,8 +1500,8 @@ const styles = StyleSheet.create({
 
   statValueCompact: {
     marginTop: 3,
-    fontSize: 15,
-    lineHeight: 18,
+    fontSize: 13,
+    lineHeight: 16,
   },
 
   statDetail: {
@@ -1432,14 +1585,17 @@ const styles = StyleSheet.create({
     flexGrow: 0,
     flexBasis: "31%",
     maxWidth: "31%",
-    minHeight: 92,
+    minHeight: 78,
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: 7,
-    paddingHorizontal: 6,
-    paddingVertical: 9,
-    borderRadius: 16,
+    gap: 5,
+    paddingHorizontal: 2,
+    paddingVertical: 4,
+    borderRadius: 0,
+    borderWidth: 0,
+    backgroundColor:
+      "transparent",
   },
 
   menuSymbol: {
@@ -1454,9 +1610,9 @@ const styles = StyleSheet.create({
   },
 
   menuSymbolCompact: {
-    width: 42,
-    height: 42,
-    borderRadius: 13,
+    width: 48,
+    height: 48,
+    borderRadius: 15,
   },
 
   menuSymbolText: {
