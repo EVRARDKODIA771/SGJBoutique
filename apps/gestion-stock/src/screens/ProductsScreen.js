@@ -12,6 +12,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 
@@ -73,6 +74,7 @@ function getStatusInformation(status) {
 function ProductCard({
   product,
   onPress,
+  compact = false,
 }) {
   const status =
     getStatusInformation(
@@ -87,6 +89,125 @@ function ProductCard({
 
   const isLowStock =
     stockQuantity <= lowStockThreshold;
+
+  if (compact) {
+    return (
+      <Pressable
+        style={({ pressed }) => [
+          styles.mobileProductItem,
+          pressed && styles.pressed,
+        ]}
+        onPress={() =>
+          onPress?.(product)
+        }
+      >
+        <View
+          style={
+            styles.mobileProductIcon
+          }
+        >
+          <Text
+            style={
+              styles.mobileProductIconText
+            }
+          >
+            {product.name
+              ?.trim()
+              ?.charAt(0)
+              ?.toUpperCase() ?? "P"}
+          </Text>
+        </View>
+
+        <View
+          style={
+            styles.mobileProductContent
+          }
+        >
+          <View
+            style={
+              styles.mobileProductTitleRow
+            }
+          >
+            <Text
+              style={
+                styles.mobileProductName
+              }
+              numberOfLines={1}
+            >
+              {product.name}
+            </Text>
+
+            <View
+              style={[
+                styles.mobileStatusBadge,
+                {
+                  backgroundColor:
+                    status.background,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.mobileStatusText,
+                  {
+                    color: status.color,
+                  },
+                ]}
+              >
+                {status.label}
+              </Text>
+            </View>
+          </View>
+
+          <Text
+            style={
+              styles.mobileProductMeta
+            }
+            numberOfLines={1}
+          >
+            {product.brand ||
+              "Sans marque"}{" "}
+            · {product.sku}
+          </Text>
+
+          <View
+            style={
+              styles.mobileProductBottom
+            }
+          >
+            <Text
+              style={
+                styles.mobileProductPrice
+              }
+              numberOfLines={1}
+            >
+              {formatCurrency(
+                product.sale_price
+              )}
+            </Text>
+
+            <Text
+              style={[
+                styles.mobileProductStock,
+                isLowStock &&
+                  styles.lowStockValue,
+              ]}
+            >
+              Stock : {stockQuantity}
+            </Text>
+          </View>
+        </View>
+
+        <Text
+          style={
+            styles.mobileProductArrow
+          }
+        >
+          ›
+        </Text>
+      </Pressable>
+    );
+  }
 
   return (
     <Pressable
@@ -223,6 +344,12 @@ export default function ProductsScreen({
   onCreate,
   onOpenProduct,
 }) {
+  const { width } =
+    useWindowDimensions();
+
+  const isCompact =
+    width < 600;
+
   const [products, setProducts] =
     useState([]);
 
@@ -524,11 +651,18 @@ export default function ProductsScreen({
             ) : null}
           </View>
         ) : (
-          <View style={styles.productGrid}>
+          <View
+            style={[
+              styles.productGrid,
+              isCompact &&
+                styles.productGridCompact,
+            ]}
+          >
             {products.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
+                compact={isCompact}
                 onPress={
                   onOpenProduct
                 }
@@ -765,6 +899,111 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 15,
+  },
+
+  productGridCompact: {
+    gap: 6,
+  },
+
+  mobileProductItem: {
+    width: "100%",
+    minHeight: 62,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  mobileProductIcon: {
+    width: 38,
+    height: 38,
+    flexShrink: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 11,
+    backgroundColor:
+      colors.primaryLight,
+  },
+
+  mobileProductIconText: {
+    color: colors.primary,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+
+  mobileProductContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  mobileProductTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  mobileProductName: {
+    flex: 1,
+    color: colors.primaryDark,
+    fontSize: 12,
+    lineHeight: 14,
+    fontWeight: "800",
+  },
+
+  mobileStatusBadge: {
+    flexShrink: 0,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 999,
+  },
+
+  mobileStatusText: {
+    fontSize: 8,
+    lineHeight: 10,
+    fontWeight: "800",
+  },
+
+  mobileProductMeta: {
+    marginTop: 1,
+    color: colors.textMuted,
+    fontSize: 9,
+    lineHeight: 11,
+  },
+
+  mobileProductBottom: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    marginTop: 1,
+  },
+
+  mobileProductPrice: {
+    flexShrink: 1,
+    color: colors.primaryDark,
+    fontSize: 10,
+    lineHeight: 12,
+    fontWeight: "800",
+  },
+
+  mobileProductStock: {
+    flexShrink: 0,
+    color: colors.success,
+    fontSize: 9,
+    lineHeight: 11,
+    fontWeight: "800",
+  },
+
+  mobileProductArrow: {
+    flexShrink: 0,
+    color: colors.primary,
+    fontSize: 18,
+    lineHeight: 20,
   },
 
   productCard: {
