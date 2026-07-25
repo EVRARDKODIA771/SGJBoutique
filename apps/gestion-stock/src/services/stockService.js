@@ -155,6 +155,17 @@ export function archiveProduct(
   );
 }
 
+export function deleteProduct(
+  productId
+) {
+  return apiRequest(
+    `/api/admin/products/${productId}`,
+    {
+      method: "DELETE",
+    }
+  );
+}
+
 /*
  * IMAGES DES PARFUMS
  */
@@ -177,7 +188,7 @@ export function uploadProductImage(
 }
 
 /*
- * HISTORIQUE DES ENTRÃ‰ES ET SORTIES
+ * HISTORIQUE DES ENTRÉES ET SORTIES
  */
 
 export function getStockMovements(
@@ -229,7 +240,7 @@ export function getGlobalStockMovements({
 }
 
 /*
- * CATÃ‰GORIES
+ * CATÉGORIES
  */
 
 export function getCategories({
@@ -329,7 +340,7 @@ export function updateSupplier(
 }
 
 /*
- * FOURNISSEURS ASSOCIÃ‰S Ã€ UN PARFUM
+ * FOURNISSEURS ASSOCIÉS À UN PARFUM
  */
 
 export function getProductSuppliers(
