@@ -217,9 +217,15 @@ function MenuItem({
       }}
       style={({ pressed }) => [
         styles.item,
-        nested && styles.subItem,
-        active && styles.activeItem,
-        pressed && styles.pressedItem,
+
+        nested &&
+          styles.subItem,
+
+        active &&
+          styles.activeItem,
+
+        pressed &&
+          styles.pressedItem,
       ]}
       onPress={handlePress}
     >
@@ -281,21 +287,52 @@ export default function AdminSidebar({
       state.adminMembership?.role
   );
 
+  function goToDashboard() {
+    if (
+      normalizePathname(pathname) !==
+      "/dashboard"
+    ) {
+      router.push("/dashboard");
+    }
+
+    /*
+     * Sur smartphone, cela referme
+     * automatiquement le menu latéral.
+     */
+    onNavigate?.();
+  }
+
   return (
     <View style={styles.sidebar}>
       <View style={styles.brand}>
-        <Image
-          source={require(
-            "../../assets/jde-logo.png"
-          )}
-          style={styles.logo}
-          resizeMode="contain"
-          accessibilityLabel="Logo JDE Parfum d’Exception"
-        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            "Retour au tableau de bord"
+          }
+          style={({ pressed }) => [
+            styles.logoButton,
 
-        <Text style={styles.brandName}>
-          Gestion de la boutique
-        </Text>
+            pressed &&
+              styles.logoButtonPressed,
+          ]}
+          onPress={goToDashboard}
+        >
+          <Image
+            source={require(
+              "../../assets/jde-logo.png"
+            )}
+            style={styles.logo}
+            resizeMode="contain"
+            accessibilityIgnoresInvertColors
+          />
+
+          <Text
+            style={styles.brandName}
+          >
+            Gestion de la boutique
+          </Text>
+        </Pressable>
       </View>
 
       <ScrollView
@@ -395,6 +432,21 @@ const styles = StyleSheet.create({
 
     backgroundColor:
       colors.surface,
+  },
+
+  logoButton: {
+    width: "100%",
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    paddingVertical: 4,
+
+    borderRadius: 12,
+  },
+
+  logoButtonPressed: {
+    opacity: 0.72,
   },
 
   logo: {
