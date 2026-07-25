@@ -5,6 +5,8 @@ import {
 
 import {
   ActivityIndicator,
+  Alert,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,6 +14,9 @@ import {
   TextInput,
   View,
 } from "react-native";
+
+import * as ImagePicker from
+  "expo-image-picker";
 
 import {
   Controller,
@@ -28,6 +33,7 @@ import {
   getCategories,
   getSuppliers,
   updateProduct,
+  uploadProductImage,
 } from "../services/stockService.js";
 
 import { colors } from
@@ -158,6 +164,30 @@ function valueToText(value) {
   return String(value);
 }
 
+function buildImageUpload(asset) {
+  if (asset?.file) {
+    return asset.file;
+  }
+
+  const mimeType =
+    asset?.mimeType || "image/jpeg";
+
+  const extension =
+    mimeType === "image/png"
+      ? "png"
+      : mimeType === "image/webp"
+        ? "webp"
+        : "jpg";
+
+  return {
+    uri: asset.uri,
+    name:
+      asset.fileName ||
+      `parfum-${Date.now()}.${extension}`,
+    type: mimeType,
+  };
+}
+
 function FormInput({
   control,
   name,
@@ -255,6 +285,11 @@ export default function ProductFormScreen({
 
   const [requestError, setRequestError] =
     useState("");
+
+  const [
+    selectedImage,
+    setSelectedImage,
+  ] = useState(null);
 
   const {
     control,
@@ -425,6 +460,69 @@ export default function ProductFormScreen({
     };
   }, [isEditing]);
 
+  async function chooseProductImage(
+    source
+  ) {
+    setRequestError("");
+
+    try {
+      const permission =
+        source === "camera"
+          ? await ImagePicker
+              .requestCameraPermissionsAsync()
+          : await ImagePicker
+              .requestMediaLibraryPermissionsAsync();
+
+      if (!permission.granted) {
+        setRequestError(
+          source === "camera"
+            ? "Autorisez l’accès à l’appareil photo pour prendre une photo."
+            : "Autorisez l’accès aux photos pour joindre une image."
+        );
+
+        return;
+      }
+
+      const pickerOptions = {
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.82,
+      };
+
+      const result =
+        source === "camera"
+          ? await ImagePicker
+              .launchCameraAsync(
+                pickerOptions
+              )
+          : await ImagePicker
+              .launchImageLibraryAsync(
+                pickerOptions
+              );
+
+      if (
+        result.canceled ||
+        !result.assets?.[0]
+      ) {
+        return;
+      }
+
+      setSelectedImage(
+        result.assets[0]
+      );
+    } catch (error) {
+      console.error(
+        "Product image selection error:",
+        error
+      );
+
+      setRequestError(
+        "Impossible de sélectionner cette photo."
+      );
+    }
+  }
+
   async function submitProduct(values) {
     setRequestError("");
 
@@ -497,6 +595,27 @@ export default function ProductFormScreen({
             values.supplierReference
               .trim() || null,
         });
+
+      if (selectedImage) {
+        try {
+          await uploadProductImage(
+            result.product.id,
+            buildImageUpload(
+              selectedImage
+            )
+          );
+        } catch (imageError) {
+          console.error(
+            "Initial product image upload error:",
+            imageError
+          );
+
+          Alert.alert(
+            "Parfum créé",
+            "Le parfum a été créé, mais sa photo n’a pas pu être chargée. Vous pourrez la réessayer depuis sa fiche."
+          );
+        }
+      }
 
       onCreated?.(result.product);
       onSaved?.(result.product);
@@ -604,6 +723,129 @@ export default function ProductFormScreen({
             <Text style={styles.errorText}>
               {requestError}
             </Text>
+          </View>
+        ) : null}
+
+        {!isEditing ? (
+          <View style={styles.photoCard}>
+            <View
+              style={styles.photoHeading}
+            >
+              <View>
+                <Text
+                  style={
+                    styles.photoTitle
+                  }
+                >
+                  Photo du parfum
+                </Text>
+
+                <Text
+                  style={
+                    styles.photoDescription
+                  }
+                >
+                  Prenez une photo ou
+                  choisissez-en une dans
+                  votre téléphone.
+                </Text>
+              </View>
+
+              {selectedImage ? (
+                <Pressable
+                  onPress={() =>
+                    setSelectedImage(null)
+                  }
+                  disabled={isSubmitting}
+                >
+                  <Text
+                    style={
+                      styles.removePhotoText
+                    }
+                  >
+                    Retirer
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+
+            {selectedImage ? (
+              <Image
+                source={{
+                  uri: selectedImage.uri,
+                }}
+                style={styles.photoPreview}
+                resizeMode="cover"
+              />
+            ) : (
+              <View
+                style={
+                  styles.photoPlaceholder
+                }
+              >
+                <Text
+                  style={
+                    styles.photoPlaceholderIcon
+                  }
+                >
+                  ◉
+                </Text>
+
+                <Text
+                  style={
+                    styles.photoPlaceholderText
+                  }
+                >
+                  Aucune photo sélectionnée
+                </Text>
+              </View>
+            )}
+
+            <View
+              style={styles.photoActions}
+            >
+              <Pressable
+                style={({ pressed }) => [
+                  styles.cameraButton,
+                  pressed && styles.pressed,
+                ]}
+                onPress={() =>
+                  chooseProductImage(
+                    "camera"
+                  )
+                }
+                disabled={isSubmitting}
+              >
+                <Text
+                  style={
+                    styles.cameraButtonText
+                  }
+                >
+                  Prendre une photo
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.galleryButton,
+                  pressed && styles.pressed,
+                ]}
+                onPress={() =>
+                  chooseProductImage(
+                    "gallery"
+                  )
+                }
+                disabled={isSubmitting}
+              >
+                <Text
+                  style={
+                    styles.galleryButtonText
+                  }
+                >
+                  Joindre une photo
+                </Text>
+              </Pressable>
+            </View>
           </View>
         ) : null}
 
@@ -1205,6 +1447,117 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "800",
     letterSpacing: 0.4,
+  },
+
+  photoCard: {
+    marginBottom: 16,
+    padding: 18,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  photoHeading: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 14,
+  },
+
+  photoTitle: {
+    color: colors.primaryDark,
+    fontSize: 18,
+    fontWeight: "800",
+  },
+
+  photoDescription: {
+    maxWidth: 520,
+    marginTop: 4,
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+
+  removePhotoText: {
+    color: colors.danger,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  photoPreview: {
+    width: 180,
+    height: 180,
+    alignSelf: "center",
+    borderRadius: 18,
+    backgroundColor:
+      colors.surfaceMuted,
+  },
+
+  photoPlaceholder: {
+    minHeight: 110,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: colors.border,
+    backgroundColor:
+      colors.surfaceMuted,
+  },
+
+  photoPlaceholderIcon: {
+    color: colors.primary,
+    fontSize: 27,
+    fontWeight: "800",
+  },
+
+  photoPlaceholderText: {
+    color: colors.textMuted,
+    fontSize: 12,
+  },
+
+  photoActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: 14,
+  },
+
+  cameraButton: {
+    flexGrow: 1,
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 15,
+    borderRadius: 11,
+    backgroundColor: colors.primary,
+  },
+
+  cameraButtonText: {
+    color: colors.textOnPrimary,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  galleryButton: {
+    flexGrow: 1,
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 15,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: colors.surface,
+  },
+
+  galleryButtonText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: "800",
   },
 
   formCard: {
