@@ -72,10 +72,8 @@ export default function ProductDetailPage() {
           `/products/${productId}/edit`
         );
       }}
-      onStockMovement={() => {
-        router.push(
-          `/products/${productId}/stock`
-        );
+      onDeleted={() => {
+        router.replace("/products");
       }}
       onSuppliers={() => {
         router.push(
