@@ -74,6 +74,7 @@ function getStatusInformation(status) {
 function ProductCard({
   product,
   onPress,
+  onEdit,
   compact = false,
 }) {
   const status =
@@ -89,6 +90,11 @@ function ProductCard({
 
   const isLowStock =
     stockQuantity <= lowStockThreshold;
+
+  function editProduct(event) {
+    event?.stopPropagation?.();
+    onEdit?.(product);
+  }
 
   if (compact) {
     return (
@@ -198,6 +204,26 @@ function ProductCard({
           </View>
         </View>
 
+        <Pressable
+          style={({ pressed }) => [
+            styles.mobileEditButton,
+            pressed && styles.pressed,
+          ]}
+          onPress={editProduct}
+          accessibilityRole="button"
+          accessibilityLabel={
+            `Modifier ${product.name}`
+          }
+        >
+          <Text
+            style={
+              styles.mobileEditIcon
+            }
+          >
+            ✎
+          </Text>
+        </Pressable>
+
         <Text
           style={
             styles.mobileProductArrow
@@ -236,24 +262,46 @@ function ProductCard({
         </View>
 
         <View
-          style={[
-            styles.statusBadge,
-            {
-              backgroundColor:
-                status.background,
-            },
-          ]}
+          style={styles.productTopActions}
         >
-          <Text
+          <View
             style={[
-              styles.statusText,
+              styles.statusBadge,
               {
-                color: status.color,
+                backgroundColor:
+                  status.background,
               },
             ]}
           >
-            {status.label}
-          </Text>
+            <Text
+              style={[
+                styles.statusText,
+                {
+                  color: status.color,
+                },
+              ]}
+            >
+              {status.label}
+            </Text>
+          </View>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.editButton,
+              pressed && styles.pressed,
+            ]}
+            onPress={editProduct}
+            accessibilityRole="button"
+            accessibilityLabel={
+              `Modifier ${product.name}`
+            }
+          >
+            <Text
+              style={styles.editIcon}
+            >
+              ✎
+            </Text>
+          </Pressable>
         </View>
       </View>
 
@@ -343,6 +391,7 @@ export default function ProductsScreen({
   onBack,
   onCreate,
   onOpenProduct,
+  onEditProduct,
 }) {
   const { width } =
     useWindowDimensions();
@@ -665,6 +714,9 @@ export default function ProductsScreen({
                 compact={isCompact}
                 onPress={
                   onOpenProduct
+                }
+                onEdit={
+                  onEditProduct
                 }
               />
             ))}
@@ -999,6 +1051,24 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
+  mobileEditButton: {
+    width: 30,
+    height: 30,
+    flexShrink: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+    backgroundColor:
+      colors.primaryLight,
+  },
+
+  mobileEditIcon: {
+    color: colors.primary,
+    fontSize: 16,
+    lineHeight: 18,
+    fontWeight: "900",
+  },
+
   mobileProductArrow: {
     flexShrink: 0,
     color: colors.primary,
@@ -1032,6 +1102,29 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 10,
+  },
+
+  productTopActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  editButton: {
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 10,
+    backgroundColor:
+      colors.primaryLight,
+  },
+
+  editIcon: {
+    color: colors.primary,
+    fontSize: 18,
+    lineHeight: 20,
+    fontWeight: "900",
   },
 
   productPlaceholder: {
