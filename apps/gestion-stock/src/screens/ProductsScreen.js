@@ -30,58 +30,12 @@ function formatCurrency(value) {
   );
 }
 
-function getStatusInformation(status) {
-  const statuses = {
-    draft: {
-      label: "Brouillon",
-      color: colors.warning,
-      background:
-        colors.warningLight,
-    },
-
-    active: {
-      label: "Actif",
-      color: colors.success,
-      background:
-        colors.successLight,
-    },
-
-    out_of_stock: {
-      label: "Rupture",
-      color: colors.danger,
-      background:
-        colors.dangerLight,
-    },
-
-    archived: {
-      label: "Archivé",
-      color: colors.textMuted,
-      background:
-        colors.surfaceMuted,
-    },
-  };
-
-  return (
-    statuses[status] ?? {
-      label: status ?? "Inconnu",
-      color: colors.textMuted,
-      background:
-        colors.surfaceMuted,
-    }
-  );
-}
-
 function ProductCard({
   product,
   onPress,
   onEdit,
   compact = false,
 }) {
-  const status =
-    getStatusInformation(
-      product.status
-    );
-
   const stockQuantity =
     product.stock_quantity ?? 0;
 
@@ -142,27 +96,6 @@ function ProductCard({
             >
               {product.name}
             </Text>
-
-            <View
-              style={[
-                styles.mobileStatusBadge,
-                {
-                  backgroundColor:
-                    status.background,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.mobileStatusText,
-                  {
-                    color: status.color,
-                  },
-                ]}
-              >
-                {status.label}
-              </Text>
-            </View>
           </View>
 
           <Text
@@ -264,27 +197,6 @@ function ProductCard({
         <View
           style={styles.productTopActions}
         >
-          <View
-            style={[
-              styles.statusBadge,
-              {
-                backgroundColor:
-                  status.background,
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.statusText,
-                {
-                  color: status.color,
-                },
-              ]}
-            >
-              {status.label}
-            </Text>
-          </View>
-
           <Pressable
             style={({ pressed }) => [
               styles.editButton,
