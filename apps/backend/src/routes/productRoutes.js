@@ -113,6 +113,13 @@ productRoutes.get(
   async (request, response) => {
     try {
       const querySchema = z.object({
+        direction: z
+          .enum([
+            "entries",
+            "exits",
+          ])
+          .optional(),
+
         movementType: z
           .enum([
             "initial",
@@ -160,6 +167,7 @@ productRoutes.get(
       }
 
       const {
+        direction,
         movementType,
         productId,
         page,
@@ -209,6 +217,22 @@ productRoutes.get(
           );
       }
 
+      if (direction === "entries") {
+        databaseQuery =
+          databaseQuery.gt(
+            "quantity_change",
+            0
+          );
+      }
+
+      if (direction === "exits") {
+        databaseQuery =
+          databaseQuery.lt(
+            "quantity_change",
+            0
+          );
+      }
+
       if (productId) {
         databaseQuery =
           databaseQuery.eq(
@@ -236,11 +260,66 @@ productRoutes.get(
         });
       }
 
+      const performerIds = [
+        ...new Set(
+          (movements ?? [])
+            .map(
+              (movement) =>
+                movement.performed_by
+            )
+            .filter(Boolean)
+        ),
+      ];
+
+      let staffByUserId = new Map();
+
+      if (performerIds.length > 0) {
+        const {
+          data: staffProfiles,
+          error: staffError,
+        } = await supabaseAdmin
+          .from("staff_profiles")
+          .select(
+            "user_id, display_name, staff_code"
+          )
+          .in(
+            "user_id",
+            performerIds
+          );
+
+        if (staffError) {
+          console.error(
+            "Stock history staff retrieval error:",
+            staffError
+          );
+        } else {
+          staffByUserId = new Map(
+            (staffProfiles ?? []).map(
+              (staff) => [
+                staff.user_id,
+                staff,
+              ]
+            )
+          );
+        }
+      }
+
+      const enrichedMovements =
+        (movements ?? []).map(
+          (movement) => ({
+            ...movement,
+            seller:
+              staffByUserId.get(
+                movement.performed_by
+              ) ?? null,
+          })
+        );
+
       return response.status(200).json({
         success: true,
 
         movements:
-          movements ?? [],
+          enrichedMovements,
 
         pagination: {
           page,
