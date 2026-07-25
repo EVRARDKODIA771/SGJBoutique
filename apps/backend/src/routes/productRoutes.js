@@ -1952,6 +1952,119 @@ productRoutes.patch(
 );
 
 /**
+ * DELETE /api/admin/products/:productId
+ * Supprime définitivement un parfum et ses données associées.
+ */
+productRoutes.delete(
+  "/:productId",
+  async (request, response) => {
+    try {
+      const validation = z
+        .object({
+          productId: z.string().uuid(),
+        })
+        .safeParse(request.params);
+
+      if (!validation.success) {
+        return response.status(400).json({
+          success: false,
+          error: "Invalid product ID",
+        });
+      }
+
+      const { productId } =
+        validation.data;
+
+      const {
+        data: deletedProduct,
+        error,
+      } = await request.auth.supabase.rpc(
+        "delete_product",
+        {
+          target_product_id: productId,
+        }
+      );
+
+      if (error) {
+        console.error(
+          "Product deletion RPC error:",
+          error
+        );
+
+        if (
+          error.message?.includes(
+            "Product not found"
+          )
+        ) {
+          return response.status(404).json({
+            success: false,
+            error: "Product not found",
+          });
+        }
+
+        if (
+          error.message?.includes(
+            "Administrative access required"
+          )
+        ) {
+          return response.status(403).json({
+            success: false,
+            error:
+              "Your administrative role does not allow product deletion",
+          });
+        }
+
+        return response.status(500).json({
+          success: false,
+          error: "Unable to delete product",
+        });
+      }
+
+      const storagePaths =
+        deletedProduct?.storage_paths ?? [];
+
+      let storageWarning = null;
+
+      if (storagePaths.length > 0) {
+        const {
+          error: storageError,
+        } = await supabaseAdmin.storage
+          .from(PRODUCT_IMAGES_BUCKET)
+          .remove(storagePaths);
+
+        if (storageError) {
+          storageWarning =
+            "Product deleted, but some image files could not be removed";
+
+          console.warn(
+            "Deleted product image cleanup error:",
+            storageError
+          );
+        }
+      }
+
+      return response.status(200).json({
+        success: true,
+        message:
+          "Product deleted successfully",
+        deletedProduct,
+        warning: storageWarning,
+      });
+    } catch (error) {
+      console.error(
+        "Product deletion route error:",
+        error
+      );
+
+      return response.status(500).json({
+        success: false,
+        error: "Unable to delete product",
+      });
+    }
+  }
+);
+
+/**
  * POST /api/admin/products/:productId/stock-movements
  * Enregistre un mouvement de stock.
  *
