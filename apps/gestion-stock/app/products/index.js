@@ -64,6 +64,11 @@ export default function ProductsPage() {
           `/products/${product.id}`
         );
       }}
+      onEditProduct={(product) => {
+        router.push(
+          `/products/${product.id}/edit`
+        );
+      }}
     />
   );
 }
