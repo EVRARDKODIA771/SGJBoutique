@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useState,
 } from "react";
 
@@ -17,7 +16,6 @@ import {
 } from "react-native";
 
 import {
-  archiveProduct,
   getCategories,
   getProduct,
   getProductSuppliers,
@@ -47,47 +45,6 @@ function formatDate(value) {
       timeStyle: "short",
     }
   ).format(new Date(value));
-}
-
-function getStatusInformation(status) {
-  const statuses = {
-    draft: {
-      label: "Brouillon",
-      color: colors.warning,
-      background:
-        colors.warningLight,
-    },
-
-    active: {
-      label: "Actif",
-      color: colors.success,
-      background:
-        colors.successLight,
-    },
-
-    out_of_stock: {
-      label: "Rupture de stock",
-      color: colors.danger,
-      background:
-        colors.dangerLight,
-    },
-
-    archived: {
-      label: "Archivé",
-      color: colors.textMuted,
-      background:
-        colors.surfaceMuted,
-    },
-  };
-
-  return (
-    statuses[status] ?? {
-      label: status ?? "Inconnu",
-      color: colors.textMuted,
-      background:
-        colors.surfaceMuted,
-    }
-  );
 }
 
 function getMovementLabel(type) {
@@ -156,14 +113,6 @@ export default function ProductDetailScreen({
 
   const [isRefreshing, setIsRefreshing] =
     useState(false);
-
-  const [isArchiving, setIsArchiving] =
-    useState(false);
-
-  const [
-    showArchiveConfirmation,
-    setShowArchiveConfirmation,
-  ] = useState(false);
 
   const [errorMessage, setErrorMessage] =
     useState("");
@@ -270,61 +219,8 @@ export default function ProductDetailScreen({
     loadProduct();
   }, [loadProduct]);
 
-  const stockInformation = useMemo(
-    () => {
-      const quantity =
-        product?.stock_quantity ?? 0;
-
-      const threshold =
-        product?.low_stock_threshold ??
-        0;
-
-      return {
-        quantity,
-        threshold,
-        isLow: quantity <= threshold,
-      };
-    },
-    [product]
-  );
-
-  async function confirmArchive() {
-    if (!resolvedProductId) {
-      return;
-    }
-
-    setIsArchiving(true);
-    setErrorMessage("");
-
-    try {
-      const result =
-        await archiveProduct(
-          resolvedProductId
-        );
-
-      setProduct(result.product);
-
-      setShowArchiveConfirmation(
-        false
-      );
-
-      onProductChanged?.(
-        result.product
-      );
-    } catch (error) {
-      console.error(
-        "Product archive error:",
-        error
-      );
-
-      setErrorMessage(
-        error?.message ||
-          "Impossible d’archiver le parfum."
-      );
-    } finally {
-      setIsArchiving(false);
-    }
-  }
+  const stockQuantity =
+    product?.stock_quantity ?? 0;
 
   function refreshProduct() {
     setIsRefreshing(true);
@@ -373,11 +269,6 @@ export default function ProductDetailScreen({
     );
   }
 
-  const status =
-    getStatusInformation(
-      product.status
-    );
-
   const images =
     product.images ?? [];
 
@@ -415,50 +306,45 @@ export default function ProductDetailScreen({
           </Pressable>
 
           <View style={styles.topActions}>
-            {product.status !==
-            "archived" ? (
-              <>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.secondaryButton,
-                    pressed &&
-                      styles.pressed,
-                  ]}
-                  onPress={() =>
-                    onEdit?.(product)
-                  }
-                >
-                  <Text
-                    style={
-                      styles.secondaryButtonText
-                    }
-                  >
-                    Modifier
-                  </Text>
-                </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                styles.secondaryButton,
+                pressed &&
+                  styles.pressed,
+              ]}
+              onPress={() =>
+                onEdit?.(product)
+              }
+            >
+              <Text
+                style={
+                  styles.secondaryButtonText
+                }
+              >
+                ✎ Modifier
+              </Text>
+            </Pressable>
 
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.primaryButton,
-                    pressed &&
-                      styles.pressed,
-                  ]}
-                  onPress={() =>
-                    onStockMovement?.(
-                      product
-                    )
-                  }
-                >
-                  <Text
-                    style={
-                      styles.primaryButtonText
-                    }
-                  >
-                    Mouvement de stock
-                  </Text>
-                </Pressable>
-              </>
-            ) : null}
+            <Pressable
+              style={({ pressed }) => [
+                styles.primaryButton,
+                pressed &&
+                  styles.pressed,
+              ]}
+              onPress={() =>
+                onStockMovement?.(
+                  product
+                )
+              }
+            >
+              <Text
+                style={
+                  styles.primaryButtonText
+                }
+              >
+                Ajouter ou retirer
+              </Text>
+            </Pressable>
           </View>
         </View>
 
@@ -535,28 +421,6 @@ export default function ProductDetailScreen({
           </View>
 
           <View style={styles.heroContent}>
-            <View
-              style={[
-                styles.statusBadge,
-                {
-                  backgroundColor:
-                    status.background,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.statusText,
-                  {
-                    color:
-                      status.color,
-                  },
-                ]}
-              >
-                {status.label}
-              </Text>
-            </View>
-
             <Text style={styles.brand}>
               {product.brand ||
                 "Marque non renseignée"}
@@ -568,21 +432,6 @@ export default function ProductDetailScreen({
 
             <Text style={styles.sku}>
               {product.sku}
-            </Text>
-
-            {product.admin_rating !==
-            null ? (
-              <Text style={styles.rating}>
-                ★{" "}
-                {product.admin_rating} / 5
-              </Text>
-            ) : null}
-
-            <Text
-              style={styles.description}
-            >
-              {product.public_description ||
-                "Aucune description publique."}
             </Text>
           </View>
         </View>
@@ -630,52 +479,13 @@ export default function ProductDetailScreen({
 
             <InformationItem
               label="Quantité disponible"
-              value={`${stockInformation.quantity} unité${
-                stockInformation
-                  .quantity > 1
+              value={`${stockQuantity} unité${
+                stockQuantity > 1
                   ? "s"
                   : ""
               }`}
               highlight
             />
-
-            <InformationItem
-              label="Seuil d’alerte"
-              value={`${stockInformation.threshold} unité${
-                stockInformation
-                  .threshold > 1
-                  ? "s"
-                  : ""
-              }`}
-            />
-
-            <View
-              style={[
-                styles.stockAlert,
-                {
-                  backgroundColor:
-                    stockInformation.isLow
-                      ? colors.warningLight
-                      : colors.successLight,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.stockAlertText,
-                  {
-                    color:
-                      stockInformation.isLow
-                        ? colors.warning
-                        : colors.success,
-                  },
-                ]}
-              >
-                {stockInformation.isLow
-                  ? "Stock faible"
-                  : "Stock suffisant"}
-              </Text>
-            </View>
           </View>
 
           <View style={styles.detailCard}>
@@ -690,15 +500,6 @@ export default function ProductDetailScreen({
               value={
                 category?.name ||
                 "Sans catégorie"
-              }
-            />
-
-            <InformationItem
-              label="Volume"
-              value={
-                product.volume_ml
-                  ? `${product.volume_ml} ml`
-                  : "Non renseigné"
               }
             />
 
@@ -881,133 +682,6 @@ export default function ProductDetailScreen({
           )}
         </View>
 
-        {product.internal_comment ? (
-          <View style={styles.sectionCard}>
-            <Text
-              style={styles.cardTitle}
-            >
-              Commentaire interne
-            </Text>
-
-            <Text
-              style={
-                styles.commentText
-              }
-            >
-              {product.internal_comment}
-            </Text>
-          </View>
-        ) : null}
-
-        {product.status !==
-        "archived" ? (
-          <View style={styles.dangerZone}>
-            <Text
-              style={styles.dangerTitle}
-            >
-              Archivage
-            </Text>
-
-            {!showArchiveConfirmation ? (
-              <>
-                <Text
-                  style={
-                    styles.dangerDescription
-                  }
-                >
-                  Le parfum restera dans
-                  l’historique, mais ne
-                  pourra plus être modifié.
-                </Text>
-
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.archiveButton,
-                    pressed &&
-                      styles.pressed,
-                  ]}
-                  onPress={() =>
-                    setShowArchiveConfirmation(
-                      true
-                    )
-                  }
-                >
-                  <Text
-                    style={
-                      styles.archiveButtonText
-                    }
-                  >
-                    Archiver ce parfum
-                  </Text>
-                </Pressable>
-              </>
-            ) : (
-              <>
-                <Text
-                  style={
-                    styles.dangerDescription
-                  }
-                >
-                  Confirmez-vous
-                  l’archivage définitif de
-                  ce parfum ?
-                </Text>
-
-                <View
-                  style={
-                    styles.confirmationActions
-                  }
-                >
-                  <Pressable
-                    style={
-                      styles.cancelArchiveButton
-                    }
-                    onPress={() =>
-                      setShowArchiveConfirmation(
-                        false
-                      )
-                    }
-                    disabled={isArchiving}
-                  >
-                    <Text
-                      style={
-                        styles.cancelArchiveText
-                      }
-                    >
-                      Annuler
-                    </Text>
-                  </Pressable>
-
-                  <Pressable
-                    style={
-                      styles.confirmArchiveButton
-                    }
-                    onPress={
-                      confirmArchive
-                    }
-                    disabled={isArchiving}
-                  >
-                    {isArchiving ? (
-                      <ActivityIndicator
-                        color={
-                          colors.white
-                        }
-                      />
-                    ) : (
-                      <Text
-                        style={
-                          styles.confirmArchiveText
-                        }
-                      >
-                        Confirmer
-                      </Text>
-                    )}
-                  </Pressable>
-                </View>
-              </>
-            )}
-          </View>
-        ) : null}
       </View>
     </ScrollView>
   );
