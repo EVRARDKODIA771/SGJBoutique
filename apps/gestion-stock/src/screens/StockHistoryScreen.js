@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useMemo,
   useState,
 } from "react";
 
@@ -16,52 +15,16 @@ import {
 
 import {
   getGlobalStockMovements,
-  getProducts,
 } from "../services/stockService.js";
 
 import {
   colors,
 } from "../theme/colors.js";
 
-const movementTypes = [
-  {
-    value: "",
-    label: "Tous",
-  },
-  {
-    value: "initial",
-    label: "Stock initial",
-  },
-  {
-    value: "purchase",
-    label: "Achats",
-  },
-  {
-    value: "sale",
-    label: "Ventes",
-  },
-  {
-    value: "return",
-    label: "Retours",
-  },
-  {
-    value: "damage",
-    label: "Dommages",
-  },
-  {
-    value: "loss",
-    label: "Pertes",
-  },
-  {
-    value: "adjustment",
-    label: "Ajustements",
-  },
-];
-
 const movementLabels = {
   initial: "Stock initial",
-  purchase: "Achat",
-  sale: "Vente",
+  purchase: "Achat fournisseur",
+  sale: "Vente client",
   return: "Retour",
   damage: "Dommage",
   loss: "Perte",
@@ -86,71 +49,10 @@ function formatDate(value) {
   }
 }
 
-function FilterChip({
-  label,
-  selected,
-  onPress,
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{
-        selected,
-      }}
-      style={({ pressed }) => [
-        styles.filterChip,
-        selected &&
-          styles.filterChipSelected,
-        pressed && styles.pressed,
-      ]}
-      onPress={onPress}
-    >
-      <Text
-        style={[
-          styles.filterChipText,
-          selected &&
-            styles.filterChipTextSelected,
-        ]}
-        numberOfLines={1}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-function SummaryItem({
-  label,
-  value,
-  valueStyle,
-}) {
-  return (
-    <View style={styles.summaryItem}>
-      <Text
-        style={styles.summaryLabel}
-        numberOfLines={1}
-      >
-        {label}
-      </Text>
-
-      <Text
-        style={[
-          styles.summaryValue,
-          valueStyle,
-        ]}
-        numberOfLines={1}
-      >
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 function TableCell({
   style,
   textStyle,
   children,
-  numberOfLines = 1,
 }) {
   return (
     <View
@@ -164,7 +66,7 @@ function TableCell({
           styles.cellText,
           textStyle,
         ]}
-        numberOfLines={numberOfLines}
+        numberOfLines={1}
       >
         {children}
       </Text>
@@ -176,21 +78,11 @@ export default function StockHistoryScreen({
   onBack,
   onOpenProduct,
 }) {
+  const [direction, setDirection] =
+    useState("entries");
+
   const [movements, setMovements] =
     useState([]);
-
-  const [products, setProducts] =
-    useState([]);
-
-  const [
-    selectedMovementType,
-    setSelectedMovementType,
-  ] = useState("");
-
-  const [
-    selectedProductId,
-    setSelectedProductId,
-  ] = useState("");
 
   const [page, setPage] =
     useState(1);
@@ -209,51 +101,6 @@ export default function StockHistoryScreen({
   const [requestError, setRequestError] =
     useState("");
 
-  const pageTotals = useMemo(() => {
-    return movements.reduce(
-      (totals, movement) => {
-        const quantity = Number(
-          movement.quantity_change ?? 0
-        );
-
-        if (quantity > 0) {
-          totals.entries += quantity;
-        } else if (quantity < 0) {
-          totals.exits +=
-            Math.abs(quantity);
-        }
-
-        return totals;
-      },
-      {
-        entries: 0,
-        exits: 0,
-      }
-    );
-  }, [movements]);
-
-  const loadProducts = useCallback(
-    async () => {
-      try {
-        const result =
-          await getProducts({
-            page: 1,
-            limit: 100,
-          });
-
-        setProducts(
-          result.products ?? []
-        );
-      } catch (error) {
-        console.error(
-          "Stock products loading error:",
-          error
-        );
-      }
-    },
-    []
-  );
-
   const loadMovements = useCallback(
     async () => {
       setIsLoading(true);
@@ -262,14 +109,7 @@ export default function StockHistoryScreen({
       try {
         const result =
           await getGlobalStockMovements({
-            movementType:
-              selectedMovementType ||
-              undefined,
-
-            productId:
-              selectedProductId ||
-              undefined,
-
+            direction,
             page,
             limit: 20,
           });
@@ -288,13 +128,13 @@ export default function StockHistoryScreen({
         );
       } catch (error) {
         console.error(
-          "Global stock movements loading error:",
+          "Stock history loading error:",
           error
         );
 
         setRequestError(
           error?.message ||
-            "Impossible de charger l’historique des entrées et sorties."
+            "Impossible de charger l’historique."
         );
 
         setMovements([]);
@@ -303,47 +143,24 @@ export default function StockHistoryScreen({
       }
     },
     [
+      direction,
       page,
-      selectedMovementType,
-      selectedProductId,
     ]
   );
-
-  useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
 
   useEffect(() => {
     loadMovements();
   }, [loadMovements]);
 
-  function selectMovementType(
-    movementType
+  function changeDirection(
+    nextDirection
   ) {
-    setSelectedMovementType(
-      movementType
-    );
+    setDirection(nextDirection);
     setPage(1);
   }
 
-  function selectProduct(
-    productId
-  ) {
-    setSelectedProductId(
-      productId
-    );
-    setPage(1);
-  }
-
-  function clearFilters() {
-    setSelectedMovementType("");
-    setSelectedProductId("");
-    setPage(1);
-  }
-
-  const hasFilters =
-    Boolean(selectedMovementType) ||
-    Boolean(selectedProductId);
+  const isEntries =
+    direction === "entries";
 
   return (
     <ScrollView
@@ -398,143 +215,63 @@ export default function StockHistoryScreen({
           </Text>
 
           <Text style={styles.subtitle}>
-            Consultez toutes les opérations
-            enregistrées pour les parfums.
+            Choisissez les entrées ou les
+            sorties pour afficher le tableau.
           </Text>
         </View>
 
-        <View style={styles.filtersCard}>
-          <View style={styles.filterLine}>
+        <View style={styles.directionTabs}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{
+              selected: isEntries,
+            }}
+            style={({ pressed }) => [
+              styles.directionButton,
+              isEntries &&
+                styles.entryButtonSelected,
+              pressed && styles.pressed,
+            ]}
+            onPress={() =>
+              changeDirection("entries")
+            }
+          >
             <Text
-              style={styles.filterLabel}
-            >
-              Type
-            </Text>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={
-                false
-              }
-              contentContainerStyle={
-                styles.filterChipList
-              }
-            >
-              {movementTypes.map(
-                (movementType) => (
-                  <FilterChip
-                    key={
-                      movementType.value ||
-                      "all"
-                    }
-                    label={
-                      movementType.label
-                    }
-                    selected={
-                      selectedMovementType ===
-                      movementType.value
-                    }
-                    onPress={() =>
-                      selectMovementType(
-                        movementType.value
-                      )
-                    }
-                  />
-                )
-              )}
-            </ScrollView>
-          </View>
-
-          <View style={styles.filterLine}>
-            <Text
-              style={styles.filterLabel}
-            >
-              Parfum
-            </Text>
-
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={
-                false
-              }
-              contentContainerStyle={
-                styles.filterChipList
-              }
-            >
-              <FilterChip
-                label="Tous les parfums"
-                selected={
-                  selectedProductId === ""
-                }
-                onPress={() =>
-                  selectProduct("")
-                }
-              />
-
-              {products.map(
-                (product) => (
-                  <FilterChip
-                    key={product.id}
-                    label={product.name}
-                    selected={
-                      selectedProductId ===
-                      product.id
-                    }
-                    onPress={() =>
-                      selectProduct(
-                        product.id
-                      )
-                    }
-                  />
-                )
-              )}
-            </ScrollView>
-          </View>
-
-          {hasFilters ? (
-            <Pressable
-              style={({ pressed }) => [
-                styles.clearButton,
-                pressed && styles.pressed,
+              style={[
+                styles.directionButtonText,
+                isEntries &&
+                  styles.selectedButtonText,
               ]}
-              onPress={clearFilters}
             >
-              <Text
-                style={
-                  styles.clearButtonText
-                }
-              >
-                Réinitialiser les filtres
-              </Text>
-            </Pressable>
-          ) : null}
-        </View>
+              ENTRÉES
+            </Text>
+          </Pressable>
 
-        <View style={styles.summaryBar}>
-          <SummaryItem
-            label="Opérations"
-            value={pagination.total ?? 0}
-          />
-
-          <View
-            style={styles.summaryDivider}
-          />
-
-          <SummaryItem
-            label="Entrées sur la page"
-            value={`+${pageTotals.entries}`}
-            valueStyle={styles.entryText}
-          />
-
-          <View
-            style={styles.summaryDivider}
-          />
-
-          <SummaryItem
-            label="Sorties sur la page"
-            value={`−${pageTotals.exits}`}
-            valueStyle={styles.exitText}
-          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{
+              selected: !isEntries,
+            }}
+            style={({ pressed }) => [
+              styles.directionButton,
+              !isEntries &&
+                styles.exitButtonSelected,
+              pressed && styles.pressed,
+            ]}
+            onPress={() =>
+              changeDirection("exits")
+            }
+          >
+            <Text
+              style={[
+                styles.directionButtonText,
+                !isEntries &&
+                  styles.selectedButtonText,
+              ]}
+            >
+              SORTIES
+            </Text>
+          </Pressable>
         </View>
 
         {requestError ? (
@@ -544,13 +281,10 @@ export default function StockHistoryScreen({
             </Text>
 
             <Pressable
-              style={styles.retryButton}
               onPress={loadMovements}
             >
               <Text
-                style={
-                  styles.retryButtonText
-                }
+                style={styles.retryText}
               >
                 Réessayer
               </Text>
@@ -563,18 +297,20 @@ export default function StockHistoryScreen({
             <Text
               style={styles.tableTitle}
             >
-              Tableau récapitulatif
+              {isEntries
+                ? "Toutes les entrées"
+                : "Toutes les sorties"}
             </Text>
 
             <Text
-              style={styles.pageIndicator}
+              style={styles.resultCount}
             >
-              Page {pagination.page ?? page}
-              {" sur "}
-              {Math.max(
-                pagination.totalPages ?? 0,
-                1
-              )}
+              {pagination.total ?? 0}{" "}
+              opération
+              {(pagination.total ?? 0) >
+              1
+                ? "s"
+                : ""}
             </Text>
           </View>
 
@@ -596,14 +332,17 @@ export default function StockHistoryScreen({
               <Text
                 style={styles.emptyTitle}
               >
-                Aucune opération trouvée
+                Aucune opération
               </Text>
 
               <Text
                 style={styles.stateText}
               >
-                Modifiez les filtres pour
-                afficher d’autres résultats.
+                Aucune{" "}
+                {isEntries
+                  ? "entrée"
+                  : "sortie"}{" "}
+                n’a encore été enregistrée.
               </Text>
             </View>
           ) : (
@@ -625,7 +364,7 @@ export default function StockHistoryScreen({
                       styles.headerText
                     }
                   >
-                    Date
+                    Date et heure
                   </TableCell>
 
                   <TableCell
@@ -645,7 +384,7 @@ export default function StockHistoryScreen({
                       styles.headerText
                     }
                   >
-                    Type
+                    Opération
                   </TableCell>
 
                   <TableCell
@@ -656,7 +395,7 @@ export default function StockHistoryScreen({
                       styles.headerText
                     }
                   >
-                    Quantité
+                    Qté
                   </TableCell>
 
                   <TableCell
@@ -678,12 +417,21 @@ export default function StockHistoryScreen({
                   </TableCell>
 
                   <TableCell
-                    style={styles.reasonColumn}
+                    style={styles.clientColumn}
                     textStyle={
                       styles.headerText
                     }
                   >
-                    Motif ou référence
+                    Client / Référence
+                  </TableCell>
+
+                  <TableCell
+                    style={styles.sellerColumn}
+                    textStyle={
+                      styles.headerText
+                    }
+                  >
+                    Vendeuse
                   </TableCell>
 
                   <TableCell
@@ -698,23 +446,14 @@ export default function StockHistoryScreen({
 
                 {movements.map(
                   (movement, index) => {
-                    const quantity = Number(
-                      movement.quantity_change ??
-                        0
-                    );
-
-                    const isEntry =
-                      quantity > 0;
+                    const quantity =
+                      Number(
+                        movement.quantity_change ??
+                          0
+                      );
 
                     const product =
                       movement.product;
-
-                    const details = [
-                      movement.reason,
-                      movement.reference,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ");
 
                     return (
                       <View
@@ -764,7 +503,7 @@ export default function StockHistoryScreen({
                             styles.quantityColumn
                           }
                           textStyle={
-                            isEntry
+                            quantity > 0
                               ? styles.entryText
                               : styles.exitText
                           }
@@ -800,10 +539,25 @@ export default function StockHistoryScreen({
 
                         <TableCell
                           style={
-                            styles.reasonColumn
+                            styles.clientColumn
                           }
                         >
-                          {details || "—"}
+                          {movement.reference ||
+                            movement.reason ||
+                            "—"}
+                        </TableCell>
+
+                        <TableCell
+                          style={
+                            styles.sellerColumn
+                          }
+                          textStyle={
+                            styles.sellerText
+                          }
+                        >
+                          {movement.seller
+                            ?.staff_code ||
+                            "—"}
                         </TableCell>
 
                         <View
@@ -813,12 +567,6 @@ export default function StockHistoryScreen({
                           ]}
                         >
                           <Pressable
-                            accessibilityRole="button"
-                            accessibilityLabel={
-                              product
-                                ? `Ouvrir ${product.name}`
-                                : "Parfum indisponible"
-                            }
                             style={({
                               pressed,
                             }) => [
@@ -1011,122 +759,42 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
-  filtersCard: {
-    gap: 8,
-    padding: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-
-  filterLine: {
-    minHeight: 34,
+  directionTabs: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 9,
+    gap: 10,
+    marginBottom: 10,
   },
 
-  filterLabel: {
-    width: 58,
-    flexShrink: 0,
-    color: colors.primaryDark,
-    fontSize: 12,
-    fontWeight: "900",
-  },
-
-  filterChipList: {
-    alignItems: "center",
-    gap: 6,
-    paddingRight: 5,
-  },
-
-  filterChip: {
-    height: 30,
-    justifyContent: "center",
-    paddingHorizontal: 11,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-
-  filterChipSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary,
-  },
-
-  filterChipText: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: "700",
-  },
-
-  filterChipTextSelected: {
-    color: colors.white,
-  },
-
-  clearButton: {
-    alignSelf: "flex-end",
-    minHeight: 30,
-    justifyContent: "center",
-    paddingHorizontal: 11,
-    borderRadius: 8,
-    backgroundColor:
-      colors.surfaceMuted,
-  },
-
-  clearButtonText: {
-    color: colors.primary,
-    fontSize: 11,
-    fontWeight: "800",
-  },
-
-  summaryBar: {
-    minHeight: 58,
-    flexDirection: "row",
-    alignItems: "stretch",
-    marginTop: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    overflow: "hidden",
-  },
-
-  summaryItem: {
+  directionButton: {
     flex: 1,
-    minWidth: 95,
+    minHeight: 48,
+    alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
 
-  summaryDivider: {
-    width: 1,
-    backgroundColor: colors.border,
+  entryButtonSelected: {
+    borderColor: colors.success,
+    backgroundColor: colors.success,
   },
 
-  summaryLabel: {
+  exitButtonSelected: {
+    borderColor: colors.danger,
+    backgroundColor: colors.danger,
+  },
+
+  directionButtonText: {
     color: colors.textMuted,
-    fontSize: 10,
+    fontSize: 13,
+    fontWeight: "900",
+    letterSpacing: 0.7,
   },
 
-  summaryValue: {
-    marginTop: 2,
-    color: colors.primaryDark,
-    fontSize: 18,
-    fontWeight: "900",
-  },
-
-  entryText: {
-    color: colors.success,
-    fontWeight: "900",
-  },
-
-  exitText: {
-    color: colors.danger,
-    fontWeight: "900",
+  selectedButtonText: {
+    color: colors.white,
   },
 
   errorBox: {
@@ -1134,7 +802,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
-    marginTop: 10,
+    marginBottom: 10,
     padding: 10,
     borderRadius: 10,
     borderWidth: 1,
@@ -1148,22 +816,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 
-  retryButton: {
-    minHeight: 32,
-    justifyContent: "center",
-    paddingHorizontal: 11,
-    borderRadius: 8,
-    backgroundColor: colors.danger,
-  },
-
-  retryButtonText: {
-    color: colors.white,
-    fontSize: 11,
-    fontWeight: "800",
+  retryText: {
+    color: colors.danger,
+    fontSize: 12,
+    fontWeight: "900",
   },
 
   tableCard: {
-    marginTop: 10,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1189,13 +848,13 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
 
-  pageIndicator: {
+  resultCount: {
     color: colors.textMuted,
     fontSize: 11,
   },
 
   table: {
-    minWidth: 1130,
+    minWidth: 1170,
   },
 
   tableRow: {
@@ -1219,7 +878,7 @@ const styles = StyleSheet.create({
 
   tableCell: {
     justifyContent: "center",
-    paddingHorizontal: 9,
+    paddingHorizontal: 8,
     borderRightWidth: 1,
     borderRightColor: colors.border,
   },
@@ -1241,37 +900,56 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
+  sellerText: {
+    color: colors.secondaryDark,
+    fontWeight: "900",
+  },
+
+  entryText: {
+    color: colors.success,
+    fontWeight: "900",
+  },
+
+  exitText: {
+    color: colors.danger,
+    fontWeight: "900",
+  },
+
   centerText: {
     textAlign: "center",
     fontWeight: "800",
   },
 
   dateColumn: {
-    width: 150,
+    width: 145,
   },
 
   productColumn: {
-    width: 205,
+    width: 180,
   },
 
   typeColumn: {
-    width: 125,
+    width: 135,
   },
 
   quantityColumn: {
-    width: 85,
+    width: 65,
   },
 
   stockColumn: {
-    width: 75,
+    width: 65,
   },
 
-  reasonColumn: {
-    width: 330,
+  clientColumn: {
+    width: 260,
+  },
+
+  sellerColumn: {
+    width: 110,
   },
 
   actionColumn: {
-    width: 70,
+    width: 65,
     alignItems: "center",
   },
 
