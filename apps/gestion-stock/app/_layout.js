@@ -14,6 +14,7 @@ import {
 } from "react-native";
 
 import {
+  router,
   Stack,
   usePathname,
 } from "expo-router";
@@ -82,9 +83,15 @@ function isAdministrationPage(
   pathname
 ) {
   return (
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/products") ||
-    pathname.startsWith("/stock") ||
+    pathname.startsWith(
+      "/dashboard"
+    ) ||
+    pathname.startsWith(
+      "/products"
+    ) ||
+    pathname.startsWith(
+      "/stock"
+    ) ||
     pathname.startsWith(
       "/categories"
     ) ||
@@ -99,6 +106,7 @@ function isAdministrationPage(
 
 export default function RootLayout() {
   const pathname = usePathname();
+
   const { width } =
     useWindowDimensions();
 
@@ -154,17 +162,20 @@ export default function RootLayout() {
 
     const {
       data: authListener,
-    } = supabase.auth.onAuthStateChange(
-      (event, newSession) => {
-        if (event === "SIGNED_OUT") {
-          resetAuthentication();
+    } =
+      supabase.auth.onAuthStateChange(
+        (event, newSession) => {
+          if (
+            event === "SIGNED_OUT"
+          ) {
+            resetAuthentication();
 
-          return;
+            return;
+          }
+
+          setSession(newSession);
         }
-
-        setSession(newSession);
-      }
-    );
+      );
 
     return () => {
       authListener.subscription
@@ -175,9 +186,21 @@ export default function RootLayout() {
     setSession,
   ]);
 
+  /*
+   * Referme automatiquement le menu
+   * après chaque changement de page.
+   */
   useEffect(() => {
     setIsMenuOpen(false);
   }, [pathname]);
+
+  function goToDashboard() {
+    setIsMenuOpen(false);
+
+    if (pathname !== "/dashboard") {
+      router.push("/dashboard");
+    }
+  }
 
   if (isInitializing) {
     return (
@@ -225,17 +248,26 @@ export default function RootLayout() {
             <AdminSidebar />
           ) : null}
 
-          <View style={styles.mainColumn}>
+          <View
+            style={styles.mainColumn}
+          >
             {showSidebar &&
             isMobile ? (
               <View
-                style={styles.mobileHeader}
+                style={
+                  styles.mobileHeader
+                }
               >
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Ouvrir le menu"
-                  style={({ pressed }) => [
+                  accessibilityLabel={
+                    "Ouvrir le menu"
+                  }
+                  style={({
+                    pressed,
+                  }) => [
                     styles.menuButton,
+
                     pressed &&
                       styles.menuButtonPressed,
                   ]}
@@ -252,15 +284,37 @@ export default function RootLayout() {
                   </Text>
                 </Pressable>
 
-                <Image
-                  source={require(
-                    "../assets/jde-logo.png"
-                  )}
-                  style={
-                    styles.mobileLogo
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    "Retour au tableau de bord"
                   }
-                  resizeMode="contain"
-                />
+                  accessibilityHint={
+                    "Ouvre le tableau de bord"
+                  }
+                  style={({
+                    pressed,
+                  }) => [
+                    styles.mobileLogoButton,
+
+                    pressed &&
+                      styles.mobileLogoButtonPressed,
+                  ]}
+                  onPress={
+                    goToDashboard
+                  }
+                >
+                  <Image
+                    source={require(
+                      "../assets/jde-logo.png"
+                    )}
+                    style={
+                      styles.mobileLogo
+                    }
+                    resizeMode="contain"
+                    accessibilityIgnoresInvertColors
+                  />
+                </Pressable>
 
                 <Text
                   style={
@@ -276,15 +330,16 @@ export default function RootLayout() {
             <View
               style={styles.pageContent}
             >
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: {
-                  backgroundColor:
-                    colors.background,
-                },
-              }}
-            />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+
+                  contentStyle: {
+                    backgroundColor:
+                      colors.background,
+                  },
+                }}
+              />
             </View>
           </View>
 
@@ -292,11 +347,15 @@ export default function RootLayout() {
           isMobile &&
           isMenuOpen ? (
             <View
-              style={styles.drawerLayer}
+              style={
+                styles.drawerLayer
+              }
             >
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Fermer le menu"
+                accessibilityLabel={
+                  "Fermer le menu"
+                }
                 style={styles.backdrop}
                 onPress={() =>
                   setIsMenuOpen(false)
@@ -308,7 +367,9 @@ export default function RootLayout() {
               >
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Fermer le menu"
+                  accessibilityLabel={
+                    "Fermer le menu"
+                  }
                   style={
                     styles.closeButton
                   }
@@ -342,6 +403,7 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+
     backgroundColor:
       colors.background,
   },
@@ -349,6 +411,7 @@ const styles = StyleSheet.create({
   appShell: {
     flex: 1,
     flexDirection: "row",
+
     backgroundColor:
       colors.background,
   },
@@ -356,6 +419,7 @@ const styles = StyleSheet.create({
   mainColumn: {
     flex: 1,
     minWidth: 0,
+
     backgroundColor:
       colors.background,
   },
@@ -363,27 +427,39 @@ const styles = StyleSheet.create({
   pageContent: {
     flex: 1,
     minWidth: 0,
+
     backgroundColor:
       colors.background,
   },
 
   mobileHeader: {
     height: 60,
+
     flexDirection: "row",
     alignItems: "center",
+
     gap: 10,
+
     paddingHorizontal: 12,
-    backgroundColor: colors.surface,
+
+    backgroundColor:
+      colors.surface,
+
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+
+    borderBottomColor:
+      colors.border,
   },
 
   menuButton: {
     width: 42,
     height: 42,
+
     alignItems: "center",
     justifyContent: "center",
+
     borderRadius: 10,
+
     backgroundColor:
       colors.brandBlueDark,
   },
@@ -394,9 +470,27 @@ const styles = StyleSheet.create({
 
   menuButtonIcon: {
     color: colors.white,
+
     fontSize: 23,
     fontWeight: "800",
     lineHeight: 25,
+  },
+
+  mobileLogoButton: {
+    width: 52,
+    height: 44,
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    borderRadius: 9,
+  },
+
+  mobileLogoButtonPressed: {
+    opacity: 0.65,
+
+    backgroundColor:
+      colors.surfaceMuted,
   },
 
   mobileLogo: {
@@ -406,20 +500,26 @@ const styles = StyleSheet.create({
 
   mobileHeaderTitle: {
     flex: 1,
-    color: colors.brandBlueDark,
+
+    color:
+      colors.brandBlueDark,
+
     fontSize: 14,
     fontWeight: "800",
   },
 
   drawerLayer: {
     ...StyleSheet.absoluteFillObject,
+
     zIndex: 1000,
     elevation: 20,
+
     flexDirection: "row",
   },
 
   backdrop: {
     ...StyleSheet.absoluteFillObject,
+
     backgroundColor:
       "rgba(15, 35, 45, 0.58)",
   },
@@ -428,36 +528,49 @@ const styles = StyleSheet.create({
     width: "86%",
     maxWidth: 320,
     height: "100%",
+
     backgroundColor:
       colors.brandBlueDark,
+
     shadowColor: colors.shadow,
+
     shadowOffset: {
       width: 5,
       height: 0,
     },
+
     shadowOpacity: 0.28,
     shadowRadius: 14,
   },
 
   closeButton: {
     position: "absolute",
+
     top: 8,
     right: 8,
+
     zIndex: 10,
+
     width: 38,
     height: 38,
+
     alignItems: "center",
     justifyContent: "center",
+
     borderRadius: 19,
+
     backgroundColor:
       colors.brandBlueDark,
+
     borderWidth: 1,
+
     borderColor:
       "rgba(255,255,255,0.32)",
   },
 
   closeButtonText: {
     color: colors.white,
+
     fontSize: 28,
     fontWeight: "400",
     lineHeight: 30,
@@ -465,9 +578,12 @@ const styles = StyleSheet.create({
 
   loadingScreen: {
     flex: 1,
+
     alignItems: "center",
     justifyContent: "center",
+
     gap: 17,
+
     backgroundColor:
       colors.background,
   },
@@ -479,6 +595,7 @@ const styles = StyleSheet.create({
 
   loadingText: {
     color: colors.textMuted,
+
     fontSize: 14,
   },
 });
