@@ -171,6 +171,8 @@ function MenuButton({
   title,
   description,
   symbol,
+  iconBackgroundColor,
+  iconColor,
   onPress,
   compact = false,
 }) {
@@ -189,6 +191,12 @@ function MenuButton({
           styles.menuSymbol,
           compact &&
             styles.menuSymbolCompact,
+          iconBackgroundColor
+            ? {
+                backgroundColor:
+                  iconBackgroundColor,
+              }
+            : null,
         ]}
       >
         <Text
@@ -196,13 +204,24 @@ function MenuButton({
             styles.menuSymbolText,
             compact &&
               styles.menuSymbolTextCompact,
+            iconColor
+              ? {
+                  color: iconColor,
+                }
+              : null,
           ]}
         >
           {symbol}
         </Text>
       </View>
 
-      <View style={styles.menuContent}>
+      <View
+        style={[
+          styles.menuContent,
+          compact &&
+            styles.menuContentCompact,
+        ]}
+      >
         <Text
           style={[
             styles.menuTitle,
@@ -825,26 +844,138 @@ export default function DashboardScreen({
               title="Parfums"
               description="Créer, consulter et modifier les parfums."
               symbol="P"
+              iconBackgroundColor={
+                colors.primaryLight
+              }
+              iconColor={colors.primary}
               onPress={() =>
                 onNavigate?.("products")
               }
             />
 
+            {isCompact ? (
+              <MenuButton
+                compact
+                title="Ajouter"
+                description="Ajouter un nouveau parfum."
+                symbol="+"
+                iconBackgroundColor={
+                  colors.secondaryLight
+                }
+                iconColor={
+                  colors.secondaryDark
+                }
+                onPress={() =>
+                  onNavigate?.(
+                    "newProduct"
+                  )
+                }
+              />
+            ) : null}
+
+            {isCompact ? (
+              <MenuButton
+                compact
+                title="Parfums vendus"
+                description="Consulter les ventes."
+                symbol="↑"
+                iconBackgroundColor={
+                  colors.successLight
+                }
+                iconColor={
+                  colors.success
+                }
+                onPress={() =>
+                  onNavigate?.(
+                    "soldProducts"
+                  )
+                }
+              />
+            ) : null}
+
+            {isCompact ? (
+              <MenuButton
+                compact
+                title="Achats fournisseurs"
+                description="Consulter les achats."
+                symbol="↓"
+                iconBackgroundColor={
+                  colors.infoLight
+                }
+                iconColor={colors.info}
+                onPress={() =>
+                  onNavigate?.(
+                    "supplierPurchases"
+                  )
+                }
+              />
+            ) : null}
+
             <MenuButton
               compact={isCompact}
               title="Historique des entrées et sorties"
               description="Consulter les achats, ventes et ajustements du stock."
-              symbol="S"
+              symbol="⇄"
+              iconBackgroundColor={
+                colors.infoLight
+              }
+              iconColor={colors.info}
               onPress={() =>
                 onNavigate?.("stock")
               }
             />
+
+            {isCompact ? (
+              <MenuButton
+                compact
+                title="Bientôt épuisés"
+                description="Voir les parfums à surveiller."
+                symbol="!"
+                iconBackgroundColor={
+                  colors.warningLight
+                }
+                iconColor={
+                  colors.warning
+                }
+                onPress={() =>
+                  onNavigate?.(
+                    "lowStock"
+                  )
+                }
+              />
+            ) : null}
+
+            {isCompact ? (
+              <MenuButton
+                compact
+                title="Parfums épuisés"
+                description="Voir les parfums épuisés."
+                symbol="0"
+                iconBackgroundColor={
+                  colors.dangerLight
+                }
+                iconColor={
+                  colors.danger
+                }
+                onPress={() =>
+                  onNavigate?.(
+                    "outOfStock"
+                  )
+                }
+              />
+            ) : null}
 
             <MenuButton
               compact={isCompact}
               title="Catégories"
               description="Organiser le catalogue de parfums."
               symbol="C"
+              iconBackgroundColor={
+                colors.secondaryLight
+              }
+              iconColor={
+                colors.secondaryDark
+              }
               onPress={() =>
                 onNavigate?.("categories")
               }
@@ -855,6 +986,10 @@ export default function DashboardScreen({
               title="Fournisseurs"
               description="Gérer les partenaires et leurs coordonnées."
               symbol="F"
+              iconBackgroundColor={
+                colors.successLight
+              }
+              iconColor={colors.success}
               onPress={() =>
                 onNavigate?.("suppliers")
               }
@@ -1173,10 +1308,13 @@ const styles = StyleSheet.create({
   },
 
   statCardCompact: {
-    minHeight: 58,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 11,
+    flexGrow: 1,
+    flexBasis: "30%",
+    maxWidth: "32%",
+    minHeight: 76,
+    paddingHorizontal: 9,
+    paddingVertical: 8,
+    borderRadius: 13,
   },
 
   statAccent: {
@@ -1195,8 +1333,8 @@ const styles = StyleSheet.create({
   },
 
   statLabelCompact: {
-    fontSize: 10,
-    lineHeight: 12,
+    fontSize: 9,
+    lineHeight: 11,
   },
 
   statValue: {
@@ -1208,9 +1346,9 @@ const styles = StyleSheet.create({
   },
 
   statValueCompact: {
-    marginTop: 1,
-    fontSize: 18,
-    lineHeight: 21,
+    marginTop: 3,
+    fontSize: 15,
+    lineHeight: 18,
   },
 
   statDetail: {
@@ -1221,9 +1359,9 @@ const styles = StyleSheet.create({
   },
 
   statDetailCompact: {
-    marginTop: 0,
-    fontSize: 9,
-    lineHeight: 11,
+    marginTop: 2,
+    fontSize: 8,
+    lineHeight: 10,
   },
 
   statArrow: {
@@ -1246,7 +1384,7 @@ const styles = StyleSheet.create({
   },
 
   sectionCompact: {
-    marginTop: 12,
+    marginTop: 16,
   },
 
   sectionTitle: {
@@ -1258,9 +1396,9 @@ const styles = StyleSheet.create({
   },
 
   sectionTitleCompact: {
-    marginBottom: 7,
-    fontSize: 16,
-    lineHeight: 20,
+    marginBottom: 10,
+    fontSize: 17,
+    lineHeight: 21,
   },
 
   menuGrid: {
@@ -1270,7 +1408,9 @@ const styles = StyleSheet.create({
   },
 
   menuGridCompact: {
-    gap: 7,
+    justifyContent: "space-between",
+    columnGap: 7,
+    rowGap: 9,
   },
 
   menuButton: {
@@ -1289,11 +1429,17 @@ const styles = StyleSheet.create({
   },
 
   menuButtonCompact: {
-    minHeight: 52,
+    flexGrow: 0,
+    flexBasis: "31%",
+    maxWidth: "31%",
+    minHeight: 92,
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 7,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 11,
+    paddingHorizontal: 6,
+    paddingVertical: 9,
+    borderRadius: 16,
   },
 
   menuSymbol: {
@@ -1308,9 +1454,9 @@ const styles = StyleSheet.create({
   },
 
   menuSymbolCompact: {
-    width: 30,
-    height: 30,
-    borderRadius: 9,
+    width: 42,
+    height: 42,
+    borderRadius: 13,
   },
 
   menuSymbolText: {
@@ -1320,12 +1466,18 @@ const styles = StyleSheet.create({
   },
 
   menuSymbolTextCompact: {
-    fontSize: 12,
+    fontSize: 17,
   },
 
   menuContent: {
     flex: 1,
     justifyContent: "center",
+  },
+
+  menuContentCompact: {
+    flex: 0,
+    width: "100%",
+    alignItems: "center",
   },
 
   menuTitle: {
@@ -1336,8 +1488,9 @@ const styles = StyleSheet.create({
   },
 
   menuTitleCompact: {
-    fontSize: 12,
-    lineHeight: 15,
+    textAlign: "center",
+    fontSize: 10,
+    lineHeight: 12,
   },
 
   menuDescription: {
@@ -1348,9 +1501,7 @@ const styles = StyleSheet.create({
   },
 
   menuDescriptionCompact: {
-    marginTop: 1,
-    fontSize: 9,
-    lineHeight: 12,
+    display: "none",
   },
 
   menuArrow: {
@@ -1360,7 +1511,7 @@ const styles = StyleSheet.create({
   },
 
   menuArrowCompact: {
-    fontSize: 18,
+    display: "none",
   },
 
   pressed: {
