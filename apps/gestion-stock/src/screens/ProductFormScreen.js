@@ -1258,65 +1258,6 @@ export default function ProductFormScreen({
                 }
               />
             ) : null}
-
-            <FormInput
-              control={control}
-              name="lowStockThreshold"
-              label="Seuil de stock faible *"
-              placeholder="5"
-              keyboardType="numeric"
-              error={
-                errors.lowStockThreshold
-              }
-            />
-
-            <FormInput
-              control={control}
-              name="volumeMl"
-              label="Volume (ml)"
-              placeholder="100"
-              keyboardType="numeric"
-              error={errors.volumeMl}
-            />
-
-            <FormInput
-              control={control}
-              name="adminRating"
-              label="Note administrative / 5"
-              placeholder="4.5"
-              keyboardType="decimal-pad"
-              error={errors.adminRating}
-            />
-          </View>
-
-          <View style={styles.divider} />
-
-          <Text
-            style={styles.sectionTitle}
-          >
-            Descriptions
-          </Text>
-
-          <View style={styles.formGrid}>
-            <FormInput
-              control={control}
-              name="description"
-              label="Description publique"
-              placeholder="Description visible dans le catalogue…"
-              multiline
-              error={errors.description}
-            />
-
-            <FormInput
-              control={control}
-              name="internalComment"
-              label="Commentaire interne"
-              placeholder="Informations réservées à l’administration…"
-              multiline
-              error={
-                errors.internalComment
-              }
-            />
           </View>
 
           <View style={styles.actions}>
