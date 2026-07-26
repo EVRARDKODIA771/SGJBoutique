@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "JDE Parfum",
-    "slug": "gestion-stock",
+    "slug": "jdeparfum",
     "scheme": "jde-parfum",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -13,6 +13,7 @@
     "android": {
       "package": "com.jdeparfum.gestionstock",
       "versionCode": 1,
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#FAF9F7",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -51,6 +52,11 @@
           "defaultChannel": "jde-parfum"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "d3035aad-2b2d-4d58-bd58-c86235410a78"
+      }
+    }
   }
 }
