@@ -1,9 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   ActivityIndicator,
@@ -17,22 +12,14 @@ import {
   View,
 } from "react-native";
 
-import { signOut } from
-  "../services/authService.js";
+import { signOut } from "../services/authService.js";
 
-import {
-  getCategories,
-  getProducts,
-  getSuppliers,
-} from "../services/stockService.js";
+import { getProducts, getSuppliers } from "../services/stockService.js";
 
-import { colors } from
-  "../theme/colors.js";
+import { colors } from "../theme/colors.js";
 
 function formatCurrency(value) {
-  return new Intl.NumberFormat(
-    "fr-FR"
-  ).format(value ?? 0) + " FCFA";
+  return new Intl.NumberFormat("fr-FR").format(value ?? 0) + " FCFA";
 }
 
 function StatCard({
@@ -48,11 +35,8 @@ function StatCard({
     <Pressable
       style={({ pressed }) => [
         styles.statCard,
-        compact &&
-          styles.statCardCompact,
-        pressed &&
-          Boolean(onPress) &&
-          styles.pressed,
+        compact && styles.statCardCompact,
+        pressed && Boolean(onPress) && styles.pressed,
       ]}
       onPress={onPress}
       disabled={!onPress}
@@ -61,49 +45,24 @@ function StatCard({
         style={[
           styles.statAccent,
           {
-            backgroundColor:
-              accentColor,
+            backgroundColor: accentColor,
           },
         ]}
       />
 
-      <Text
-        style={[
-          styles.statLabel,
-          compact &&
-            styles.statLabelCompact,
-        ]}
-      >
+      <Text style={[styles.statLabel, compact && styles.statLabelCompact]}>
         {label}
       </Text>
 
-      <Text
-        style={[
-          styles.statValue,
-          compact &&
-            styles.statValueCompact,
-        ]}
-      >
+      <Text style={[styles.statValue, compact && styles.statValueCompact]}>
         {hidden ? "********" : value}
       </Text>
 
-      <Text
-        style={[
-          styles.statDetail,
-          compact &&
-            styles.statDetailCompact,
-        ]}
-      >
+      <Text style={[styles.statDetail, compact && styles.statDetailCompact]}>
         {detail}
       </Text>
       {onPress ? (
-        <Text
-          style={[
-            styles.statArrow,
-            compact &&
-              styles.statArrowCompact,
-          ]}
-        >
+        <Text style={[styles.statArrow, compact && styles.statArrowCompact]}>
           ›
         </Text>
       ) : null}
@@ -123,43 +82,33 @@ function SidebarItem({
       style={({ pressed }) => [
         styles.sidebarItem,
         nested && styles.sidebarSubItem,
-        active &&
-          styles.sidebarItemActive,
+        active && styles.sidebarItemActive,
         pressed && styles.sidebarPressed,
       ]}
       onPress={onPress}
     >
       {!nested ? (
         <View
-          style={[
-            styles.sidebarSymbol,
-            active &&
-              styles.sidebarSymbolActive,
-          ]}
+          style={[styles.sidebarSymbol, active && styles.sidebarSymbolActive]}
         >
           <Text
             style={[
               styles.sidebarSymbolText,
-              active &&
-                styles.sidebarSymbolTextActive,
+              active && styles.sidebarSymbolTextActive,
             ]}
           >
             {symbol}
           </Text>
         </View>
       ) : (
-        <View
-          style={styles.sidebarSubDot}
-        />
+        <View style={styles.sidebarSubDot} />
       )}
 
       <Text
         style={[
           styles.sidebarItemText,
-          nested &&
-            styles.sidebarSubItemText,
-          active &&
-            styles.sidebarItemTextActive,
+          nested && styles.sidebarSubItemText,
+          active && styles.sidebarItemTextActive,
         ]}
       >
         {label}
@@ -181,8 +130,7 @@ function MenuButton({
     <Pressable
       style={({ pressed }) => [
         styles.menuButton,
-        compact &&
-          styles.menuButtonCompact,
+        compact && styles.menuButtonCompact,
         pressed && styles.pressed,
       ]}
       onPress={onPress}
@@ -190,12 +138,10 @@ function MenuButton({
       <View
         style={[
           styles.menuSymbol,
-          compact &&
-            styles.menuSymbolCompact,
+          compact && styles.menuSymbolCompact,
           iconBackgroundColor
             ? {
-                backgroundColor:
-                  iconBackgroundColor,
+                backgroundColor: iconBackgroundColor,
               }
             : null,
         ]}
@@ -203,8 +149,7 @@ function MenuButton({
         <Text
           style={[
             styles.menuSymbolText,
-            compact &&
-              styles.menuSymbolTextCompact,
+            compact && styles.menuSymbolTextCompact,
             iconColor
               ? {
                   color: iconColor,
@@ -216,19 +161,9 @@ function MenuButton({
         </Text>
       </View>
 
-      <View
-        style={[
-          styles.menuContent,
-          compact &&
-            styles.menuContentCompact,
-        ]}
-      >
+      <View style={[styles.menuContent, compact && styles.menuContentCompact]}>
         <Text
-          style={[
-            styles.menuTitle,
-            compact &&
-              styles.menuTitleCompact,
-          ]}
+          style={[styles.menuTitle, compact && styles.menuTitleCompact]}
           numberOfLines={2}
         >
           {title}
@@ -237,8 +172,7 @@ function MenuButton({
         <Text
           style={[
             styles.menuDescription,
-            compact &&
-              styles.menuDescriptionCompact,
+            compact && styles.menuDescriptionCompact,
           ]}
           numberOfLines={2}
         >
@@ -246,13 +180,7 @@ function MenuButton({
         </Text>
       </View>
 
-      <Text
-        style={[
-          styles.menuArrow,
-          compact &&
-            styles.menuArrowCompact,
-        ]}
-      >
+      <Text style={[styles.menuArrow, compact && styles.menuArrowCompact]}>
         ›
       </Text>
     </Pressable>
@@ -265,155 +193,88 @@ export default function DashboardScreen({
   onNavigate,
   onSignedOut,
 }) {
-  const { width } =
-    useWindowDimensions();
+  const { width } = useWindowDimensions();
 
-  const isCompact =
-    width < 600;
+  const isCompact = width < 600;
 
-  const [products, setProducts] =
-    useState([]);
+  const [products, setProducts] = useState([]);
 
-  const [productTotal, setProductTotal] =
-    useState(0);
+  const [productTotal, setProductTotal] = useState(0);
 
-  const [categoryTotal, setCategoryTotal] =
-    useState(0);
+  const [supplierTotal, setSupplierTotal] = useState(0);
 
-  const [supplierTotal, setSupplierTotal] =
-    useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [isLoading, setIsLoading] =
-    useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const [isRefreshing, setIsRefreshing] =
-    useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const [errorMessage, setErrorMessage] =
-    useState("");
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
-  const [isSigningOut, setIsSigningOut] =
-    useState(false);
+  const [areValuesVisible, setAreValuesVisible] = useState(true);
 
-  const [
-    areValuesVisible,
-    setAreValuesVisible,
-  ] = useState(true);
+  const loadDashboard = useCallback(async () => {
+    setErrorMessage("");
 
-  const loadDashboard = useCallback(
-    async () => {
-      setErrorMessage("");
+    try {
+      const [productsResult, suppliersResult] = await Promise.all([
+        getProducts({
+          page: 1,
+          limit: 100,
+        }),
 
-      try {
-        const [
-          productsResult,
-          categoriesResult,
-          suppliersResult,
-        ] = await Promise.all([
-          getProducts({
-            page: 1,
-            limit: 100,
-          }),
+        getSuppliers({
+          page: 1,
+          limit: 100,
+        }),
+      ]);
 
-          getCategories({
-            page: 1,
-            limit: 100,
-          }),
+      setProducts(productsResult.products ?? []);
 
-          getSuppliers({
-            page: 1,
-            limit: 100,
-          }),
-        ]);
+      setProductTotal(productsResult.pagination?.total ?? 0);
 
-        setProducts(
-          productsResult.products ?? []
-        );
+      setSupplierTotal(suppliersResult.pagination?.total ?? 0);
+    } catch (error) {
+      console.error("Dashboard loading error:", error);
 
-        setProductTotal(
-          productsResult.pagination
-            ?.total ?? 0
-        );
-
-        setCategoryTotal(
-          categoriesResult.pagination
-            ?.total ?? 0
-        );
-
-        setSupplierTotal(
-          suppliersResult.pagination
-            ?.total ?? 0
-        );
-      } catch (error) {
-        console.error(
-          "Dashboard loading error:",
-          error
-        );
-
-        setErrorMessage(
-          "Impossible de charger les données du tableau de bord."
-        );
-      } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
-      }
-    },
-    []
-  );
+      setErrorMessage("Impossible de charger les données du tableau de bord.");
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
 
   const statistics = useMemo(() => {
-    const visibleProducts =
-      products.filter(
-        (product) =>
-          product.status !== "archived"
-      );
+    const visibleProducts = products.filter(
+      (product) => product.status !== "archived",
+    );
 
-    const stockQuantity =
-      visibleProducts.reduce(
-        (total, product) =>
-          total +
-          (product.stock_quantity ?? 0),
-        0
-      );
+    const stockQuantity = visibleProducts.reduce(
+      (total, product) => total + (product.stock_quantity ?? 0),
+      0,
+    );
 
-    const lowStockProducts =
-      visibleProducts.filter(
-        (product) =>
-          (product.stock_quantity ?? 0) <=
-          (product.low_stock_threshold ??
-            0)
-      );
+    const purchaseValue = visibleProducts.reduce(
+      (total, product) =>
+        total + (product.stock_quantity ?? 0) * (product.purchase_price ?? 0),
+      0,
+    );
 
-    const purchaseValue =
-      visibleProducts.reduce(
-        (total, product) =>
-          total +
-          (product.stock_quantity ?? 0) *
-            (product.purchase_price ?? 0),
-        0
-      );
-
-    const saleValue =
-      visibleProducts.reduce(
-        (total, product) =>
-          total +
-          (product.stock_quantity ?? 0) *
-            (product.sale_price ?? 0),
-        0
-      );
+    const saleValue = visibleProducts.reduce(
+      (total, product) =>
+        total + (product.stock_quantity ?? 0) * (product.sale_price ?? 0),
+      0,
+    );
 
     return {
       stockQuantity,
-      lowStockCount:
-        lowStockProducts.length,
       purchaseValue,
       saleValue,
-      profit:
-        saleValue - purchaseValue,
+      profit: saleValue - purchaseValue,
     };
   }, [products]);
 
@@ -424,14 +285,9 @@ export default function DashboardScreen({
       await signOut();
       onSignedOut?.();
     } catch (error) {
-      console.error(
-        "Dashboard sign out error:",
-        error
-      );
+      console.error("Dashboard sign out error:", error);
 
-      setErrorMessage(
-        "Impossible de fermer la session."
-      );
+      setErrorMessage("Impossible de fermer la session.");
 
       setIsSigningOut(false);
     }
@@ -446,199 +302,110 @@ export default function DashboardScreen({
     return (
       <View style={styles.loadingScreen}>
         <Image
-          source={require(
-            "../../assets/jde-logo.png"
-          )}
+          source={require("../../assets/jde-logo.png")}
           style={styles.loadingLogo}
           resizeMode="contain"
         />
 
-        <ActivityIndicator
-          size="large"
-          color={colors.primary}
-        />
+        <ActivityIndicator size="large" color={colors.primary} />
 
-        <Text style={styles.loadingText}>
-          Chargement du stock…
-        </Text>
+        <Text style={styles.loadingText}>Chargement du stock…</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.appShell}>
-      <View
-        style={
-          styles.dashboardLegacySidebar
-        }
-      >
+      <View style={styles.dashboardLegacySidebar}>
         <View style={styles.sidebarBrand}>
           <Image
-            source={require(
-              "../../assets/jde-logo.png"
-            )}
+            source={require("../../assets/jde-logo.png")}
             style={styles.sidebarLogo}
             resizeMode="contain"
           />
 
-          <Text style={styles.sidebarName}>
-            Gestion de la boutique
-          </Text>
+          <Text style={styles.sidebarName}>Gestion de la boutique</Text>
         </View>
 
         <ScrollView
           style={styles.sidebarScroll}
-          contentContainerStyle={
-            styles.sidebarContent
-          }
-          showsVerticalScrollIndicator={
-            false
-          }
+          contentContainerStyle={styles.sidebarContent}
+          showsVerticalScrollIndicator={false}
         >
           <SidebarItem
             label="Tableau de bord"
             symbol="T"
             active
-            onPress={() =>
-              onNavigate?.("dashboard")
-            }
+            onPress={() => onNavigate?.("dashboard")}
           />
 
-          <Text
-            style={styles.sidebarSection}
-          >
-            PARFUMS
-          </Text>
+          <Text style={styles.sidebarSection}>PARFUMS</Text>
 
           <SidebarItem
             label="Tous les parfums"
             nested
-            onPress={() =>
-              onNavigate?.("products")
-            }
+            onPress={() => onNavigate?.("products")}
           />
 
           <SidebarItem
             label="Ajouter un parfum"
             nested
-            onPress={() =>
-              onNavigate?.("newProduct")
-            }
+            onPress={() => onNavigate?.("newProduct")}
           />
 
           <SidebarItem
             label="Parfums vendus"
             nested
-            onPress={() =>
-              onNavigate?.(
-                "soldProducts"
-              )
-            }
+            onPress={() => onNavigate?.("soldProducts")}
           />
 
           <SidebarItem
             label="Parfums achetés chez les fournisseurs"
             nested
-            onPress={() =>
-              onNavigate?.(
-                "supplierPurchases"
-              )
-            }
+            onPress={() => onNavigate?.("supplierPurchases")}
           />
 
-          <Text
-            style={styles.sidebarSection}
-          >
-            GESTION DU STOCK
-          </Text>
+          <Text style={styles.sidebarSection}>GESTION DU STOCK</Text>
 
           <SidebarItem
             label="Ajouter ou retirer des parfums"
             nested
-            onPress={() =>
-              onNavigate?.("stock")
-            }
+            onPress={() => onNavigate?.("stock")}
           />
 
           <SidebarItem
             label="Historique des entrées et sorties"
             nested
-            onPress={() =>
-              onNavigate?.("stock")
-            }
+            onPress={() => onNavigate?.("stock")}
           />
 
-          <SidebarItem
-            label="Parfums bientôt épuisés"
-            nested
-            onPress={() =>
-              onNavigate?.("lowStock")
-            }
-          />
-
-          <SidebarItem
-            label="Parfums épuisés"
-            nested
-            onPress={() =>
-              onNavigate?.("outOfStock")
-            }
-          />
-
-          <Text
-            style={styles.sidebarSection}
-          >
-            ORGANISATION
-          </Text>
-
-          <SidebarItem
-            label="Catégories"
-            symbol="C"
-            onPress={() =>
-              onNavigate?.("categories")
-            }
-          />
+          <Text style={styles.sidebarSection}>ORGANISATION</Text>
 
           <SidebarItem
             label="Fournisseurs"
             symbol="F"
-            onPress={() =>
-              onNavigate?.("suppliers")
-            }
+            onPress={() => onNavigate?.("suppliers")}
           />
 
-          <Text
-            style={styles.sidebarSection}
-          >
-            ADMINISTRATION
-          </Text>
+          <Text style={styles.sidebarSection}>ADMINISTRATION</Text>
 
           <SidebarItem
             label="Demandes d’accès"
             nested
-            onPress={() =>
-              onNavigate?.(
-                "accessRequests"
-              )
-            }
+            onPress={() => onNavigate?.("accessRequests")}
           />
 
           <SidebarItem
             label="Utilisateurs autorisés"
             nested
-            onPress={() =>
-              onNavigate?.(
-                "authorizedUsers"
-              )
-            }
+            onPress={() => onNavigate?.("authorizedUsers")}
           />
         </ScrollView>
       </View>
 
       <ScrollView
         style={styles.screen}
-        contentContainerStyle={
-          styles.scrollContent
-        }
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -649,468 +416,180 @@ export default function DashboardScreen({
         }
       >
         <View style={styles.container}>
-        <View style={styles.header}>
-          <Image
-            source={require(
-              "../../assets/jde-logo.png"
-            )}
-            style={styles.headerLogo}
-            resizeMode="contain"
-          />
+          <View style={styles.header}>
+            <Image
+              source={require("../../assets/jde-logo.png")}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
 
-          <View style={styles.headerActions}>
-            <View style={styles.userBox}>
-              <Text
-                style={styles.userEmail}
-                numberOfLines={1}
-              >
-                {user?.email ??
-                  "Administrateur"}
-              </Text>
-
-              <Text style={styles.userRole}>
-                {membership?.role ??
-                  "administrateur"}
-              </Text>
-            </View>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.logoutButton,
-                pressed && styles.pressed,
-              ]}
-              onPress={handleSignOut}
-              disabled={isSigningOut}
-            >
-              {isSigningOut ? (
-                <ActivityIndicator
-                  size="small"
-                  color={colors.primary}
-                />
-              ) : (
-                <Text
-                  style={
-                    styles.logoutButtonText
-                  }
-                >
-                  Déconnexion
+            <View style={styles.headerActions}>
+              <View style={styles.userBox}>
+                <Text style={styles.userEmail} numberOfLines={1}>
+                  {user?.email ?? "Administrateur"}
                 </Text>
-              )}
-            </Pressable>
+
+                <Text style={styles.userRole}>
+                  {membership?.role ?? "administrateur"}
+                </Text>
+              </View>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.logoutButton,
+                  pressed && styles.pressed,
+                ]}
+                onPress={handleSignOut}
+                disabled={isSigningOut}
+              >
+                {isSigningOut ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <Text style={styles.logoutButtonText}>Déconnexion</Text>
+                )}
+              </Pressable>
+            </View>
           </View>
-        </View>
 
-        <View style={styles.welcome}>
-          <Text style={styles.eyebrow}>
-            ESPACE ADMINISTRATIF
-          </Text>
+          <View style={styles.welcome}>
+            <Text style={styles.eyebrow}>ESPACE ADMINISTRATIF</Text>
 
-          <Text style={styles.title}>
-            Tableau de bord
-          </Text>
+            <Text style={styles.title}>Tableau de bord</Text>
 
-          <Text style={styles.subtitle}>
-            Vue d’ensemble du catalogue et
-            du stock JDE.
-          </Text>
-        </View>
+            <Text style={styles.subtitle}>
+              Vue d’ensemble du catalogue et du stock JDE.
+            </Text>
+          </View>
 
-        {errorMessage ? (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>
-              {errorMessage}
+          {errorMessage ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{errorMessage}</Text>
+
+              <Pressable onPress={loadDashboard}>
+                <Text style={styles.retryText}>Réessayer</Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {isCompact ? (
+            <View style={styles.mobileProfitCard}>
+              <View style={styles.mobileProfitInfo}>
+                <Text style={styles.mobileProfitLabel}>Bénéfice :</Text>
+
+                <Text style={styles.mobileProfitValue} numberOfLines={1}>
+                  {areValuesVisible
+                    ? formatCurrency(statistics.profit)
+                    : "********"}
+                </Text>
+              </View>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.visibilityButton,
+                  pressed && styles.pressed,
+                ]}
+                onPress={() => setAreValuesVisible((current) => !current)}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  areValuesVisible
+                    ? "Masquer les chiffres"
+                    : "Afficher les chiffres"
+                }
+              >
+                <Text style={styles.visibilityIcon}>
+                  {areValuesVisible ? "👁" : "⊘"}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          <View
+            style={[styles.statsGrid, isCompact && styles.statsGridCompact]}
+          >
+            <StatCard
+              compact={isCompact}
+              hidden={isCompact && !areValuesVisible}
+              label="Parfums"
+              value={productTotal}
+              detail="Produits enregistrés"
+              accentColor={colors.primary}
+              onPress={() => onNavigate?.("products")}
+            />
+
+            <StatCard
+              compact={isCompact}
+              hidden={isCompact && !areValuesVisible}
+              label="Unités en stock"
+              value={statistics.stockQuantity}
+              detail="Quantité disponible"
+              accentColor={colors.gold}
+            />
+
+            <StatCard
+              compact={isCompact}
+              hidden={isCompact && !areValuesVisible}
+              label="Fournisseurs"
+              value={supplierTotal}
+              detail="Partenaires enregistrés"
+              accentColor={colors.secondaryDark}
+              onPress={() => onNavigate?.("suppliers")}
+            />
+          </View>
+
+          <View style={[styles.section, isCompact && styles.sectionCompact]}>
+            <Text
+              style={[
+                styles.sectionTitle,
+                isCompact && styles.sectionTitleCompact,
+              ]}
+            >
+              Gestion rapide
             </Text>
 
-            <Pressable
-              onPress={loadDashboard}
-            >
-              <Text
-                style={styles.retryText}
-              >
-                Réessayer
-              </Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        {isCompact ? (
-          <View
-            style={
-              styles.mobileProfitCard
-            }
-          >
             <View
-              style={
-                styles.mobileProfitInfo
-              }
+              style={[styles.menuGrid, isCompact && styles.menuGridCompact]}
             >
-              <Text
-                style={
-                  styles.mobileProfitLabel
-                }
-              >
-                Bénéfice :
-              </Text>
-
-              <Text
-                style={
-                  styles.mobileProfitValue
-                }
-                numberOfLines={1}
-              >
-                {areValuesVisible
-                  ? formatCurrency(
-                      statistics.profit
-                    )
-                  : "********"}
-              </Text>
-            </View>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.visibilityButton,
-                pressed && styles.pressed,
-              ]}
-              onPress={() =>
-                setAreValuesVisible(
-                  (current) => !current
-                )
-              }
-              accessibilityRole="button"
-              accessibilityLabel={
-                areValuesVisible
-                  ? "Masquer les chiffres"
-                  : "Afficher les chiffres"
-              }
-            >
-              <Text
-                style={
-                  styles.visibilityIcon
-                }
-              >
-                {areValuesVisible
-                  ? "👁"
-                  : "⊘"}
-              </Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        <View
-          style={[
-            styles.statsGrid,
-            isCompact &&
-              styles.statsGridCompact,
-          ]}
-        >
-          <StatCard
-            compact={isCompact}
-            hidden={
-              isCompact &&
-              !areValuesVisible
-            }
-            label="Parfums"
-            value={productTotal}
-            detail="Produits enregistrés"
-            accentColor={colors.primary}
-            onPress={() =>
-              onNavigate?.("products")
-            }
-          />
-
-          <StatCard
-            compact={isCompact}
-            hidden={
-              isCompact &&
-              !areValuesVisible
-            }
-            label="Unités en stock"
-            value={
-              statistics.stockQuantity
-            }
-            detail="Quantité disponible"
-            accentColor={colors.gold}
-          />
-
-          <StatCard
-            compact={isCompact}
-            hidden={
-              isCompact &&
-              !areValuesVisible
-            }
-            label="Parfums bientôt épuisés"
-            value={
-              statistics.lowStockCount
-            }
-            detail="Parfums à surveiller"
-            accentColor={
-              statistics.lowStockCount > 0
-                ? colors.warning
-                : colors.success
-            }
-            onPress={() =>
-              onNavigate?.("lowStock")
-            }
-          />
-
-          <StatCard
-            compact={isCompact}
-            hidden={
-              isCompact &&
-              !areValuesVisible
-            }
-            label="Catégories"
-            value={categoryTotal}
-            detail="Catégories enregistrées"
-            accentColor={colors.info}
-            onPress={() =>
-              onNavigate?.("categories")
-            }
-          />
-
-          <StatCard
-            compact={isCompact}
-            hidden={
-              isCompact &&
-              !areValuesVisible
-            }
-            label="Fournisseurs"
-            value={supplierTotal}
-            detail="Partenaires enregistrés"
-            accentColor={
-              colors.secondaryDark
-            }
-            onPress={() =>
-              onNavigate?.("suppliers")
-            }
-          />
-
-          <StatCard
-            compact={isCompact}
-            hidden={
-              isCompact &&
-              !areValuesVisible
-            }
-            label="Valeur d’achat"
-            value={formatCurrency(
-              statistics.purchaseValue
-            )}
-            detail="Valeur du stock au coût"
-            accentColor={colors.primary}
-          />
-
-          <StatCard
-            compact={isCompact}
-            hidden={
-              isCompact &&
-              !areValuesVisible
-            }
-            label="Valeur de vente"
-            value={formatCurrency(
-              statistics.saleValue
-            )}
-            detail="Potentiel du stock"
-            accentColor={colors.success}
-          />
-        </View>
-
-        <View
-          style={[
-            styles.section,
-            isCompact &&
-              styles.sectionCompact,
-          ]}
-        >
-          <Text
-            style={[
-              styles.sectionTitle,
-              isCompact &&
-                styles.sectionTitleCompact,
-            ]}
-          >
-            Gestion rapide
-          </Text>
-
-          <View
-            style={[
-              styles.menuGrid,
-              isCompact &&
-                styles.menuGridCompact,
-            ]}
-          >
-            <MenuButton
-              compact={isCompact}
-              title="Déclarer parfum acheté par un client"
-              description="Enregistrer un parfum acheté par un client."
-              symbol="✓"
-              iconBackgroundColor={
-                colors.successLight
-              }
-              iconColor={colors.success}
-              onPress={() =>
-                onNavigate?.(
-                  "declareSale"
-                )
-              }
-            />
-
-            <MenuButton
-              compact={isCompact}
-              title="Mes parfums"
-              description="Créer, consulter et modifier les parfums."
-              symbol="P"
-              iconBackgroundColor={
-                colors.primaryLight
-              }
-              iconColor={colors.primary}
-              onPress={() =>
-                onNavigate?.("products")
-              }
-            />
-
-            {isCompact ? (
               <MenuButton
-                compact
+                compact={isCompact}
+                title="Déclarer parfum acheté par un client"
+                description="Enregistrer un parfum acheté par un client."
+                symbol="✓"
+                iconBackgroundColor={colors.successLight}
+                iconColor={colors.success}
+                onPress={() => onNavigate?.("declareSale")}
+              />
+
+              <MenuButton
+                compact={isCompact}
+                title="Mes parfums"
+                description="Créer, consulter et modifier les parfums."
+                symbol="P"
+                iconBackgroundColor={colors.primaryLight}
+                iconColor={colors.primary}
+                onPress={() => onNavigate?.("products")}
+              />
+
+              <MenuButton
+                compact={isCompact}
                 title="Ajouter parfum"
                 description="Ajouter un nouveau parfum."
                 symbol="+"
-                iconBackgroundColor={
-                  colors.secondaryLight
-                }
-                iconColor={
-                  colors.secondaryDark
-                }
-                onPress={() =>
-                  onNavigate?.(
-                    "newProduct"
-                  )
-                }
+                iconBackgroundColor={colors.secondaryLight}
+                iconColor={colors.secondaryDark}
+                onPress={() => onNavigate?.("newProduct")}
               />
-            ) : null}
 
-            {isCompact ? (
               <MenuButton
-                compact
-                title="Parfums vendus"
-                description="Consulter les ventes."
-                symbol="↑"
-                iconBackgroundColor={
-                  colors.successLight
-                }
-                iconColor={
-                  colors.success
-                }
-                onPress={() =>
-                  onNavigate?.(
-                    "soldProducts"
-                  )
-                }
-              />
-            ) : null}
-
-            {isCompact ? (
-              <MenuButton
-                compact
-                title="Achats fournisseurs"
-                description="Consulter les achats."
-                symbol="↓"
-                iconBackgroundColor={
-                  colors.infoLight
-                }
+                compact={isCompact}
+                title="Historique des entrées et sorties"
+                description="Consulter les achats, ventes et ajustements du stock."
+                symbol="⇄"
+                iconBackgroundColor={colors.infoLight}
                 iconColor={colors.info}
-                onPress={() =>
-                  onNavigate?.(
-                    "supplierPurchases"
-                  )
-                }
+                onPress={() => onNavigate?.("stock")}
               />
-            ) : null}
-
-            <MenuButton
-              compact={isCompact}
-              title="Historique des entrées et sorties"
-              description="Consulter les achats, ventes et ajustements du stock."
-              symbol="⇄"
-              iconBackgroundColor={
-                colors.infoLight
-              }
-              iconColor={colors.info}
-              onPress={() =>
-                onNavigate?.("stock")
-              }
-            />
-
-            {isCompact ? (
-              <MenuButton
-                compact
-                title="Bientôt épuisés"
-                description="Voir les parfums à surveiller."
-                symbol="!"
-                iconBackgroundColor={
-                  colors.warningLight
-                }
-                iconColor={
-                  colors.warning
-                }
-                onPress={() =>
-                  onNavigate?.(
-                    "lowStock"
-                  )
-                }
-              />
-            ) : null}
-
-            {isCompact ? (
-              <MenuButton
-                compact
-                title="Parfums épuisés"
-                description="Voir les parfums épuisés."
-                symbol="0"
-                iconBackgroundColor={
-                  colors.dangerLight
-                }
-                iconColor={
-                  colors.danger
-                }
-                onPress={() =>
-                  onNavigate?.(
-                    "outOfStock"
-                  )
-                }
-              />
-            ) : null}
-
-            <MenuButton
-              compact={isCompact}
-              title="Catégories"
-              description="Organiser le catalogue de parfums."
-              symbol="C"
-              iconBackgroundColor={
-                colors.secondaryLight
-              }
-              iconColor={
-                colors.secondaryDark
-              }
-              onPress={() =>
-                onNavigate?.("categories")
-              }
-            />
-
-            <MenuButton
-              compact={isCompact}
-              title="Fournisseurs"
-              description="Gérer les partenaires et leurs coordonnées."
-              symbol="F"
-              iconBackgroundColor={
-                colors.successLight
-              }
-              iconColor={colors.success}
-              onPress={() =>
-                onNavigate?.("suppliers")
-              }
-            />
+            </View>
           </View>
-        </View>
         </View>
       </ScrollView>
     </View>
@@ -1131,11 +610,9 @@ const styles = StyleSheet.create({
   sidebar: {
     width: 292,
     flexShrink: 0,
-    backgroundColor:
-      colors.brandBlueDark,
+    backgroundColor: colors.brandBlueDark,
     borderRightWidth: 4,
-    borderRightColor:
-      colors.secondaryDark,
+    borderRightColor: colors.secondaryDark,
   },
 
   sidebarBrand: {
@@ -1145,8 +622,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor:
-      "rgba(255,255,255,0.16)",
+    borderBottomColor: "rgba(255,255,255,0.16)",
     backgroundColor: colors.surface,
   },
 
@@ -1198,13 +674,11 @@ const styles = StyleSheet.create({
   },
 
   sidebarItemActive: {
-    backgroundColor:
-      colors.secondaryDark,
+    backgroundColor: colors.secondaryDark,
   },
 
   sidebarPressed: {
-    backgroundColor:
-      "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(255,255,255,0.12)",
   },
 
   sidebarSymbol: {
@@ -1213,8 +687,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    backgroundColor:
-      "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(255,255,255,0.12)",
   },
 
   sidebarSymbolActive: {
@@ -1235,8 +708,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 999,
-    backgroundColor:
-      colors.secondary,
+    backgroundColor: colors.secondary,
   },
 
   sidebarItemText: {
@@ -1408,13 +880,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 17,
-    backgroundColor:
-      colors.brandBlueDark,
+    backgroundColor: colors.brandBlueDark,
   },
 
   mobileProfitLabel: {
-    color:
-      "rgba(255,255,255,0.78)",
+    color: "rgba(255,255,255,0.78)",
     fontSize: 12,
     lineHeight: 16,
     fontWeight: "800",
@@ -1442,8 +912,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 19,
-    backgroundColor:
-      "rgba(255,255,255,0.16)",
+    backgroundColor: "rgba(255,255,255,0.16)",
   },
 
   visibilityIcon: {
@@ -1610,8 +1079,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 0,
     borderWidth: 0,
-    backgroundColor:
-      "transparent",
+    backgroundColor: "transparent",
   },
 
   menuSymbol: {
@@ -1621,8 +1089,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 11,
-    backgroundColor:
-      colors.primaryLight,
+    backgroundColor: colors.primaryLight,
   },
 
   menuSymbolCompact: {
