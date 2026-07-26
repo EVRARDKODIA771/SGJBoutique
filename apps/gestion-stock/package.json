@@ -8,7 +8,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build": "expo export --platform web"
+    "build": "expo export --platform web",
+    "build:android:apk": "npx eas-cli build --platform android --profile preview",
+    "build:android:aab": "npx eas-cli build --platform android --profile production"
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.6",
@@ -18,8 +20,10 @@
     "expo": "~57.0.7",
     "expo-camera": "~57.0.3",
     "expo-constants": "~57.0.6",
+    "expo-device": "~57.0.1",
     "expo-image-picker": "~57.0.5",
     "expo-linking": "~57.0.3",
+    "expo-notifications": "~57.0.6",
     "expo-router": "~57.0.7",
     "expo-secure-store": "~57.0.1",
     "expo-status-bar": "~57.0.1",
