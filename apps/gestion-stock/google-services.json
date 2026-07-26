@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "994908757344",
+    "project_id": "jde-parfum",
+    "storage_bucket": "jde-parfum.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:994908757344:android:31c71bc5f93a88e37e5205",
+        "android_client_info": {
+          "package_name": "com.jdeparfum.gestionstock"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQBoEUcZSRuyJT5L1K7SqUWLET4vE7lSU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
