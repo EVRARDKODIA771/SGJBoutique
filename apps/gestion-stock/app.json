@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "gestion-stock",
+    "name": "JDE Parfum",
     "slug": "gestion-stock",
+    "scheme": "jde-parfum",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,12 +11,17 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.jdeparfum.gestionstock",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FAF9F7",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -24,7 +30,27 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Autoriser JDE Parfum à sélectionner les photos des parfums."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#6F4E37",
+          "defaultChannel": "jde-parfum"
+        }
+      ]
     ]
   }
 }
