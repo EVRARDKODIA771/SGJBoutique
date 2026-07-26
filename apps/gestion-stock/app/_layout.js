@@ -335,6 +335,10 @@ export default function RootLayout() {
                   headerShown: false,
 
                   contentStyle: {
+                    width: "100%",
+                    maxWidth: "100%",
+                    minWidth: 0,
+                    overflow: "hidden",
                     backgroundColor:
                       colors.background,
                   },
@@ -387,6 +391,7 @@ export default function RootLayout() {
                 </Pressable>
 
                 <AdminSidebar
+                  isDrawer
                   onNavigate={() =>
                     setIsMenuOpen(false)
                   }
@@ -403,6 +408,10 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    overflow: "hidden",
 
     backgroundColor:
       colors.background,
@@ -410,7 +419,11 @@ const styles = StyleSheet.create({
 
   appShell: {
     flex: 1,
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
     flexDirection: "row",
+    overflow: "hidden",
 
     backgroundColor:
       colors.background,
@@ -418,7 +431,10 @@ const styles = StyleSheet.create({
 
   mainColumn: {
     flex: 1,
+    width: "100%",
+    maxWidth: "100%",
     minWidth: 0,
+    overflow: "hidden",
 
     backgroundColor:
       colors.background,
@@ -426,13 +442,19 @@ const styles = StyleSheet.create({
 
   pageContent: {
     flex: 1,
+    width: "100%",
+    maxWidth: "100%",
     minWidth: 0,
+    overflow: "hidden",
 
     backgroundColor:
       colors.background,
   },
 
   mobileHeader: {
+    width: "100%",
+    maxWidth: "100%",
+    flexShrink: 0,
     height: 60,
 
     flexDirection: "row",
@@ -528,6 +550,8 @@ const styles = StyleSheet.create({
     width: "86%",
     maxWidth: 320,
     height: "100%",
+    minHeight: 0,
+    overflow: "hidden",
 
     backgroundColor:
       colors.brandBlueDark,
