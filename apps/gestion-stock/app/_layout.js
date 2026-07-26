@@ -78,8 +78,7 @@ function LoadingScreen() {
       />
 
       <Text style={styles.loadingText}>
-        Initialisation de l’espace
-        sécurisé…
+        Authentification…
       </Text>
     </SafeAreaView>
   );
@@ -619,6 +618,8 @@ const styles = StyleSheet.create({
     elevation: 20,
 
     flexDirection: "row",
+    alignItems: "stretch",
+    justifyContent: "flex-start",
   },
 
   backdrop: {
@@ -629,9 +630,13 @@ const styles = StyleSheet.create({
   },
 
   drawer: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+
     width: "86%",
     maxWidth: 320,
-    height: "100%",
     minHeight: 0,
     overflow: "hidden",
 

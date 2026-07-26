@@ -341,6 +341,7 @@ const styles = StyleSheet.create({
 
   content: {
     flexGrow: 1,
+    alignItems: "stretch",
     paddingHorizontal: 11,
     paddingTop: 15,
     paddingBottom: 30,
@@ -360,6 +361,7 @@ const styles = StyleSheet.create({
   },
 
   item: {
+    width: "100%",
     minHeight: 46,
 
     flexDirection: "row",

@@ -62,90 +62,98 @@ function ProductCard({
 
   if (compact) {
     return (
-      <Pressable
-        style={({ pressed }) => [
-          styles.mobileProductItem,
-          pressed && styles.pressed,
-        ]}
-        onPress={() =>
-          onPress?.(product)
-        }
-      >
-        <View
-          style={
-            styles.mobileProductIcon
-          }
-        >
-          <Text
-            style={
-              styles.mobileProductIconText
-            }
-          >
-            {product.name
-              ?.trim()
-              ?.charAt(0)
-              ?.toUpperCase() ?? "P"}
-          </Text>
-        </View>
-
-        <View
-          style={
-            styles.mobileProductContent
+      <View style={styles.mobileProductItem}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.mobileProductMain,
+            pressed && styles.pressed,
+          ]}
+          onPress={() =>
+            onPress?.(product)
           }
         >
           <View
             style={
-              styles.mobileProductTitleRow
+              styles.mobileProductIcon
             }
           >
             <Text
               style={
-                styles.mobileProductName
+                styles.mobileProductIconText
+              }
+            >
+              {product.name
+                ?.trim()
+                ?.charAt(0)
+                ?.toUpperCase() ?? "P"}
+            </Text>
+          </View>
+
+          <View
+            style={
+              styles.mobileProductContent
+            }
+          >
+            <View
+              style={
+                styles.mobileProductTitleRow
+              }
+            >
+              <Text
+                style={
+                  styles.mobileProductName
+                }
+                numberOfLines={1}
+              >
+                {product.name}
+              </Text>
+            </View>
+
+            <Text
+              style={
+                styles.mobileProductMeta
               }
               numberOfLines={1}
             >
-              {product.name}
+              {product.sku}
             </Text>
+
+            <View
+              style={
+                styles.mobileProductBottom
+              }
+            >
+              <Text
+                style={
+                  styles.mobileProductPrice
+                }
+                numberOfLines={1}
+              >
+                {formatCurrency(
+                  product.sale_price
+                )}
+              </Text>
+
+              <Text
+                style={[
+                  styles.mobileProductStock,
+                  isLowStock &&
+                    styles.lowStockValue,
+                ]}
+              >
+                Stock : {stockQuantity}
+              </Text>
+            </View>
           </View>
 
           <Text
             style={
-              styles.mobileProductMeta
+              styles.mobileProductArrow
             }
-            numberOfLines={1}
           >
-            {product.brand ||
-              "Sans marque"}{" "}
-            · {product.sku}
+            ›
           </Text>
-
-          <View
-            style={
-              styles.mobileProductBottom
-            }
-          >
-            <Text
-              style={
-                styles.mobileProductPrice
-              }
-              numberOfLines={1}
-            >
-              {formatCurrency(
-                product.sale_price
-              )}
-            </Text>
-
-            <Text
-              style={[
-                styles.mobileProductStock,
-                isLowStock &&
-                  styles.lowStockValue,
-              ]}
-            >
-              Stock : {stockQuantity}
-            </Text>
-          </View>
-        </View>
+        </Pressable>
 
         <Pressable
           style={({ pressed }) => [
@@ -186,15 +194,7 @@ function ProductCard({
             🗑
           </Text>
         </Pressable>
-
-        <Text
-          style={
-            styles.mobileProductArrow
-          }
-        >
-          ›
-        </Text>
-      </Pressable>
+      </View>
     );
   }
 
@@ -1053,6 +1053,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+
+  mobileProductMain: {
+    flex: 1,
+    minWidth: 0,
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
 
   mobileProductIcon: {

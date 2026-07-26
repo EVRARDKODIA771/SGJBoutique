@@ -409,6 +409,7 @@ productRoutes.get(
         .select("*", {
           count: "exact",
         })
+        .neq("status", "archived")
         .range(start, end);
 
       if (search) {
@@ -1324,6 +1325,29 @@ productRoutes.post(
           });
       }
 
+      const actorLabel =
+        await getUserDisplayLabel(
+          request.auth.user.id
+        );
+
+      await notifySafely({
+        eventType: "product_created",
+        title: "Parfum ajouté",
+        body:
+          `${actorLabel} a ajouté le parfum ${createdProduct.name}`,
+        route:
+          `/products/${createdProduct.id}`,
+        actorUserId:
+          request.auth.user.id,
+        productId: createdProduct.id,
+        data: {
+          productId: createdProduct.id,
+          productName:
+            createdProduct.name,
+          actorLabel,
+        },
+      });
+
       return response.status(201).json({
         success: true,
         message:
@@ -2122,9 +2146,67 @@ productRoutes.delete(
           });
         }
 
-        return response.status(500).json({
-          success: false,
-          error: "Unable to delete product",
+        /*
+         * Certaines anciennes bases possèdent
+         * encore des références historiques qui
+         * empêchent une suppression physique.
+         * Dans ce cas, le parfum est retiré du
+         * catalogue actif de manière récupérable.
+         */
+        const {
+          data: archivedProduct,
+          error: archiveError,
+        } = await request.auth.supabase.rpc(
+          "archive_product",
+          {
+            product_id: productId,
+          }
+        );
+
+        if (archiveError) {
+          console.error(
+            "Product deletion fallback error:",
+            archiveError
+          );
+
+          return response.status(500).json({
+            success: false,
+            error: "Unable to delete product",
+          });
+        }
+
+        const actorLabel =
+          await getUserDisplayLabel(
+            request.auth.user.id
+          );
+
+        await notifySafely({
+          eventType: "product_deleted",
+          title: "Parfum supprimé",
+          body:
+            `${actorLabel} a supprimé le parfum ${archivedProduct.name}`,
+          route: "/products",
+          actorUserId:
+            request.auth.user.id,
+          data: {
+            deletedProductId:
+              productId,
+            productName:
+              archivedProduct.name,
+            productSku:
+              archivedProduct.sku,
+            actorLabel,
+            archived: true,
+          },
+        });
+
+        return response.status(200).json({
+          success: true,
+          message:
+            "Product removed from active catalog",
+          deletedProduct:
+            archivedProduct,
+          archived: true,
         });
       }
 

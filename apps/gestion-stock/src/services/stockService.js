@@ -170,13 +170,27 @@ export function deleteProduct(
  * IMAGES DES PARFUMS
  */
 
-export function uploadProductImage(
+export async function uploadProductImage(
   productId,
   image
 ) {
   const formData = new FormData();
 
-  formData.append("image", image);
+  let imagePart = image;
+
+  if (image?.uri) {
+    const imageResponse = await fetch(
+      image.uri
+    );
+
+    imagePart = await imageResponse.blob();
+  }
+
+  formData.append(
+    "image",
+    imagePart,
+    image?.name ?? "parfum.jpg"
+  );
 
   return apiRequest(
     `/api/admin/products/${productId}/images`,

@@ -30,7 +30,6 @@ import { z } from "zod";
 
 import {
   createProduct,
-  getCategories,
   getSuppliers,
   updateProduct,
   uploadProductImage,
@@ -89,16 +88,6 @@ const sharedProductSchema = z.object({
     )
     .max(150),
 
-  brand: z
-    .string()
-    .trim()
-    .max(100),
-
-  categoryId: z
-    .string()
-    .uuid()
-    .nullable(),
-
   description: z
     .string()
     .trim()
@@ -124,26 +113,6 @@ const createProductSchema =
       .string()
       .uuid()
       .nullable(),
-
-    supplierReference: z
-      .string()
-      .trim()
-      .max(
-        150,
-        "La référence ne doit pas dépasser 150 caractères"
-      ),
-  }).superRefine((values, context) => {
-    if (
-      values.supplierReference !== "" &&
-      !values.supplierId
-    ) {
-      context.addIssue({
-        code: "custom",
-        path: ["supplierReference"],
-        message:
-          "Sélectionnez d’abord un fournisseur",
-      });
-    }
   });
 
 const updateProductSchema =
@@ -262,16 +231,8 @@ export default function ProductFormScreen({
 }) {
   const isEditing = Boolean(product?.id);
 
-  const [categories, setCategories] =
-    useState([]);
-
   const [suppliers, setSuppliers] =
     useState([]);
-
-  const [
-    isLoadingCategories,
-    setIsLoadingCategories,
-  ] = useState(true);
 
   const [
     isLoadingSuppliers,
@@ -309,11 +270,6 @@ export default function ProductFormScreen({
 
     defaultValues: {
       name: product?.name ?? "",
-      brand: product?.brand ?? "",
-
-      categoryId:
-        product?.category_id ?? null,
-
       description:
         product?.public_description ??
         "",
@@ -348,12 +304,8 @@ export default function ProductFormScreen({
       ),
 
       supplierId: null,
-      supplierReference: "",
     },
   });
-
-  const selectedCategoryId =
-    watch("categoryId");
 
   const selectedSupplierId =
     watch("supplierId");
@@ -364,52 +316,6 @@ export default function ProductFormScreen({
         supplier.id ===
         selectedSupplierId
     ) ?? null;
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadCategories() {
-      try {
-        const result =
-          await getCategories({
-            isActive: true,
-            page: 1,
-            limit: 100,
-          });
-
-        if (!isMounted) {
-          return;
-        }
-
-        setCategories(
-          result.categories ?? []
-        );
-      } catch (error) {
-        console.error(
-          "Categories loading error:",
-          error
-        );
-
-        if (isMounted) {
-          setRequestError(
-            "Impossible de charger les catégories."
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingCategories(
-            false
-          );
-        }
-      }
-    }
-
-    loadCategories();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   useEffect(() => {
     if (isEditing) {
@@ -529,11 +435,9 @@ export default function ProductFormScreen({
     const productData = {
       name: values.name.trim(),
 
-      brand:
-        values.brand.trim() || null,
+      brand: null,
 
-      categoryId:
-        values.categoryId,
+      categoryId: null,
 
       description:
         values.description.trim() ||
@@ -591,9 +495,7 @@ export default function ProductFormScreen({
           supplierId:
             values.supplierId,
 
-          supplierReference:
-            values.supplierReference
-              .trim() || null,
+          supplierReference: null,
         });
 
       if (selectedImage) {
@@ -865,100 +767,6 @@ export default function ProductFormScreen({
               error={errors.name}
             />
 
-            <FormInput
-              control={control}
-              name="brand"
-              label="Marque"
-              placeholder="Exemple : Dior"
-              error={errors.brand}
-            />
-          </View>
-
-          <View style={styles.categoryArea}>
-            <Text style={styles.label}>
-              Catégorie
-            </Text>
-
-            {isLoadingCategories ? (
-              <ActivityIndicator
-                color={colors.primary}
-              />
-            ) : (
-              <View
-                style={
-                  styles.categoryList
-                }
-              >
-                <Pressable
-                  style={[
-                    styles.categoryChip,
-                    selectedCategoryId ===
-                      null &&
-                      styles.categoryChipSelected,
-                  ]}
-                  onPress={() =>
-                    setValue(
-                      "categoryId",
-                      null,
-                      {
-                        shouldValidate:
-                          true,
-                      }
-                    )
-                  }
-                >
-                  <Text
-                    style={[
-                      styles.categoryChipText,
-                      selectedCategoryId ===
-                        null &&
-                        styles.categoryChipTextSelected,
-                    ]}
-                  >
-                    Sans catégorie
-                  </Text>
-                </Pressable>
-
-                {categories.map(
-                  (category) => {
-                    const isSelected =
-                      selectedCategoryId ===
-                      category.id;
-
-                    return (
-                      <Pressable
-                        key={category.id}
-                        style={[
-                          styles.categoryChip,
-                          isSelected &&
-                            styles.categoryChipSelected,
-                        ]}
-                        onPress={() =>
-                          setValue(
-                            "categoryId",
-                            category.id,
-                            {
-                              shouldValidate:
-                                true,
-                            }
-                          )
-                        }
-                      >
-                        <Text
-                          style={[
-                            styles.categoryChipText,
-                            isSelected &&
-                              styles.categoryChipTextSelected,
-                          ]}
-                        >
-                          {category.name}
-                        </Text>
-                      </Pressable>
-                    );
-                  }
-                )}
-              </View>
-            )}
           </View>
 
           {!isEditing ? (
@@ -1165,17 +973,6 @@ export default function ProductFormScreen({
                   </>
                 )}
 
-                {selectedSupplier ? (
-                  <FormInput
-                    control={control}
-                    name="supplierReference"
-                    label="Référence fournisseur"
-                    placeholder="Exemple : CMD-2026-001"
-                    error={
-                      errors.supplierReference
-                    }
-                  />
-                ) : null}
               </View>
             </>
           ) : null}
@@ -1250,7 +1047,7 @@ export default function ProductFormScreen({
               <FormInput
                 control={control}
                 name="initialQuantity"
-                label="Stock initial *"
+                label="Quantité *"
                 placeholder="0"
                 keyboardType="numeric"
                 error={

@@ -64,32 +64,42 @@ export async function signIn(
   email,
   password
 ) {
-  const {
-    data,
-    error,
-  } = await supabase.auth
-    .signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-
-  if (error) {
-    throw error;
-  }
-
   useAuthStore
     .getState()
-    .setSession(data.session);
+    .setIsInitializing(true);
 
-  const statusResult =
-    await getAdminAccessStatus();
+  try {
+    const {
+      data,
+      error,
+    } = await supabase.auth
+      .signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-  return {
-    session: data.session,
-    user: data.user,
-    membership:
-      statusResult.membership,
-  };
+    if (error) {
+      throw error;
+    }
+
+    const statusResult =
+      await getAdminAccessStatus();
+
+    useAuthStore
+      .getState()
+      .setSession(data.session);
+
+    return {
+      session: data.session,
+      user: data.user,
+      membership:
+        statusResult.membership,
+    };
+  } finally {
+    useAuthStore
+      .getState()
+      .setIsInitializing(false);
+  }
 }
 
 /*

@@ -30,7 +30,12 @@ function configureNotificationHandler() {
 
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
-      shouldShowBanner: true,
+      /*
+       * La notification reste dans le volet
+       * Android sans afficher de bannière
+       * intrusive au-dessus de l’application.
+       */
+      shouldShowBanner: false,
       shouldShowList: true,
       shouldPlaySound: true,
       shouldSetBadge: true,
@@ -64,7 +69,7 @@ async function configureAndroidChannel() {
           "Ventes, stock et accès administratifs",
         importance:
           Notifications
-            .AndroidImportance.MAX,
+            .AndroidImportance.DEFAULT,
         vibrationPattern: [
           0,
           250,
