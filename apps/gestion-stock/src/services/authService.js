@@ -45,7 +45,7 @@ export async function initializeAuth() {
       };
     }
 
-    const statusResult =
+    let statusResult =
       await getAdminAccessStatus();
 
     return {
@@ -88,6 +88,20 @@ export async function signIn(
     useAuthStore
       .getState()
       .setSession(data.session);
+
+    /*
+     * La première connexion crée immédiatement
+     * la demande d'accès. Les administrateurs
+     * déjà approuvés reçoivent ainsi l'alerte
+     * sans obliger le nouvel utilisateur à
+     * appuyer sur un second bouton.
+     */
+    if (!statusResult.membership) {
+      await requestAdminAccess();
+
+      statusResult =
+        await getAdminAccessStatus();
+    }
 
     return {
       session: data.session,

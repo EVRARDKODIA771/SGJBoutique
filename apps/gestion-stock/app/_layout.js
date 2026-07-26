@@ -342,7 +342,9 @@ export default function RootLayout() {
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={
-                    "Ouvrir le menu"
+                    isMenuOpen
+                      ? "Fermer le menu"
+                      : "Ouvrir le menu"
                   }
                   style={({
                     pressed,
@@ -353,7 +355,10 @@ export default function RootLayout() {
                       styles.menuButtonPressed,
                   ]}
                   onPress={() =>
-                    setIsMenuOpen(true)
+                    setIsMenuOpen(
+                      (isOpen) =>
+                        !isOpen
+                    )
                   }
                 >
                   <Text
@@ -552,6 +557,9 @@ const styles = StyleSheet.create({
 
     borderBottomColor:
       colors.border,
+
+    zIndex: 1001,
+    elevation: 22,
   },
 
   menuButton: {
@@ -613,6 +621,7 @@ const styles = StyleSheet.create({
 
   drawerLayer: {
     ...StyleSheet.absoluteFillObject,
+    top: 60,
 
     zIndex: 1000,
     elevation: 20,
@@ -642,6 +651,9 @@ const styles = StyleSheet.create({
 
     backgroundColor:
       colors.brandBlueDark,
+
+    zIndex: 1,
+    elevation: 21,
 
     shadowColor: colors.shadow,
 

@@ -21,7 +21,6 @@ import {
   getCategories,
   getProduct,
   getProductSuppliers,
-  getStockMovements,
 } from "../services/stockService.js";
 
 import { colors } from
@@ -47,20 +46,6 @@ function formatDate(value) {
       timeStyle: "short",
     }
   ).format(new Date(value));
-}
-
-function getMovementLabel(type) {
-  const labels = {
-    initial: "Stock initial",
-    purchase: "Achat",
-    sale: "Vente",
-    return: "Retour",
-    damage: "Produit endommagé",
-    loss: "Perte",
-    adjustment: "Ajustement",
-  };
-
-  return labels[type] ?? type;
 }
 
 function InformationItem({
@@ -104,9 +89,6 @@ export default function ProductDetailScreen({
   const [category, setCategory] =
     useState(null);
 
-  const [movements, setMovements] =
-    useState([]);
-
   const [suppliers, setSuppliers] =
     useState([]);
 
@@ -149,7 +131,6 @@ export default function ProductDetailScreen({
         const [
           productResult,
           categoriesResult,
-          movementsResult,
           suppliersResult,
         ] = await Promise.all([
           getProduct(
@@ -161,14 +142,6 @@ export default function ProductDetailScreen({
             limit: 100,
           }),
 
-          getStockMovements(
-            resolvedProductId,
-            {
-              page: 1,
-              limit: 5,
-            }
-          ),
-
           getProductSuppliers(
             resolvedProductId
           ),
@@ -178,11 +151,6 @@ export default function ProductDetailScreen({
           productResult.product;
 
         setProduct(loadedProduct);
-
-        setMovements(
-          movementsResult.movements ??
-            []
-        );
 
         setSuppliers(
           suppliersResult.suppliers ??
@@ -646,75 +614,6 @@ export default function ProductDetailScreen({
                             association.last_purchase_price
                           )
                         : "Prix non renseigné"}
-                    </Text>
-                  </View>
-                )
-              )}
-            </View>
-          )}
-        </View>
-
-        <View style={styles.sectionCard}>
-          <Text style={styles.cardTitle}>
-            Derniers mouvements
-          </Text>
-
-          {movements.length === 0 ? (
-            <Text style={styles.emptyText}>
-              Aucun mouvement enregistré.
-            </Text>
-          ) : (
-            <View style={styles.simpleList}>
-              {movements.map(
-                (movement) => (
-                  <View
-                    key={movement.id}
-                    style={
-                      styles.simpleListItem
-                    }
-                  >
-                    <View>
-                      <Text
-                        style={
-                          styles.simpleListTitle
-                        }
-                      >
-                        {getMovementLabel(
-                          movement.movement_type
-                        )}
-                      </Text>
-
-                      <Text
-                        style={
-                          styles.simpleListSubtitle
-                        }
-                      >
-                        {movement.reason ||
-                          formatDate(
-                            movement.created_at
-                          )}
-                      </Text>
-                    </View>
-
-                    <Text
-                      style={[
-                        styles.movementQuantity,
-                        {
-                          color:
-                            movement.quantity_change >
-                            0
-                              ? colors.success
-                              : colors.danger,
-                        },
-                      ]}
-                    >
-                      {movement.quantity_change >
-                      0
-                        ? "+"
-                        : ""}
-                      {
-                        movement.quantity_change
-                      }
                     </Text>
                   </View>
                 )

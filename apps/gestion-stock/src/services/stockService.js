@@ -1,6 +1,9 @@
 import { apiRequest } from
   "../lib/api.js";
 
+import { File } from
+  "expo-file-system";
+
 function buildQuery(parameters = {}) {
   const query = Object.entries(parameters)
     .filter(
@@ -176,20 +179,14 @@ export async function uploadProductImage(
 ) {
   const formData = new FormData();
 
-  let imagePart = image;
-
-  if (image?.uri) {
-    const imageResponse = await fetch(
-      image.uri
-    );
-
-    imagePart = await imageResponse.blob();
-  }
+  const imagePart =
+    image?.uri
+      ? new File(image.uri)
+      : image;
 
   formData.append(
     "image",
-    imagePart,
-    image?.name ?? "parfum.jpg"
+    imagePart
   );
 
   return apiRequest(
