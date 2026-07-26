@@ -7,18 +7,11 @@ import {
   View,
 } from "react-native";
 
-import {
-  router,
-  usePathname,
-} from "expo-router";
+import { router, usePathname } from "expo-router";
 
-import {
-  useAuthStore,
-} from "../store/authStore.js";
+import { useAuthStore } from "../store/authStore.js";
 
-import {
-  colors,
-} from "../theme/colors.js";
+import { colors } from "../theme/colors.js";
 
 const menuSections = [
   {
@@ -57,11 +50,9 @@ const menuSections = [
       },
 
       {
-        label:
-          "Parfums achetés chez les fournisseurs",
+        label: "Parfums achetés chez les fournisseurs",
 
-        route:
-          "/products/supplier-purchases",
+        route: "/products/supplier-purchases",
 
         exact: true,
       },
@@ -73,35 +64,16 @@ const menuSections = [
 
     items: [
       {
-        label:
-          "Ajouter ou retirer des parfums",
+        label: "Ajouter ou retirer des parfums",
 
         route: "/stock/manage",
         exact: true,
       },
 
       {
-        label:
-          "Historique des entrées et sorties",
+        label: "Historique des entrées et sorties",
 
         route: "/stock",
-        exact: true,
-      },
-
-      {
-        label:
-          "Parfums bientôt épuisés",
-
-        route: "/products/low-stock",
-        exact: true,
-      },
-
-      {
-        label: "Parfums épuisés",
-
-        route:
-          "/products/out-of-stock",
-
         exact: true,
       },
     ],
@@ -111,13 +83,6 @@ const menuSections = [
     title: "ORGANISATION",
 
     items: [
-      {
-        label: "Catégories",
-        symbol: "C",
-        route: "/categories",
-        exact: true,
-      },
-
       {
         label: "Fournisseurs",
         symbol: "F",
@@ -135,18 +100,15 @@ const menuSections = [
       {
         label: "Demandes d’accès",
 
-        route:
-          "/administration/access-requests",
+        route: "/administration/access-requests",
 
         exact: true,
       },
 
       {
-        label:
-          "Utilisateurs autorisés",
+        label: "Utilisateurs autorisés",
 
-        route:
-          "/administration/authorized-users",
+        route: "/administration/authorized-users",
 
         exact: true,
       },
@@ -155,46 +117,26 @@ const menuSections = [
 ];
 
 function normalizePathname(pathname) {
-  if (
-    !pathname ||
-    pathname === "/"
-  ) {
+  if (!pathname || pathname === "/") {
     return pathname || "/";
   }
 
-  return pathname.replace(
-    /\/+$/,
-    ""
-  );
+  return pathname.replace(/\/+$/, "");
 }
 
-function isItemActive(
-  pathname,
-  item
-) {
-  const currentPath =
-    normalizePathname(pathname);
+function isItemActive(pathname, item) {
+  const currentPath = normalizePathname(pathname);
 
-  const itemRoute =
-    normalizePathname(item.route);
+  const itemRoute = normalizePathname(item.route);
 
   if (item.exact) {
     return currentPath === itemRoute;
   }
 
-  return (
-    currentPath === itemRoute ||
-    currentPath.startsWith(
-      `${itemRoute}/`
-    )
-  );
+  return currentPath === itemRoute || currentPath.startsWith(`${itemRoute}/`);
 }
 
-function MenuItem({
-  item,
-  active,
-  onNavigate,
-}) {
+function MenuItem({ item, active, onNavigate }) {
   const nested = !item.symbol;
 
   function handlePress() {
@@ -218,43 +160,19 @@ function MenuItem({
       style={({ pressed }) => [
         styles.item,
 
-        nested &&
-          styles.subItem,
+        nested && styles.subItem,
 
-        active &&
-          styles.activeItem,
+        active && styles.activeItem,
 
-        pressed &&
-          styles.pressedItem,
+        pressed && styles.pressedItem,
       ]}
       onPress={handlePress}
     >
       {nested ? (
-        <View
-          style={[
-            styles.subDot,
-
-            active &&
-              styles.activeSubDot,
-          ]}
-        />
+        <View style={[styles.subDot, active && styles.activeSubDot]} />
       ) : (
-        <View
-          style={[
-            styles.symbol,
-
-            active &&
-              styles.activeSymbol,
-          ]}
-        >
-          <Text
-            style={[
-              styles.symbolText,
-
-              active &&
-                styles.activeSymbolText,
-            ]}
-          >
+        <View style={[styles.symbol, active && styles.activeSymbol]}>
+          <Text style={[styles.symbolText, active && styles.activeSymbolText]}>
             {item.symbol}
           </Text>
         </View>
@@ -264,11 +182,9 @@ function MenuItem({
         style={[
           styles.itemText,
 
-          nested &&
-            styles.subItemText,
+          nested && styles.subItemText,
 
-          active &&
-            styles.activeItemText,
+          active && styles.activeItemText,
         ]}
       >
         {item.label}
@@ -277,22 +193,13 @@ function MenuItem({
   );
 }
 
-export default function AdminSidebar({
-  onNavigate,
-  isDrawer = false,
-}) {
+export default function AdminSidebar({ onNavigate, isDrawer = false }) {
   const pathname = usePathname();
 
-  const role = useAuthStore(
-    (state) =>
-      state.adminMembership?.role
-  );
+  const role = useAuthStore((state) => state.adminMembership?.role);
 
   function goToDashboard() {
-    if (
-      normalizePathname(pathname) !==
-      "/dashboard"
-    ) {
+    if (normalizePathname(pathname) !== "/dashboard") {
       router.push("/dashboard");
     }
 
@@ -304,109 +211,59 @@ export default function AdminSidebar({
   }
 
   return (
-    <View
-      style={[
-        styles.sidebar,
-        isDrawer &&
-          styles.sidebarDrawer,
-      ]}
-    >
+    <View style={[styles.sidebar, isDrawer && styles.sidebarDrawer]}>
       <View style={styles.brand}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={
-            "Retour au tableau de bord"
-          }
+          accessibilityLabel={"Retour au tableau de bord"}
           style={({ pressed }) => [
             styles.logoButton,
 
-            pressed &&
-              styles.logoButtonPressed,
+            pressed && styles.logoButtonPressed,
           ]}
           onPress={goToDashboard}
         >
           <Image
-            source={require(
-              "../../assets/jde-logo.png"
-            )}
+            source={require("../../assets/jde-logo.png")}
             style={styles.logo}
             resizeMode="contain"
             accessibilityIgnoresInvertColors
           />
 
-          <Text
-            style={styles.brandName}
-          >
-            Gestion de la boutique
-          </Text>
+          <Text style={styles.brandName}>Gestion de la boutique</Text>
         </Pressable>
       </View>
 
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={
-          styles.content
-        }
-        showsVerticalScrollIndicator={
-          false
-        }
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
         nestedScrollEnabled
         keyboardShouldPersistTaps="handled"
         bounces
       >
-        {menuSections.map(
-          (
-            section,
-            sectionIndex
-          ) => {
-            if (
-              section.ownerOnly &&
-              role !== "owner"
-            ) {
-              return null;
-            }
-
-            return (
-              <View
-                key={
-                  section.title ??
-                  `main-${sectionIndex}`
-                }
-              >
-                {section.title ? (
-                  <Text
-                    style={
-                      styles.sectionTitle
-                    }
-                  >
-                    {section.title}
-                  </Text>
-                ) : null}
-
-                {section.items.map(
-                  (
-                    item,
-                    itemIndex
-                  ) => (
-                    <MenuItem
-                      key={
-                        `${item.route}-${itemIndex}`
-                      }
-                      item={item}
-                      active={isItemActive(
-                        pathname,
-                        item
-                      )}
-                      onNavigate={
-                        onNavigate
-                      }
-                    />
-                  )
-                )}
-              </View>
-            );
+        {menuSections.map((section, sectionIndex) => {
+          if (section.ownerOnly && role !== "owner") {
+            return null;
           }
-        )}
+
+          return (
+            <View key={section.title ?? `main-${sectionIndex}`}>
+              {section.title ? (
+                <Text style={styles.sectionTitle}>{section.title}</Text>
+              ) : null}
+
+              {section.items.map((item, itemIndex) => (
+                <MenuItem
+                  key={`${item.route}-${itemIndex}`}
+                  item={item}
+                  active={isItemActive(pathname, item)}
+                  onNavigate={onNavigate}
+                />
+              ))}
+            </View>
+          );
+        })}
       </ScrollView>
     </View>
   );
@@ -419,13 +276,11 @@ const styles = StyleSheet.create({
     minHeight: 0,
     flexShrink: 0,
 
-    backgroundColor:
-      colors.brandBlueDark,
+    backgroundColor: colors.brandBlueDark,
 
     borderRightWidth: 4,
 
-    borderRightColor:
-      colors.secondaryDark,
+    borderRightColor: colors.secondaryDark,
   },
 
   sidebarDrawer: {
@@ -445,11 +300,9 @@ const styles = StyleSheet.create({
 
     borderBottomWidth: 1,
 
-    borderBottomColor:
-      "rgba(255,255,255,0.16)",
+    borderBottomColor: "rgba(255,255,255,0.16)",
 
-    backgroundColor:
-      colors.surface,
+    backgroundColor: colors.surface,
   },
 
   logoButton: {
@@ -475,8 +328,7 @@ const styles = StyleSheet.create({
   brandName: {
     marginTop: 4,
 
-    color:
-      colors.brandBlueDark,
+    color: colors.brandBlueDark,
 
     fontSize: 13,
     fontWeight: "800",
@@ -527,8 +379,7 @@ const styles = StyleSheet.create({
   },
 
   activeItem: {
-    backgroundColor:
-      colors.secondaryDark,
+    backgroundColor: colors.secondaryDark,
   },
 
   pressedItem: {
@@ -544,13 +395,11 @@ const styles = StyleSheet.create({
 
     borderRadius: 8,
 
-    backgroundColor:
-      "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(255,255,255,0.12)",
   },
 
   activeSymbol: {
-    backgroundColor:
-      colors.surface,
+    backgroundColor: colors.surface,
   },
 
   symbolText: {
@@ -561,8 +410,7 @@ const styles = StyleSheet.create({
   },
 
   activeSymbolText: {
-    color:
-      colors.secondaryDark,
+    color: colors.secondaryDark,
   },
 
   subDot: {
@@ -571,13 +419,11 @@ const styles = StyleSheet.create({
 
     borderRadius: 999,
 
-    backgroundColor:
-      colors.secondary,
+    backgroundColor: colors.secondary,
   },
 
   activeSubDot: {
-    backgroundColor:
-      colors.surface,
+    backgroundColor: colors.surface,
   },
 
   itemText: {
@@ -591,8 +437,7 @@ const styles = StyleSheet.create({
   },
 
   subItemText: {
-    color:
-      "rgba(255,255,255,0.86)",
+    color: "rgba(255,255,255,0.86)",
 
     fontSize: 12,
     fontWeight: "600",
