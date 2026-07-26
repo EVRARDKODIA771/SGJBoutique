@@ -22,6 +22,12 @@ import {
   requireCompanySession,
 } from "../middleware/requireCompanySession.js";
 
+import {
+  getUserDisplayLabel,
+  getUserEmail,
+  notifySafely,
+} from "../services/notificationService.js";
+
 const router = Router();
 
 const companyPasswordSchema = z.object({
@@ -317,6 +323,23 @@ router.post(
   authenticateUser,
   async (request, response) => {
     try {
+      const {
+        data: existingMembership,
+        error:
+          existingMembershipError,
+      } = await supabaseAdmin
+        .from("admin_memberships")
+        .select("user_id, status")
+        .eq(
+          "user_id",
+          request.auth.user.id
+        )
+        .maybeSingle();
+
+      if (existingMembershipError) {
+        throw existingMembershipError;
+      }
+
       /*
        * Cette fonction doit utiliser le client
        * Supabase de l’utilisateur, car la
@@ -356,6 +379,45 @@ router.post(
 
       if (membershipError) {
         throw membershipError;
+      }
+
+      if (
+        !existingMembership &&
+        membership?.status === "pending"
+      ) {
+        const requesterEmail =
+          await getUserEmail(
+            request.auth.user.id
+          );
+
+        const displayEmail =
+          requesterEmail ??
+          "Un nouvel utilisateur";
+
+        await notifySafely({
+          eventType:
+            "access_requested",
+          title:
+            "Nouvelle demande d’accès",
+          body:
+            `${displayEmail} s’est connecté. ` +
+            "Si la connexion est légitime, veuillez autoriser l’accès.",
+          route:
+            "/administration/access-requests",
+          actorUserId:
+            request.auth.user.id,
+          subjectUserId:
+            request.auth.user.id,
+          data: {
+            requestedUserId:
+              request.auth.user.id,
+            displayEmail:
+              requesterEmail,
+          },
+          excludeUserIds: [
+            request.auth.user.id,
+          ],
+        });
       }
 
       return response.status(200).json({
@@ -795,6 +857,43 @@ router.post(
         });
       }
 
+      if (action === "approve") {
+        const authorizedEmail =
+          await getUserEmail(userId);
+
+        const displayEmail =
+          authorizedEmail ??
+          displayName ??
+          "Un utilisateur";
+
+        await notifySafely({
+          eventType:
+            "admin_authorized",
+          title:
+            "Utilisateur autorisé",
+          body:
+            `${displayEmail} a été autorisé à accéder à l’entreprise`,
+          route:
+            "/administration/authorized-users",
+          actorUserId:
+            request.auth.user.id,
+          subjectUserId: userId,
+          data: {
+            authorizedUserId:
+              userId,
+            displayEmail:
+              authorizedEmail,
+            displayName:
+              displayName ?? null,
+            staffCode:
+              staffCode
+                ? staffCode.toUpperCase()
+                : null,
+          },
+          excludeUserIds: [userId],
+        });
+      }
+
       return response.status(200).json({
         success: true,
         result: data,
@@ -944,6 +1043,28 @@ router.post(
           ...data,
         });
       }
+
+      const actorLabel =
+        await getUserDisplayLabel(
+          request.auth.user.id
+        );
+
+      await notifySafely({
+        eventType:
+          "company_session_opened",
+        title: "Nouvelle connexion",
+        body:
+          `${actorLabel} vient de se connecter`,
+        route: "/dashboard",
+        actorUserId:
+          request.auth.user.id,
+        data: {
+          actorLabel,
+        },
+        excludeUserIds: [
+          request.auth.user.id,
+        ],
+      });
 
       return response.status(200).json({
         success: true,

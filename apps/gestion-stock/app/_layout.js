@@ -36,6 +36,12 @@ import {
 } from "../src/services/authService.js";
 
 import {
+  listenForNotificationNavigation,
+  markNotificationRead,
+  registerDeviceForPushNotifications,
+} from "../src/services/notificationService.js";
+
+import {
   supabase,
 } from "../src/lib/supabase.js";
 
@@ -193,6 +199,82 @@ export default function RootLayout() {
   useEffect(() => {
     setIsMenuOpen(false);
   }, [pathname]);
+
+  /*
+   * Un appui sur une notification ouvre
+   * directement la page métier concernée.
+   */
+  useEffect(() => {
+    if (
+      isInitializing ||
+      !session ||
+      adminMembership?.status !==
+        "approved"
+    ) {
+      return;
+    }
+
+    return listenForNotificationNavigation(
+      ({
+        route,
+        notificationId,
+      }) => {
+        if (companySessionId) {
+          router.push(route);
+
+          markNotificationRead(
+            notificationId
+          );
+
+          return;
+        }
+
+        router.push({
+          pathname:
+            "/company-password",
+          params: {
+            returnTo: route,
+            notificationId:
+              notificationId ?? "",
+          },
+        });
+      }
+    );
+  }, [
+    isInitializing,
+    session?.user?.id,
+    adminMembership?.status,
+    companySessionId,
+  ]);
+
+  /*
+   * Le téléphone est enregistré seulement
+   * après les trois barrières de sécurité :
+   * session Supabase, accès approuvé et
+   * mot de passe entreprise.
+   */
+  useEffect(() => {
+    if (
+      !session ||
+      adminMembership?.status !==
+        "approved" ||
+      !companySessionId
+    ) {
+      return;
+    }
+
+    registerDeviceForPushNotifications()
+      .catch((error) => {
+        console.error(
+          "Push notification registration error:",
+          error
+        );
+      });
+  }, [
+    session?.user?.id,
+    adminMembership?.status,
+    companySessionId,
+  ]);
 
   function goToDashboard() {
     setIsMenuOpen(false);

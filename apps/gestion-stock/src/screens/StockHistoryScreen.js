@@ -75,11 +75,17 @@ function TableCell({
 }
 
 export default function StockHistoryScreen({
+  initialDirection = "entries",
   onBack,
   onOpenProduct,
 }) {
   const [direction, setDirection] =
-    useState("entries");
+    useState(initialDirection);
+
+  useEffect(() => {
+    setDirection(initialDirection);
+    setPage(1);
+  }, [initialDirection]);
 
   const [movements, setMovements] =
     useState([]);

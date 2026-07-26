@@ -1,6 +1,7 @@
 import {
   Redirect,
   router,
+  useLocalSearchParams,
 } from "expo-router";
 
 import StockHistoryScreen from
@@ -11,6 +12,21 @@ import {
 } from "../src/store/authStore.js";
 
 export default function StockPage() {
+  const parameters =
+    useLocalSearchParams();
+
+  const requestedDirection =
+    Array.isArray(
+      parameters.direction
+    )
+      ? parameters.direction[0]
+      : parameters.direction;
+
+  const initialDirection =
+    requestedDirection === "exits"
+      ? "exits"
+      : "entries";
+
   const session = useAuthStore(
     (state) => state.session
   );
@@ -46,6 +62,9 @@ export default function StockPage() {
 
   return (
     <StockHistoryScreen
+      initialDirection={
+        initialDirection
+      }
       onBack={() => {
         router.push("/dashboard");
       }}

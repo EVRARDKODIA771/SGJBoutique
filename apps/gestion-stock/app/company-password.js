@@ -1,6 +1,7 @@
 import {
   Redirect,
   router,
+  useLocalSearchParams,
 } from "expo-router";
 
 import CompanyPasswordScreen from
@@ -10,7 +11,44 @@ import {
   useAuthStore,
 } from "../src/store/authStore.js";
 
+import {
+  markNotificationRead,
+} from "../src/services/notificationService.js";
+
 export default function CompanyPasswordPage() {
+  const parameters =
+    useLocalSearchParams();
+
+  const rawReturnTo =
+    Array.isArray(
+      parameters.returnTo
+    )
+      ? parameters.returnTo[0]
+      : parameters.returnTo;
+
+  const returnTo =
+    typeof rawReturnTo === "string" &&
+    rawReturnTo.startsWith("/") &&
+    !rawReturnTo.startsWith("//")
+      ? rawReturnTo
+      : "/dashboard";
+
+  const rawNotificationId =
+    Array.isArray(
+      parameters.notificationId
+    )
+      ? parameters.notificationId[0]
+      : parameters.notificationId;
+
+  const notificationId =
+    typeof rawNotificationId ===
+      "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      rawNotificationId
+    )
+      ? rawNotificationId
+      : null;
+
   const session =
     useAuthStore(
       (state) => state.session
@@ -50,15 +88,19 @@ export default function CompanyPasswordPage() {
 
   if (companySessionId) {
     return (
-      <Redirect href="/dashboard" />
+      <Redirect href={returnTo} />
     );
   }
 
   return (
     <CompanyPasswordScreen
       userEmail={user?.email}
-      onVerified={() => {
-        router.replace("/dashboard");
+      onVerified={async () => {
+        await markNotificationRead(
+          notificationId
+        );
+
+        router.replace(returnTo);
       }}
       onSignedOut={() => {
         router.replace("/login");

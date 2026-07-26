@@ -19,6 +19,11 @@ import {
   requireCompanySession,
 } from "../middleware/requireCompanySession.js";
 
+import {
+  getUserDisplayLabel,
+  notifySafely,
+} from "../services/notificationService.js";
+
 const productRoutes = Router();
 
 const PRODUCT_IMAGES_BUCKET =
@@ -1893,6 +1898,30 @@ productRoutes.patch(
           });
       }
 
+      const actorLabel =
+        await getUserDisplayLabel(
+          request.auth.user.id
+        );
+
+      await notifySafely({
+        eventType:
+          "product_updated",
+        title: "Parfum modifié",
+        body:
+          `${actorLabel} a modifié le parfum ${updatedProduct.name}`,
+        route:
+          `/products/${productId}`,
+        actorUserId:
+          request.auth.user.id,
+        productId,
+        data: {
+          productId,
+          productName:
+            updatedProduct.name,
+          actorLabel,
+        },
+      });
+
       return response.status(200).json({
         success: true,
         message:
@@ -2121,6 +2150,33 @@ productRoutes.delete(
           );
         }
       }
+
+      const actorLabel =
+        await getUserDisplayLabel(
+          request.auth.user.id
+        );
+
+      await notifySafely({
+        eventType:
+          "product_deleted",
+        title: "Parfum supprimé",
+        body:
+          `${actorLabel} a supprimé le parfum ${deletedProduct.name}`,
+        route: "/products",
+        actorUserId:
+          request.auth.user.id,
+        subjectUserId: null,
+        productId: null,
+        data: {
+          deletedProductId:
+            productId,
+          productName:
+            deletedProduct.name,
+          productSku:
+            deletedProduct.sku,
+          actorLabel,
+        },
+      });
 
       return response.status(200).json({
         success: true,
@@ -2441,6 +2497,121 @@ productRoutes.post(
             error:
               "Unable to record stock movement",
           });
+      }
+
+      const actorLabel =
+        await getUserDisplayLabel(
+          request.auth.user.id
+        );
+
+      if (
+        movement.movementType ===
+        "sale"
+      ) {
+        await notifySafely({
+          eventType:
+            "sale_declared",
+          title: "Vente enregistrée",
+          body:
+            `${actorLabel} a vendu ${movement.quantity} ` +
+            `${movement.quantity > 1 ? "parfums" : "parfum"}`,
+          route:
+            "/stock?direction=exits",
+          actorUserId:
+            request.auth.user.id,
+          productId,
+          data: {
+            productId,
+            productName:
+              updatedProduct.name,
+            quantity:
+              movement.quantity,
+            actorLabel,
+            direction: "exits",
+          },
+        });
+      }
+
+      if (
+        movement.movementType ===
+        "purchase"
+      ) {
+        const {
+          data: supplier,
+          error: supplierError,
+        } = await supabaseAdmin
+          .from("suppliers")
+          .select("id, name")
+          .eq(
+            "id",
+            movement.supplierId
+          )
+          .maybeSingle();
+
+        if (supplierError) {
+          console.error(
+            "Notification supplier lookup error:",
+            supplierError
+          );
+        }
+
+        const supplierName =
+          supplier?.name ??
+          "un fournisseur";
+
+        await notifySafely({
+          eventType:
+            "supplier_restocked",
+          title:
+            "Ravitaillement enregistré",
+          body:
+            `${actorLabel} a ajouté ${movement.quantity} ` +
+            `${movement.quantity > 1 ? "parfums" : "parfum"} ` +
+            `achetés chez ${supplierName}`,
+          route:
+            "/stock?direction=entries",
+          actorUserId:
+            request.auth.user.id,
+          productId,
+          data: {
+            productId,
+            productName:
+              updatedProduct.name,
+            supplierId:
+              movement.supplierId,
+            supplierName,
+            quantity:
+              movement.quantity,
+            actorLabel,
+            direction: "entries",
+          },
+        });
+      }
+
+      if (
+        quantityDelta < 0 &&
+        Number(
+          updatedProduct.stock_quantity
+        ) === 0
+      ) {
+        await notifySafely({
+          eventType:
+            "stock_depleted",
+          title: "Parfum épuisé",
+          body:
+            `Le parfum ${updatedProduct.name} est épuisé`,
+          route:
+            `/products/${productId}`,
+          actorUserId:
+            request.auth.user.id,
+          productId,
+          data: {
+            productId,
+            productName:
+              updatedProduct.name,
+            actorLabel,
+          },
+        });
       }
 
       return response.status(201).json({

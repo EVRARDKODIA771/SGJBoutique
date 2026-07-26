@@ -23,6 +23,9 @@ import stockRoutes from
 import supplierRoutes from
   "./src/routes/supplierRoutes.js";
 
+import notificationRoutes from
+  "./src/routes/notificationRoutes.js";
+
 const app = express();
 
 const port =
@@ -211,6 +214,14 @@ app.use(
 app.use(
   "/api/admin/suppliers",
   supplierRoutes
+);
+
+/*
+ * NOTIFICATIONS MOBILES
+ */
+app.use(
+  "/api/admin/notifications",
+  notificationRoutes
 );
 
 /*
