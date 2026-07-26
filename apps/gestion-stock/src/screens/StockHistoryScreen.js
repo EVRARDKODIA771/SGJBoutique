@@ -109,7 +109,10 @@ export default function StockHistoryScreen({
       try {
         const result =
           await getGlobalStockMovements({
-            direction,
+            movementType:
+              direction === "entries"
+                ? "purchase"
+                : "sale",
             page,
             limit: 20,
           });
@@ -422,7 +425,9 @@ export default function StockHistoryScreen({
                       styles.headerText
                     }
                   >
-                    Client / Référence
+                    {isEntries
+                      ? "Fournisseur / Référence"
+                      : "Client"}
                   </TableCell>
 
                   <TableCell
@@ -454,6 +459,17 @@ export default function StockHistoryScreen({
 
                     const product =
                       movement.product;
+
+                    const contactInformation =
+                      isEntries
+                        ? [
+                            movement.supplier
+                              ?.name,
+                            movement.reference,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")
+                        : movement.reference;
 
                     return (
                       <View
@@ -542,8 +558,7 @@ export default function StockHistoryScreen({
                             styles.clientColumn
                           }
                         >
-                          {movement.reference ||
-                            movement.reason ||
+                          {contactInformation ||
                             "—"}
                         </TableCell>
 
