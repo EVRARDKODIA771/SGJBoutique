@@ -279,6 +279,7 @@ function MenuItem({
 
 export default function AdminSidebar({
   onNavigate,
+  isDrawer = false,
 }) {
   const pathname = usePathname();
 
@@ -303,7 +304,13 @@ export default function AdminSidebar({
   }
 
   return (
-    <View style={styles.sidebar}>
+    <View
+      style={[
+        styles.sidebar,
+        isDrawer &&
+          styles.sidebarDrawer,
+      ]}
+    >
       <View style={styles.brand}>
         <Pressable
           accessibilityRole="button"
@@ -343,6 +350,9 @@ export default function AdminSidebar({
         showsVerticalScrollIndicator={
           false
         }
+        nestedScrollEnabled
+        keyboardShouldPersistTaps="handled"
+        bounces
       >
         {menuSections.map(
           (
@@ -405,6 +415,8 @@ export default function AdminSidebar({
 const styles = StyleSheet.create({
   sidebar: {
     width: 292,
+    height: "100%",
+    minHeight: 0,
     flexShrink: 0,
 
     backgroundColor:
@@ -414,6 +426,12 @@ const styles = StyleSheet.create({
 
     borderRightColor:
       colors.secondaryDark,
+  },
+
+  sidebarDrawer: {
+    width: "100%",
+    minWidth: 0,
+    flex: 1,
   },
 
   brand: {
@@ -466,9 +484,11 @@ const styles = StyleSheet.create({
 
   scroll: {
     flex: 1,
+    minHeight: 0,
   },
 
   content: {
+    flexGrow: 1,
     paddingHorizontal: 11,
     paddingTop: 15,
     paddingBottom: 30,
