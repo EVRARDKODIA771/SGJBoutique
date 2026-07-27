@@ -442,44 +442,42 @@ export default function DashboardScreen({
             </View>
           ) : null}
 
-          {isCompact ? (
-            <View style={styles.mobileProfitCard}>
-              <View style={styles.mobileProfitInfo}>
-                <Text style={styles.mobileProfitLabel}>Bénéfice :</Text>
+          <View style={styles.mobileProfitCard}>
+            <View style={styles.mobileProfitInfo}>
+              <Text style={styles.mobileProfitLabel}>Bénéfice :</Text>
 
-                <Text style={styles.mobileProfitValue} numberOfLines={1}>
-                  {areValuesVisible
-                    ? formatCurrency(statistics.profit)
-                    : "********"}
-                </Text>
-              </View>
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.visibilityButton,
-                  pressed && styles.pressed,
-                ]}
-                onPress={() => setAreValuesVisible((current) => !current)}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  areValuesVisible
-                    ? "Masquer les chiffres"
-                    : "Afficher les chiffres"
-                }
-              >
-                <Text style={styles.visibilityIcon}>
-                  {areValuesVisible ? "👁" : "⊘"}
-                </Text>
-              </Pressable>
+              <Text style={styles.mobileProfitValue} numberOfLines={1}>
+                {areValuesVisible
+                  ? formatCurrency(statistics.profit)
+                  : "********"}
+              </Text>
             </View>
-          ) : null}
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.visibilityButton,
+                pressed && styles.pressed,
+              ]}
+              onPress={() => setAreValuesVisible((current) => !current)}
+              accessibilityRole="button"
+              accessibilityLabel={
+                areValuesVisible
+                  ? "Masquer les chiffres"
+                  : "Afficher les chiffres"
+              }
+            >
+              <Text style={styles.visibilityIcon}>
+                {areValuesVisible ? "👁" : "⊘"}
+              </Text>
+            </Pressable>
+          </View>
 
           <View
             style={[styles.statsGrid, isCompact && styles.statsGridCompact]}
           >
             <StatCard
               compact={isCompact}
-              hidden={isCompact && !areValuesVisible}
+              hidden={!areValuesVisible}
               label="Parfums"
               value={statistics.productTotal}
               detail="Produits enregistrés"
@@ -489,7 +487,7 @@ export default function DashboardScreen({
 
             <StatCard
               compact={isCompact}
-              hidden={isCompact && !areValuesVisible}
+              hidden={!areValuesVisible}
               label="Unités en stock"
               value={statistics.stockQuantity}
               detail="Quantité disponible"
@@ -498,7 +496,7 @@ export default function DashboardScreen({
 
             <StatCard
               compact={isCompact}
-              hidden={isCompact && !areValuesVisible}
+              hidden={!areValuesVisible}
               label="Fournisseurs"
               value={statistics.supplierTotal}
               detail="Partenaires enregistrés"
