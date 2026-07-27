@@ -14,6 +14,10 @@ import {
   useAuthStore,
 } from "../store/authStore.js";
 
+import {
+  clearLocalBiometricAccess,
+} from "./biometricService.js";
+
 export async function initializeAuth() {
   const authStore =
     useAuthStore.getState();
@@ -84,6 +88,15 @@ export async function signIn(
 
     const statusResult =
       await getAdminAccessStatus();
+
+    if (
+      statusResult.membership?.status !==
+      "approved"
+    ) {
+      await clearLocalBiometricAccess(
+        session.user.id
+      );
+    }
 
     useAuthStore
       .getState()
@@ -284,12 +297,6 @@ export async function verifyCompanyPassword(
     );
   }
 
-  useAuthStore
-    .getState()
-    .setCompanySessionId(
-      companySessionId
-    );
-
   return result;
 }
 
@@ -310,6 +317,11 @@ export async function logoutCompanySession() {
 }
 
 export async function signOut() {
+  const userId =
+    useAuthStore
+      .getState()
+      .user?.id;
+
   try {
     await logoutCompanySession();
   } catch (error) {
@@ -322,6 +334,10 @@ export async function signOut() {
   const {
     error,
   } = await supabase.auth.signOut();
+
+  await clearLocalBiometricAccess(
+    userId
+  );
 
   useAuthStore
     .getState()

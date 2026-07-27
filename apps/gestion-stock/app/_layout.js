@@ -6,6 +6,7 @@ import {
 import {
   ActivityIndicator,
   Image,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -433,58 +434,142 @@ export default function RootLayout() {
             </View>
           </View>
 
-          {showSidebar &&
-          isMobile &&
-          isMenuOpen ? (
-            <View
-              style={
-                styles.drawerLayer
-              }
+          <Modal
+            visible={
+              showSidebar &&
+              isMobile &&
+              isMenuOpen
+            }
+            transparent
+            animationType="fade"
+            statusBarTranslucent={false}
+            onRequestClose={() =>
+              setIsMenuOpen(false)
+            }
+          >
+            <SafeAreaView
+              style={styles.modalRoot}
+              edges={[
+                "top",
+                "right",
+                "bottom",
+                "left",
+              ]}
             >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={
-                  "Fermer le menu"
-                }
-                style={styles.backdrop}
-                onPress={() =>
-                  setIsMenuOpen(false)
-                }
-              />
-
               <View
-                style={styles.drawer}
+                style={
+                  styles.mobileHeader
+                }
               >
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={
                     "Fermer le menu"
                   }
-                  style={
-                    styles.closeButton
-                  }
+                  style={({
+                    pressed,
+                  }) => [
+                    styles.menuButton,
+
+                    pressed &&
+                      styles.menuButtonPressed,
+                  ]}
                   onPress={() =>
                     setIsMenuOpen(false)
                   }
                 >
                   <Text
                     style={
-                      styles.closeButtonText
+                      styles.menuButtonIcon
                     }
                   >
-                    ×
+                    ☰
                   </Text>
                 </Pressable>
 
-                <AdminSidebar
-                  isDrawer
-                  onNavigate={() =>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    "Retour au tableau de bord"
+                  }
+                  style={
+                    styles.mobileLogoButton
+                  }
+                  onPress={
+                    goToDashboard
+                  }
+                >
+                  <Image
+                    source={require(
+                      "../assets/jde-logo.png"
+                    )}
+                    style={
+                      styles.mobileLogo
+                    }
+                    resizeMode="contain"
+                  />
+                </Pressable>
+
+                <Text
+                  style={
+                    styles.mobileHeaderTitle
+                  }
+                  numberOfLines={1}
+                >
+                  Gestion de la boutique
+                </Text>
+              </View>
+
+              <View
+                style={
+                  styles.drawerLayer
+                }
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    "Fermer le menu"
+                  }
+                  style={styles.backdrop}
+                  onPress={() =>
                     setIsMenuOpen(false)
                   }
                 />
+
+                <View
+                  style={styles.drawer}
+                >
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      "Fermer le menu"
+                    }
+                    style={
+                      styles.closeButton
+                    }
+                    onPress={() =>
+                      setIsMenuOpen(false)
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.closeButtonText
+                      }
+                    >
+                      ×
+                    </Text>
+                  </Pressable>
+
+                  <AdminSidebar
+                    isDrawer
+                    onNavigate={() =>
+                      setIsMenuOpen(false)
+                    }
+                  />
+                </View>
               </View>
-            </View>
-          ) : null}
+            </SafeAreaView>
+          </Modal>
         </View>
       </SafeAreaView>
     </SafeAreaProvider>
@@ -511,6 +596,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     overflow: "hidden",
 
+    backgroundColor:
+      colors.background,
+  },
+
+  modalRoot: {
+    flex: 1,
+    width: "100%",
     backgroundColor:
       colors.background,
   },

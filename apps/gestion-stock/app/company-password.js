@@ -1,4 +1,15 @@
 import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  ActivityIndicator,
+  StyleSheet,
+  View,
+} from "react-native";
+
+import {
   Redirect,
   router,
   useLocalSearchParams,
@@ -6,6 +17,18 @@ import {
 
 import CompanyPasswordScreen from
   "../src/screens/CompanyPasswordScreen.js";
+
+import BiometricUnlockScreen from
+  "../src/screens/BiometricUnlockScreen.js";
+
+import {
+  getBiometricCapabilities,
+  hasBiometricCredential,
+  shouldOfferBiometricEnrollment,
+} from "../src/services/biometricService.js";
+
+import { colors } from
+  "../src/theme/colors.js";
 
 import {
   useAuthStore,
@@ -16,6 +39,16 @@ import {
 } from "../src/services/notificationService.js";
 
 export default function CompanyPasswordPage() {
+  const [
+    authenticationMode,
+    setAuthenticationMode,
+  ] = useState("checking");
+
+  const [
+    biometricLabel,
+    setBiometricLabel,
+  ] = useState("biométrie");
+
   const parameters =
     useLocalSearchParams();
 
@@ -71,6 +104,61 @@ export default function CompanyPasswordPage() {
         state.companySessionId
     );
 
+  const setCompanySessionId =
+    useAuthStore(
+      (state) =>
+        state.setCompanySessionId
+    );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function resolveMode() {
+      if (!user?.id) {
+        return;
+      }
+
+      try {
+        const [
+          capabilities,
+          hasCredential,
+        ] = await Promise.all([
+          getBiometricCapabilities(),
+          hasBiometricCredential(
+            user.id
+          ),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setBiometricLabel(
+          capabilities.label
+        );
+
+        setAuthenticationMode(
+          capabilities.available &&
+            hasCredential
+            ? "biometric"
+            : "password"
+        );
+      } catch {
+        if (isMounted) {
+          setAuthenticationMode(
+            "password"
+          );
+        }
+      }
+    }
+
+    resolveMode();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
+
   if (!session) {
     return (
       <Redirect href="/login" />
@@ -92,10 +180,78 @@ export default function CompanyPasswordPage() {
     );
   }
 
+  if (
+    authenticationMode ===
+    "checking"
+  ) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator
+          size="large"
+          color={
+            colors.brandBlueDark
+          }
+        />
+      </View>
+    );
+  }
+
+  if (
+    authenticationMode ===
+    "biometric"
+  ) {
+    return (
+      <BiometricUnlockScreen
+        userId={user.id}
+        biometricLabel={
+          biometricLabel
+        }
+        onUnlocked={async () => {
+          await markNotificationRead(
+            notificationId
+          );
+
+          router.replace(returnTo);
+        }}
+        onUsePassword={() =>
+          setAuthenticationMode(
+            "password"
+          )
+        }
+        onSignedOut={() => {
+          router.replace("/login");
+        }}
+      />
+    );
+  }
+
   return (
     <CompanyPasswordScreen
       userEmail={user?.email}
-      onVerified={async () => {
+      onVerified={async (result) => {
+        const shouldOffer =
+          await shouldOfferBiometricEnrollment(
+            user.id
+          );
+
+        setCompanySessionId(
+          result.session_id
+        );
+
+        if (shouldOffer) {
+          router.replace({
+            pathname:
+              "/biometric-setup",
+            params: {
+              returnTo,
+              notificationId:
+                notificationId ?? "",
+            },
+          });
+
+          return;
+        }
+
         await markNotificationRead(
           notificationId
         );
@@ -108,3 +264,13 @@ export default function CompanyPasswordPage() {
     />
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor:
+      colors.background,
+  },
+});

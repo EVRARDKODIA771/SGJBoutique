@@ -1,4 +1,10 @@
 import {
+  createHash,
+  randomBytes,
+  timingSafeEqual,
+} from "node:crypto";
+
+import {
   Router,
 } from "express";
 
@@ -53,6 +59,56 @@ const newCompanyPasswordSchema = z.object({
       "Company password must contain at least 12 characters"
     ),
 });
+
+const biometricCredentialSchema =
+  z.object({
+    credentialId: z
+      .string()
+      .uuid(),
+
+    token: z
+      .string()
+      .min(40)
+      .max(200),
+
+    deviceLabel: z
+      .string()
+      .trim()
+      .max(100)
+      .optional(),
+  });
+
+function hashBiometricToken(token) {
+  return createHash("sha256")
+    .update(token, "utf8")
+    .digest("hex");
+}
+
+function biometricTokenMatches(
+  storedHash,
+  suppliedToken
+) {
+  const expected = Buffer.from(
+    storedHash,
+    "hex"
+  );
+
+  const supplied = Buffer.from(
+    hashBiometricToken(
+      suppliedToken
+    ),
+    "hex"
+  );
+
+  return (
+    expected.length ===
+      supplied.length &&
+    timingSafeEqual(
+      expected,
+      supplied
+    )
+  );
+}
 
 const managedAdminRoles = [
   "admin",
@@ -965,6 +1021,22 @@ router.post(
         });
       }
 
+      const {
+        error: biometricError,
+      } = await supabaseAdmin
+        .from(
+          "company_biometric_credentials"
+        )
+        .update({
+          revoked_at:
+            new Date().toISOString(),
+        })
+        .is("revoked_at", null);
+
+      if (biometricError) {
+        throw biometricError;
+      }
+
       return response.status(200).json({
         success: true,
         message:
@@ -1086,6 +1158,317 @@ router.post(
 );
 
 /**
+ * POST /api/admin/auth/biometric/enroll
+ *
+ * Crée un secret d'appareil seulement après
+ * une session entreprise déjà validée par le
+ * mot de passe.
+ */
+router.post(
+  "/biometric/enroll",
+  authenticateUser,
+  requireApprovedAdmin(),
+  requireCompanySession,
+  async (request, response) => {
+    try {
+      const validation = z
+        .object({
+          deviceLabel: z
+            .string()
+            .trim()
+            .max(100)
+            .optional(),
+        })
+        .safeParse(request.body);
+
+      if (!validation.success) {
+        return response.status(400).json({
+          success: false,
+          error:
+            "Invalid biometric device data",
+        });
+      }
+
+      const token =
+        randomBytes(32).toString(
+          "base64url"
+        );
+
+      const tokenHash =
+        hashBiometricToken(token);
+
+      const deviceLabel =
+        validation.data.deviceLabel ??
+        null;
+
+      /*
+       * Une nouvelle activation remplace les
+       * anciennes autorisations de ce même
+       * utilisateur sur ce libellé d'appareil.
+       */
+      if (deviceLabel) {
+        await supabaseAdmin
+          .from(
+            "company_biometric_credentials"
+          )
+          .update({
+            revoked_at:
+              new Date().toISOString(),
+          })
+          .eq(
+            "user_id",
+            request.auth.user.id
+          )
+          .eq(
+            "device_label",
+            deviceLabel
+          )
+          .is("revoked_at", null);
+      }
+
+      const {
+        data: credential,
+        error,
+      } = await supabaseAdmin
+        .from(
+          "company_biometric_credentials"
+        )
+        .insert({
+          user_id:
+            request.auth.user.id,
+          token_hash: tokenHash,
+          device_label:
+            deviceLabel,
+        })
+        .select("id, created_at")
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      return response.status(201).json({
+        success: true,
+        credentialId: credential.id,
+        token,
+        createdAt:
+          credential.created_at,
+      });
+    } catch (error) {
+      console.error(
+        "Biometric enrollment error:",
+        error
+      );
+
+      return response.status(500).json({
+        success: false,
+        error:
+          "Unable to activate biometric access",
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/auth/biometric/verify
+ *
+ * Vérifie le secret déverrouillé localement
+ * par l'empreinte ou la reconnaissance faciale,
+ * puis crée une session entreprise courte.
+ */
+router.post(
+  "/biometric/verify",
+  authenticateUser,
+  async (request, response) => {
+    try {
+      const validation =
+        biometricCredentialSchema
+          .safeParse(request.body);
+
+      if (!validation.success) {
+        return response.status(400).json({
+          success: false,
+          error:
+            "Invalid biometric credential",
+        });
+      }
+
+      const {
+        credentialId,
+        token,
+        deviceLabel,
+      } = validation.data;
+
+      const {
+        data: membership,
+        error: membershipError,
+      } = await supabaseAdmin
+        .from("admin_memberships")
+        .select("status")
+        .eq(
+          "user_id",
+          request.auth.user.id
+        )
+        .maybeSingle();
+
+      if (membershipError) {
+        throw membershipError;
+      }
+
+      if (
+        membership?.status !==
+        "approved"
+      ) {
+        return response.status(403).json({
+          success: false,
+          error:
+            "Administrative access is no longer approved",
+          biometricCredentialRevoked:
+            true,
+        });
+      }
+
+      const {
+        data: credential,
+        error: credentialError,
+      } = await supabaseAdmin
+        .from(
+          "company_biometric_credentials"
+        )
+        .select(
+          "id, token_hash, device_label"
+        )
+        .eq("id", credentialId)
+        .eq(
+          "user_id",
+          request.auth.user.id
+        )
+        .is("revoked_at", null)
+        .maybeSingle();
+
+      if (credentialError) {
+        throw credentialError;
+      }
+
+      if (
+        !credential ||
+        !biometricTokenMatches(
+          credential.token_hash,
+          token
+        )
+      ) {
+        return response.status(403).json({
+          success: false,
+          error:
+            "Biometric access is invalid or revoked",
+          biometricCredentialRevoked:
+            true,
+        });
+      }
+
+      const {
+        data: securityConfig,
+        error: securityError,
+      } = await supabaseAdmin
+        .from("company_security")
+        .select(
+          "session_duration_minutes"
+        )
+        .eq("id", true)
+        .single();
+
+      if (securityError) {
+        throw securityError;
+      }
+
+      const expiresAt = new Date(
+        Date.now() +
+          securityConfig
+            .session_duration_minutes *
+            60 *
+            1000
+      ).toISOString();
+
+      const {
+        data: companySession,
+        error: sessionError,
+      } = await supabaseAdmin
+        .from(
+          "company_access_sessions"
+        )
+        .insert({
+          user_id:
+            request.auth.user.id,
+          device_label:
+            deviceLabel ??
+            credential.device_label ??
+            null,
+          expires_at: expiresAt,
+        })
+        .select("id")
+        .single();
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      await supabaseAdmin
+        .from(
+          "company_biometric_credentials"
+        )
+        .update({
+          last_used_at:
+            new Date().toISOString(),
+        })
+        .eq("id", credential.id);
+
+      const actorLabel =
+        await getUserDisplayLabel(
+          request.auth.user.id
+        );
+
+      await notifySafely({
+        eventType:
+          "company_session_opened",
+        title: "Nouvelle connexion",
+        body:
+          `${actorLabel} vient de se connecter`,
+        route: "/dashboard",
+        actorUserId:
+          request.auth.user.id,
+        data: {
+          actorLabel,
+          authenticationMethod:
+            "biometric",
+        },
+        excludeUserIds: [
+          request.auth.user.id,
+        ],
+      });
+
+      return response.status(200).json({
+        success: true,
+        granted: true,
+        session_id:
+          companySession.id,
+        expires_at: expiresAt,
+      });
+    } catch (error) {
+      console.error(
+        "Biometric verification error:",
+        error
+      );
+
+      return response.status(500).json({
+        success: false,
+        error:
+          "Unable to verify biometric access",
+      });
+    }
+  }
+);
+
+/**
  * POST /api/admin/auth/company-password/logout
  *
  * Ferme toutes les sessions d’entreprise
@@ -1107,6 +1490,26 @@ router.post(
 
       if (error) {
         throw error;
+      }
+
+      const {
+        error: biometricError,
+      } = await supabaseAdmin
+        .from(
+          "company_biometric_credentials"
+        )
+        .update({
+          revoked_at:
+            new Date().toISOString(),
+        })
+        .eq(
+          "user_id",
+          request.auth.user.id
+        )
+        .is("revoked_at", null);
+
+      if (biometricError) {
+        throw biometricError;
       }
 
       return response.status(200).json({
