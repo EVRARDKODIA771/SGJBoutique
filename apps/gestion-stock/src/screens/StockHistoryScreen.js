@@ -538,6 +538,19 @@ export default function StockHistoryScreen({
                     Vendeuse
                   </TableCell>
 
+                  {isEntries ? (
+                    <TableCell
+                      style={
+                        styles.statusColumn
+                      }
+                      textStyle={
+                        styles.headerText
+                      }
+                    >
+                      État
+                    </TableCell>
+                  ) : null}
+
                   <TableCell
                     style={styles.actionColumn}
                     textStyle={
@@ -575,6 +588,11 @@ export default function StockHistoryScreen({
                             .join(" · ")
                         : movement.reference;
 
+                    const isInactiveEntry =
+                      isEntries &&
+                      movement.entry_status ===
+                        "inactive";
+
                     return (
                       <View
                         key={movement.id}
@@ -582,6 +600,8 @@ export default function StockHistoryScreen({
                           styles.tableRow,
                           index % 2 === 1 &&
                             styles.alternateRow,
+                          isInactiveEntry &&
+                            styles.inactiveRow,
                         ]}
                       >
                         <TableCell
@@ -676,6 +696,25 @@ export default function StockHistoryScreen({
                             ?.staff_code ||
                             "—"}
                         </TableCell>
+
+                        {isEntries ? (
+                          <TableCell
+                            style={
+                              styles.statusColumn
+                            }
+                            textStyle={
+                              movement.entry_status ===
+                              "active"
+                                ? styles.activeStatusText
+                                : styles.inactiveStatusText
+                            }
+                          >
+                            {movement.entry_status ===
+                            "active"
+                              ? "ACTIF"
+                              : "INACTIF"}
+                          </TableCell>
+                        ) : null}
 
                         <View
                           style={[
@@ -1042,7 +1081,7 @@ const styles = StyleSheet.create({
   },
 
   table: {
-    minWidth: 1170,
+    minWidth: 1260,
   },
 
   tableRow: {
@@ -1062,6 +1101,11 @@ const styles = StyleSheet.create({
 
   alternateRow: {
     backgroundColor: colors.background,
+  },
+
+  inactiveRow: {
+    backgroundColor: "#E4E4E4",
+    opacity: 0.68,
   },
 
   tableCell: {
@@ -1091,6 +1135,18 @@ const styles = StyleSheet.create({
   sellerText: {
     color: colors.secondaryDark,
     fontWeight: "900",
+  },
+
+  activeStatusText: {
+    color: colors.success,
+    fontWeight: "900",
+    textAlign: "center",
+  },
+
+  inactiveStatusText: {
+    color: colors.textMuted,
+    fontWeight: "900",
+    textAlign: "center",
   },
 
   entryText: {
@@ -1134,6 +1190,10 @@ const styles = StyleSheet.create({
 
   sellerColumn: {
     width: 110,
+  },
+
+  statusColumn: {
+    width: 90,
   },
 
   actionColumn: {

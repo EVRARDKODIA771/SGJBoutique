@@ -437,7 +437,8 @@ productRoutes.get(
               sku,
               added_by_code,
               purchase_price,
-              sale_price
+              sale_price,
+              stock_quantity
             ),
             supplier:suppliers (
               id,
@@ -587,15 +588,117 @@ productRoutes.get(
         }
       }
 
+      const entryProductIds = [
+        ...new Set(
+          (movements ?? [])
+            .filter((movement) =>
+              [
+                "initial",
+                "purchase",
+              ].includes(
+                movement.movement_type
+              )
+            )
+            .map(
+              (movement) =>
+                movement.product_id
+            )
+            .filter(Boolean)
+        ),
+      ];
+
+      let latestEntryIdByProduct =
+        new Map();
+
+      if (entryProductIds.length > 0) {
+        const {
+          data: latestEntries,
+          error: latestEntriesError,
+        } = await supabaseAdmin
+          .from("stock_movements")
+          .select(
+            "id, product_id, created_at"
+          )
+          .in(
+            "product_id",
+            entryProductIds
+          )
+          .in(
+            "movement_type",
+            [
+              "initial",
+              "purchase",
+            ]
+          )
+          .order(
+            "created_at",
+            {
+              ascending: false,
+            }
+          );
+
+        if (latestEntriesError) {
+          console.error(
+            "Latest stock entries retrieval error:",
+            latestEntriesError
+          );
+        } else {
+          latestEntryIdByProduct =
+            new Map();
+
+          for (
+            const entry of
+              latestEntries ?? []
+          ) {
+            if (
+              !latestEntryIdByProduct.has(
+                entry.product_id
+              )
+            ) {
+              latestEntryIdByProduct.set(
+                entry.product_id,
+                entry.id
+              );
+            }
+          }
+        }
+      }
+
       const enrichedMovements =
         (movements ?? []).map(
-          (movement) => ({
-            ...movement,
-            seller:
-              staffByUserId.get(
-                movement.performed_by
-              ) ?? null,
-          })
+          (movement) => {
+            const isEntry = [
+              "initial",
+              "purchase",
+            ].includes(
+              movement.movement_type
+            );
+
+            const isLatestEntry =
+              latestEntryIdByProduct.get(
+                movement.product_id
+              ) === movement.id;
+
+            const hasAvailableStock =
+              Number(
+                movement.product
+                  ?.stock_quantity ?? 0
+              ) > 0;
+
+            return {
+              ...movement,
+              seller:
+                staffByUserId.get(
+                  movement.performed_by
+                ) ?? null,
+              entry_status: isEntry
+                ? isLatestEntry &&
+                  hasAvailableStock
+                  ? "active"
+                  : "inactive"
+                : null,
+            };
+          }
         );
 
       const searchTokens =
