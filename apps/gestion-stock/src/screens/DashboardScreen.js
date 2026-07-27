@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   ActivityIndicator,
@@ -14,7 +14,7 @@ import {
 
 import { signOut } from "../services/authService.js";
 
-import { getProducts, getSuppliers } from "../services/stockService.js";
+import { getDashboardStatistics } from "../services/stockService.js";
 
 import { colors } from "../theme/colors.js";
 
@@ -197,11 +197,15 @@ export default function DashboardScreen({
 
   const isCompact = width < 600;
 
-  const [products, setProducts] = useState([]);
-
-  const [productTotal, setProductTotal] = useState(0);
-
-  const [supplierTotal, setSupplierTotal] = useState(0);
+  const [statistics, setStatistics] = useState({
+    productTotal: 0,
+    supplierTotal: 0,
+    stockQuantity: 0,
+    soldUnits: 0,
+    salesRevenue: 0,
+    purchaseCost: 0,
+    profit: 0,
+  });
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -217,23 +221,20 @@ export default function DashboardScreen({
     setErrorMessage("");
 
     try {
-      const [productsResult, suppliersResult] = await Promise.all([
-        getProducts({
-          page: 1,
-          limit: 100,
-        }),
+      const result =
+        await getDashboardStatistics();
 
-        getSuppliers({
-          page: 1,
-          limit: 100,
-        }),
-      ]);
-
-      setProducts(productsResult.products ?? []);
-
-      setProductTotal(productsResult.pagination?.total ?? 0);
-
-      setSupplierTotal(suppliersResult.pagination?.total ?? 0);
+      setStatistics(
+        result.statistics ?? {
+          productTotal: 0,
+          supplierTotal: 0,
+          stockQuantity: 0,
+          soldUnits: 0,
+          salesRevenue: 0,
+          purchaseCost: 0,
+          profit: 0,
+        }
+      );
     } catch (error) {
       console.error("Dashboard loading error:", error);
 
@@ -247,36 +248,6 @@ export default function DashboardScreen({
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
-
-  const statistics = useMemo(() => {
-    const visibleProducts = products.filter(
-      (product) => product.status !== "archived",
-    );
-
-    const stockQuantity = visibleProducts.reduce(
-      (total, product) => total + (product.stock_quantity ?? 0),
-      0,
-    );
-
-    const purchaseValue = visibleProducts.reduce(
-      (total, product) =>
-        total + (product.stock_quantity ?? 0) * (product.purchase_price ?? 0),
-      0,
-    );
-
-    const saleValue = visibleProducts.reduce(
-      (total, product) =>
-        total + (product.stock_quantity ?? 0) * (product.sale_price ?? 0),
-      0,
-    );
-
-    return {
-      stockQuantity,
-      purchaseValue,
-      saleValue,
-      profit: saleValue - purchaseValue,
-    };
-  }, [products]);
 
   async function handleSignOut() {
     setIsSigningOut(true);
@@ -510,7 +481,7 @@ export default function DashboardScreen({
               compact={isCompact}
               hidden={isCompact && !areValuesVisible}
               label="Parfums"
-              value={productTotal}
+              value={statistics.productTotal}
               detail="Produits enregistrés"
               accentColor={colors.primary}
               onPress={() => onNavigate?.("products")}
@@ -529,7 +500,7 @@ export default function DashboardScreen({
               compact={isCompact}
               hidden={isCompact && !areValuesVisible}
               label="Fournisseurs"
-              value={supplierTotal}
+              value={statistics.supplierTotal}
               detail="Partenaires enregistrés"
               accentColor={colors.secondaryDark}
               onPress={() => onNavigate?.("suppliers")}

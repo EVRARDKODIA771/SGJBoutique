@@ -712,8 +712,8 @@ const styles = StyleSheet.create({
   },
 
   drawerLayer: {
-    ...StyleSheet.absoluteFillObject,
-    top: 60,
+    flex: 1,
+    minHeight: 0,
 
     zIndex: 1000,
     elevation: 20,
@@ -731,13 +731,9 @@ const styles = StyleSheet.create({
   },
 
   drawer: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-
     width: "86%",
     maxWidth: 320,
+    height: "100%",
     minHeight: 0,
     overflow: "hidden",
 

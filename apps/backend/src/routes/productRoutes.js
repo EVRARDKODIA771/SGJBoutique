@@ -105,6 +105,178 @@ productRoutes.use(
 );
 
 /**
+ * GET /api/admin/products/dashboard-statistics
+ *
+ * Le bénéfice correspond uniquement aux ventes réellement déclarées :
+ * somme quantité × (prix de vente - prix d'achat).
+ */
+productRoutes.get(
+  "/dashboard-statistics",
+  async (request, response) => {
+    try {
+      const [
+        productCountResult,
+        supplierCountResult,
+      ] = await Promise.all([
+        supabaseAdmin
+          .from("products")
+          .select("id", {
+            count: "exact",
+            head: true,
+          })
+          .neq("status", "archived"),
+
+        supabaseAdmin
+          .from("suppliers")
+          .select("id", {
+            count: "exact",
+            head: true,
+          }),
+      ]);
+
+      if (productCountResult.error) {
+        throw productCountResult.error;
+      }
+
+      if (supplierCountResult.error) {
+        throw supplierCountResult.error;
+      }
+
+      let stockQuantity = 0;
+      let productOffset = 0;
+      const pageSize = 1000;
+
+      while (true) {
+        const {
+          data: productPage,
+          error: productError,
+        } = await supabaseAdmin
+          .from("products")
+          .select("stock_quantity")
+          .neq("status", "archived")
+          .range(
+            productOffset,
+            productOffset + pageSize - 1
+          );
+
+        if (productError) {
+          throw productError;
+        }
+
+        const products = productPage ?? [];
+
+        stockQuantity += products.reduce(
+          (total, product) =>
+            total +
+            Number(product.stock_quantity ?? 0),
+          0
+        );
+
+        if (products.length < pageSize) {
+          break;
+        }
+
+        productOffset += pageSize;
+      }
+
+      let soldUnits = 0;
+      let salesRevenue = 0;
+      let purchaseCost = 0;
+      let profit = 0;
+      let saleOffset = 0;
+
+      while (true) {
+        const {
+          data: salePage,
+          error: saleError,
+        } = await supabaseAdmin
+          .from("stock_movements")
+          .select(
+            `
+              quantity_change,
+              unit_price,
+              purchase_price_snapshot,
+              product:products (
+                purchase_price,
+                sale_price
+              )
+            `
+          )
+          .eq("movement_type", "sale")
+          .range(
+            saleOffset,
+            saleOffset + pageSize - 1
+          );
+
+        if (saleError) {
+          throw saleError;
+        }
+
+        const sales = salePage ?? [];
+
+        for (const sale of sales) {
+          const quantity = Math.abs(
+            Number(sale.quantity_change ?? 0)
+          );
+
+          const salePrice = Number(
+            sale.unit_price ??
+              sale.product?.sale_price ??
+              0
+          );
+
+          const purchasePrice = Number(
+            sale.purchase_price_snapshot ??
+              sale.product?.purchase_price ??
+              0
+          );
+
+          soldUnits += quantity;
+          salesRevenue += quantity * salePrice;
+          purchaseCost +=
+            quantity * purchasePrice;
+          profit +=
+            quantity *
+            (salePrice - purchasePrice);
+        }
+
+        if (sales.length < pageSize) {
+          break;
+        }
+
+        saleOffset += pageSize;
+      }
+
+      return response.status(200).json({
+        success: true,
+        statistics: {
+          productTotal:
+            productCountResult.count ?? 0,
+          supplierTotal:
+            supplierCountResult.count ?? 0,
+          stockQuantity,
+          soldUnits,
+          salesRevenue,
+          purchaseCost,
+          profit,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "Dashboard statistics error:",
+        error
+      );
+
+      return response.status(500).json({
+        success: false,
+        error:
+          "Unable to calculate dashboard statistics",
+      });
+    }
+  }
+);
+
+/**
  * GET /api/admin/products/stock-history
  *
  * Retourne l’historique global des entrées

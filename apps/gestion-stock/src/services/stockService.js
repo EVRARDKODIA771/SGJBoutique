@@ -42,6 +42,12 @@ export function getProducts({
   );
 }
 
+export function getDashboardStatistics() {
+  return apiRequest(
+    "/api/admin/products/dashboard-statistics"
+  );
+}
+
 export function getSoldProducts({
   search,
   startDate,

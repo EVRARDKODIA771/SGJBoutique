@@ -117,7 +117,10 @@ export async function hasBiometricCredential(
 export async function shouldOfferBiometricEnrollment(
   userId
 ) {
-  if (!userId) {
+  if (
+    !userId ||
+    Platform.OS === "web"
+  ) {
     return false;
   }
 
@@ -146,6 +149,10 @@ export async function shouldOfferBiometricEnrollment(
 export async function authenticateLocally(
   label
 ) {
+  if (Platform.OS === "web") {
+    return false;
+  }
+
   const result =
     await LocalAuthentication
       .authenticateAsync({
@@ -168,6 +175,12 @@ export async function authenticateLocally(
 export async function enrollBiometricAccess(
   userId
 ) {
+  if (Platform.OS === "web") {
+    throw new Error(
+      "La biométrie est disponible uniquement dans l’application mobile."
+    );
+  }
+
   const capabilities =
     await getBiometricCapabilities();
 
@@ -232,7 +245,10 @@ export async function enrollBiometricAccess(
 export async function ignoreBiometricEnrollment(
   userId
 ) {
-  if (!userId) {
+  if (
+    !userId ||
+    Platform.OS === "web"
+  ) {
     return;
   }
 
@@ -248,6 +264,12 @@ export async function ignoreBiometricEnrollment(
 export async function unlockWithBiometrics(
   userId
 ) {
+  if (Platform.OS === "web") {
+    throw new Error(
+      "La biométrie est disponible uniquement dans l’application mobile."
+    );
+  }
+
   const capabilities =
     await getBiometricCapabilities();
 
