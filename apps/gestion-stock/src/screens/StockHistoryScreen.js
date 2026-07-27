@@ -458,9 +458,11 @@ export default function StockHistoryScreen({
                 {movements.map(
                   (movement, index) => {
                     const quantity =
-                      Number(
-                        movement.quantity_change ??
-                          0
+                      Math.abs(
+                        Number(
+                          movement.quantity_change ??
+                            0
+                        )
                       );
 
                     const product =
@@ -525,14 +527,12 @@ export default function StockHistoryScreen({
                             styles.quantityColumn
                           }
                           textStyle={
-                            quantity > 0
+                            isEntries
                               ? styles.entryText
                               : styles.exitText
                           }
                         >
-                          {quantity > 0
-                            ? `+${quantity}`
-                            : quantity}
+                          {quantity}
                         </TableCell>
 
                         <TableCell
