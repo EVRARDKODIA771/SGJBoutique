@@ -81,7 +81,6 @@ const menuSections = [
 
   {
     title: "ADMINISTRATION",
-    ownerOnly: true,
 
     items: [
       {
@@ -90,6 +89,7 @@ const menuSections = [
         route: "/administration/access-requests",
 
         exact: true,
+        ownerOnly: true,
       },
 
       {
@@ -240,7 +240,13 @@ export default function AdminSidebar({ onNavigate, isDrawer = false }) {
                 <Text style={styles.sectionTitle}>{section.title}</Text>
               ) : null}
 
-              {section.items.map((item, itemIndex) => (
+              {section.items
+                .filter(
+                  (item) =>
+                    !item.ownerOnly ||
+                    role === "owner"
+                )
+                .map((item, itemIndex) => (
                 <MenuItem
                   key={`${item.route}-${itemIndex}`}
                   item={item}

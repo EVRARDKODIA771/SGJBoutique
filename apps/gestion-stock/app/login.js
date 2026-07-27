@@ -27,6 +27,9 @@ export default function LoginPage() {
       onAuthenticated={() => {
         router.replace("/");
       }}
+      onSignUp={() => {
+        router.push("/signup");
+      }}
     />
   );
 }

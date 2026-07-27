@@ -86,6 +86,25 @@ export async function signIn(
       throw error;
     }
 
+    useAuthStore
+      .getState()
+      .setSession(data.session);
+
+    try {
+      await apiRequest(
+        "/api/admin/auth/login-notification",
+        {
+          method: "POST",
+          requiresCompanySession: false,
+        }
+      );
+    } catch (notificationError) {
+      console.warn(
+        "Login notification error:",
+        notificationError
+      );
+    }
+
     const statusResult =
       await getAdminAccessStatus();
 
@@ -94,13 +113,9 @@ export async function signIn(
       "approved"
     ) {
       await clearLocalBiometricAccess(
-        session.user.id
+        data.user.id
       );
     }
-
-    useAuthStore
-      .getState()
-      .setSession(data.session);
 
     /*
      * La première connexion crée immédiatement
@@ -127,6 +142,49 @@ export async function signIn(
       .getState()
       .setIsInitializing(false);
   }
+}
+
+export async function signUp({
+  email,
+  password,
+  fullName,
+}) {
+  const normalizedName =
+    fullName.trim();
+
+  const {
+    data,
+    error,
+  } = await supabase.auth.signUp({
+    email: email.trim(),
+    password,
+    options: {
+      data: {
+        full_name: normalizedName,
+      },
+    },
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (data.session) {
+    useAuthStore
+      .getState()
+      .setSession(data.session);
+
+    try {
+      await requestAdminAccess();
+    } catch (accessError) {
+      console.warn(
+        "Automatic access request error:",
+        accessError
+      );
+    }
+  }
+
+  return data;
 }
 
 /*
@@ -263,6 +321,22 @@ export function manageAdminUser(
         action,
         role,
         displayName,
+        staffCode,
+        skuPrefix,
+      },
+    }
+  );
+}
+
+export function updateMyStaffProfile({
+  staffCode,
+  skuPrefix,
+}) {
+  return apiRequest(
+    "/api/admin/auth/me/staff-profile",
+    {
+      method: "PATCH",
+      body: {
         staffCode,
         skuPrefix,
       },

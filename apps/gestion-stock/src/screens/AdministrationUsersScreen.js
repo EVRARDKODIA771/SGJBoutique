@@ -21,6 +21,7 @@ import {
   getAccessRequests,
   getAuthorizedUsers,
   manageAdminUser,
+  updateMyStaffProfile,
 } from "../services/authService.js";
 
 import {
@@ -127,8 +128,19 @@ export default function AdministrationUsersScreen({
         state.session?.user?.id
     );
 
+  const currentUserRole =
+    useAuthStore(
+      (state) =>
+        state.adminMembership?.role
+    );
+
   const [users, setUsers] =
     useState([]);
+
+  const [
+    expandedUserId,
+    setExpandedUserId,
+  ] = useState(null);
 
   const [drafts, setDrafts] =
     useState({});
@@ -193,25 +205,23 @@ export default function AdministrationUsersScreen({
           }
         );
 
-        if (isRequests) {
-          setDrafts((current) => {
-            const next = {
-              ...current,
-            };
+        setDrafts((current) => {
+          const next = {
+            ...current,
+          };
 
-            for (const user of
-              loadedUsers) {
-              if (!next[user.user_id]) {
-                next[user.user_id] =
-                  createApprovalDraft(
-                    user
-                  );
-              }
+          for (const user of
+            loadedUsers) {
+            if (!next[user.user_id]) {
+              next[user.user_id] =
+                createApprovalDraft(
+                  user
+                );
             }
+          }
 
-            return next;
-          });
-        }
+          return next;
+        });
       } catch (error) {
         console.error(
           "Administration users loading error:",
@@ -332,6 +342,57 @@ export default function AdministrationUsersScreen({
     } catch (error) {
       Alert.alert(
         "Approbation impossible",
+        error?.message ||
+          "Une erreur est survenue."
+      );
+    } finally {
+      setProcessingUserId(null);
+    }
+  }
+
+  async function saveOwnIdentity(
+    user
+  ) {
+    const draft =
+      drafts[user.user_id] ??
+      createApprovalDraft(user);
+
+    if (
+      !draft.staffCode.trim() ||
+      !draft.skuPrefix.trim()
+    ) {
+      Alert.alert(
+        "Informations requises",
+        "Renseignez votre code métier et votre préfixe SKU."
+      );
+      return;
+    }
+
+    setProcessingUserId(
+      user.user_id
+    );
+
+    try {
+      await updateMyStaffProfile({
+        staffCode:
+          draft.staffCode
+            .trim()
+            .toUpperCase(),
+        skuPrefix:
+          draft.skuPrefix
+            .trim()
+            .toUpperCase(),
+      });
+
+      await loadUsers();
+
+      Alert.alert(
+        "Informations enregistrées",
+        "Votre code métier et votre préfixe SKU ont été mis à jour."
+      );
+    } catch (error) {
+      Alert.alert(
+        "Modification impossible",
         error?.message ||
           "Une erreur est survenue."
       );
@@ -671,9 +732,18 @@ export default function AdministrationUsersScreen({
                       styles.userCardCompact,
                   ]}
                 >
-                  <View
+                  <Pressable
                     style={
                       styles.userHeader
+                    }
+                    onPress={() =>
+                      setExpandedUserId(
+                        (current) =>
+                          current ===
+                          user.user_id
+                            ? null
+                            : user.user_id
+                      )
                     }
                   >
                     <View
@@ -704,57 +774,84 @@ export default function AdministrationUsersScreen({
                           "E-mail indisponible"}
                       </Text>
 
-                      <Text
-                        style={
-                          styles.userUuid
-                        }
-                        selectable
-                      >
-                        UUID :{" "}
-                        {user.user_id}
-                      </Text>
+                      {expandedUserId ===
+                      user.user_id ? (
+                        <Text
+                          style={
+                            styles.userUuid
+                          }
+                          selectable
+                        >
+                          UUID :{" "}
+                          {user.user_id}
+                        </Text>
+                      ) : null}
                     </View>
 
                     <View
-                      style={[
-                        styles.statusBadge,
-                        user.status ===
-                        "approved"
-                          ? styles.approvedBadge
-                          : user.status ===
-                              "suspended"
-                            ? styles.suspendedBadge
-                            : styles.pendingBadge,
-                      ]}
+                      style={
+                        styles.headerActions
+                      }
                     >
-                      <Text
+                      <View
                         style={[
-                          styles.statusText,
+                          styles.statusBadge,
                           user.status ===
                           "approved"
-                            ? styles.approvedText
+                            ? styles.approvedBadge
                             : user.status ===
                                 "suspended"
-                              ? styles.suspendedText
-                              : styles.pendingText,
+                              ? styles.suspendedBadge
+                              : styles.pendingBadge,
                         ]}
                       >
-                        {user.status ===
-                        "approved"
-                          ? "Autorisé"
-                          : user.status ===
-                              "suspended"
-                            ? "Suspendu"
-                            : "En attente"}
+                        <Text
+                          style={[
+                            styles.statusText,
+                            user.status ===
+                            "approved"
+                              ? styles.approvedText
+                              : user.status ===
+                                  "suspended"
+                                ? styles.suspendedText
+                                : styles.pendingText,
+                          ]}
+                        >
+                          {user.status ===
+                          "approved"
+                            ? "Autorisé"
+                            : user.status ===
+                                "suspended"
+                              ? "Suspendu"
+                              : user.status ===
+                                  "revoked"
+                                ? "Révoqué"
+                                : user.status ===
+                                    "registered"
+                                  ? "Inscrit"
+                                  : "En attente"}
+                        </Text>
+                      </View>
+
+                      <Text
+                        style={styles.chevron}
+                      >
+                        {expandedUserId ===
+                        user.user_id
+                          ? "▲"
+                          : "▼"}
                       </Text>
                     </View>
-                  </View>
+                  </Pressable>
 
                   {isRequests ? (
                     <View
-                      style={
-                        styles.formSection
-                      }
+                      style={[
+                        styles.formSection,
+                        expandedUserId !==
+                          user.user_id &&
+                          styles.hidden,
+                      ]}
                     >
                       <Text
                         style={
@@ -924,9 +1021,12 @@ export default function AdministrationUsersScreen({
                     </View>
                   ) : (
                     <View
-                      style={
-                        styles.detailsGrid
-                      }
+                      style={[
+                        styles.detailsGrid,
+                        expandedUserId !==
+                          user.user_id &&
+                          styles.hidden,
+                      ]}
                     >
                       <View
                         style={
@@ -1021,14 +1121,211 @@ export default function AdministrationUsersScreen({
                           )}
                         </Text>
                       </View>
+
+                      <View
+                        style={
+                          styles.detailItem
+                        }
+                      >
+                        <Text
+                          style={
+                            styles.detailLabel
+                          }
+                        >
+                          Téléphone
+                        </Text>
+                        <Text
+                          style={
+                            styles.detailValue
+                          }
+                        >
+                          {user.phone || "—"}
+                        </Text>
+                      </View>
+
+                      <View
+                        style={
+                          styles.detailItem
+                        }
+                      >
+                        <Text
+                          style={
+                            styles.detailLabel
+                          }
+                        >
+                          Inscrit le
+                        </Text>
+                        <Text
+                          style={
+                            styles.detailValue
+                          }
+                        >
+                          {formatDate(
+                            user.createdAt ??
+                              user.requested_at
+                          )}
+                        </Text>
+                      </View>
+
+                      <View
+                        style={
+                          styles.detailItem
+                        }
+                      >
+                        <Text
+                          style={
+                            styles.detailLabel
+                          }
+                        >
+                          Dernière connexion
+                        </Text>
+                        <Text
+                          style={
+                            styles.detailValue
+                          }
+                        >
+                          {formatDate(
+                            user.lastSignInAt
+                          )}
+                        </Text>
+                      </View>
                     </View>
                   )}
+
+                  {!isRequests &&
+                  expandedUserId ===
+                    user.user_id ? (
+                    user.user_id ===
+                    currentUserId ? (
+                      <View
+                        style={
+                          styles.selfEditSection
+                        }
+                      >
+                        <Text
+                          style={
+                            styles.sectionLabel
+                          }
+                        >
+                          Modifier mes informations métier
+                        </Text>
+
+                        <View
+                          style={
+                            styles.fieldsRow
+                          }
+                        >
+                          <View
+                            style={
+                              styles.field
+                            }
+                          >
+                            <Text
+                              style={
+                                styles.fieldLabel
+                              }
+                            >
+                              Code métier
+                            </Text>
+                            <TextInput
+                              style={
+                                styles.fieldInput
+                              }
+                              value={
+                                draft.staffCode
+                              }
+                              onChangeText={(
+                                value
+                              ) =>
+                                updateDraft(
+                                  user.user_id,
+                                  "staffCode",
+                                  value.toUpperCase()
+                                )
+                              }
+                              autoCapitalize="characters"
+                              autoCorrect={false}
+                            />
+                          </View>
+
+                          <View
+                            style={
+                              styles.field
+                            }
+                          >
+                            <Text
+                              style={
+                                styles.fieldLabel
+                              }
+                            >
+                              Préfixe SKU
+                            </Text>
+                            <TextInput
+                              style={
+                                styles.fieldInput
+                              }
+                              value={
+                                draft.skuPrefix
+                              }
+                              onChangeText={(
+                                value
+                              ) =>
+                                updateDraft(
+                                  user.user_id,
+                                  "skuPrefix",
+                                  value.toUpperCase()
+                                )
+                              }
+                              autoCapitalize="characters"
+                              autoCorrect={false}
+                            />
+                          </View>
+                        </View>
+
+                        <Pressable
+                          style={
+                            styles.primaryButton
+                          }
+                          disabled={
+                            isProcessing
+                          }
+                          onPress={() =>
+                            saveOwnIdentity(
+                              user
+                            )
+                          }
+                        >
+                          <Text
+                            style={
+                              styles.primaryButtonText
+                            }
+                          >
+                            Enregistrer
+                          </Text>
+                        </Pressable>
+                      </View>
+                    ) : (
+                      <Text
+                        style={
+                          styles.readOnlyNote
+                        }
+                      >
+                        Seul cet utilisateur peut modifier son code métier et son préfixe SKU.
+                      </Text>
+                    )
+                  ) : null}
 
                   <View
                         style={[
                           styles.actionsRow,
                           isCompact &&
                             styles.actionsRowCompact,
+                          (expandedUserId !==
+                            user.user_id ||
+                            (!isRequests &&
+                              currentUserRole !==
+                                "owner")) &&
+                            styles.hidden,
                         ]}
                   >
                     {isRequests ? (
@@ -1472,6 +1769,16 @@ const styles = StyleSheet.create({
     gap: 14,
     marginBottom: 18,
   },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  chevron: {
+    color: brandBlueDark,
+    fontSize: 14,
+    fontWeight: "900",
+  },
   userIdentity: {
     flex: 1,
     minWidth: 240,
@@ -1626,6 +1933,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     marginTop: 18,
+  },
+  selfEditSection: {
+    gap: 12,
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  readOnlyNote: {
+    marginTop: 14,
+    color: colors.textMuted,
+    fontSize: 12,
+    fontStyle: "italic",
+  },
+  hidden: {
+    display: "none",
   },
   actionsRowCompact: {
     flexDirection: "column",

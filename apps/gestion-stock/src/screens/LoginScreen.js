@@ -51,6 +51,7 @@ const loginSchema = z.object({
 
 export default function LoginScreen({
   onAuthenticated,
+  onSignUp,
 }) {
   const [showPassword, setShowPassword] =
     useState(false);
@@ -336,6 +337,18 @@ export default function LoginScreen({
             Accès réservé aux membres
             autorisés de JDE.
           </Text>
+
+          <Pressable
+            style={styles.signUpLink}
+            onPress={onSignUp}
+          >
+            <Text
+              style={styles.signUpLinkText}
+            >
+              Nouveau sur JDE Parfum ?
+              Créer un compte
+            </Text>
+          </Pressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -417,6 +430,19 @@ const styles = StyleSheet.create({
     color: colors.danger,
     fontSize: 14,
     lineHeight: 20,
+  },
+
+  signUpLink: {
+    alignSelf: "center",
+    marginTop: 16,
+    padding: 8,
+  },
+
+  signUpLinkText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: "800",
+    textAlign: "center",
   },
 
   form: {

@@ -51,15 +51,6 @@ export default function AuthorizedUsersPage() {
     );
   }
 
-  if (
-    adminMembership?.role !==
-    "owner"
-  ) {
-    return (
-      <Redirect href="/dashboard" />
-    );
-  }
-
   return (
     <AdministrationUsersScreen
       view="authorized"

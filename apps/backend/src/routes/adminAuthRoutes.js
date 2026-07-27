@@ -364,6 +364,220 @@ async function getManagedMemberships({
   };
 }
 
+async function getAllRegisteredUsers({
+  search,
+  page,
+  limit,
+}) {
+  const {
+    data: authResult,
+    error: authError,
+  } =
+    await supabaseAdmin.auth.admin
+      .listUsers({
+        page: 1,
+        perPage: 1000,
+      });
+
+  if (authError) {
+    throw authError;
+  }
+
+  const authUsers =
+    authResult?.users ?? [];
+
+  if (authUsers.length === 0) {
+    return {
+      users: [],
+      pagination: {
+        page,
+        limit,
+        total: 0,
+        totalPages: 0,
+      },
+    };
+  }
+
+  const userIds = authUsers.map(
+    (user) => user.id
+  );
+
+  const [
+    membershipsResult,
+    profilesResult,
+    staffProfilesResult,
+  ] = await Promise.all([
+    supabaseAdmin
+      .from("admin_memberships")
+      .select(
+        "user_id, role, status, requested_at, approved_at, approved_by, suspended_at, revoked_at"
+      )
+      .in("user_id", userIds),
+    supabaseAdmin
+      .from("profiles")
+      .select(
+        "id, full_name, phone, avatar_url"
+      )
+      .in("id", userIds),
+    supabaseAdmin
+      .from("staff_profiles")
+      .select(
+        "user_id, display_name, staff_code, sku_prefix, is_active"
+      )
+      .in("user_id", userIds),
+  ]);
+
+  if (membershipsResult.error) {
+    throw membershipsResult.error;
+  }
+
+  if (profilesResult.error) {
+    throw profilesResult.error;
+  }
+
+  if (staffProfilesResult.error) {
+    throw staffProfilesResult.error;
+  }
+
+  const membershipsById = new Map(
+    (membershipsResult.data ?? []).map(
+      (membership) => [
+        membership.user_id,
+        membership,
+      ]
+    )
+  );
+
+  const profilesById = new Map(
+    (profilesResult.data ?? []).map(
+      (profile) => [
+        profile.id,
+        profile,
+      ]
+    )
+  );
+
+  const staffProfilesById = new Map(
+    (staffProfilesResult.data ?? []).map(
+      (profile) => [
+        profile.user_id,
+        profile,
+      ]
+    )
+  );
+
+  let users = authUsers.map(
+    (authUser) => {
+      const membership =
+        membershipsById.get(
+          authUser.id
+        ) ?? null;
+
+      const profile =
+        profilesById.get(
+          authUser.id
+        ) ?? null;
+
+      const staffProfile =
+        staffProfilesById.get(
+          authUser.id
+        ) ?? null;
+
+      return {
+        ...(membership ?? {}),
+        user_id: authUser.id,
+        email:
+          authUser.email ?? null,
+        emailConfirmedAt:
+          authUser.email_confirmed_at ??
+          null,
+        createdAt:
+          authUser.created_at ?? null,
+        lastSignInAt:
+          authUser.last_sign_in_at ??
+          null,
+        status:
+          membership?.status ??
+          "registered",
+        role:
+          membership?.role ??
+          "viewer",
+        fullName:
+          profile?.full_name ??
+          authUser.user_metadata
+            ?.full_name ??
+          null,
+        phone:
+          profile?.phone ?? null,
+        avatarUrl:
+          profile?.avatar_url ??
+          null,
+        displayName:
+          staffProfile?.display_name ??
+          null,
+        staffCode:
+          staffProfile?.staff_code ??
+          null,
+        skuPrefix:
+          staffProfile?.sku_prefix ??
+          null,
+        isStaffActive:
+          staffProfile?.is_active ??
+          false,
+      };
+    }
+  );
+
+  if (search) {
+    const normalizedSearch =
+      search.toLocaleLowerCase("fr");
+
+    users = users.filter((user) =>
+      [
+        user.email,
+        user.fullName,
+        user.displayName,
+        user.staffCode,
+        user.skuPrefix,
+        user.role,
+        user.status,
+        user.user_id,
+      ].some((value) =>
+        String(value ?? "")
+          .toLocaleLowerCase("fr")
+          .includes(normalizedSearch)
+      )
+    );
+  }
+
+  users.sort(
+    (first, second) =>
+      new Date(
+        second.createdAt ?? 0
+      ) -
+      new Date(
+        first.createdAt ?? 0
+      )
+  );
+
+  const total = users.length;
+  const start = (page - 1) * limit;
+
+  return {
+    users: users.slice(
+      start,
+      start + limit
+    ),
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages:
+        Math.ceil(total / limit),
+    },
+  };
+}
+
 /**
  * POST /api/admin/auth/access/request
  *
@@ -632,7 +846,7 @@ router.get(
 router.get(
   "/authorized-users",
   authenticateUser,
-  requireApprovedAdmin(["owner"]),
+  requireApprovedAdmin(),
   requireCompanySession,
   async (request, response) => {
     try {
@@ -658,11 +872,7 @@ router.get(
       } = validation.data;
 
       const result =
-        await getManagedMemberships({
-          statuses: [
-            "approved",
-            "suspended",
-          ],
+        await getAllRegisteredUsers({
           search,
           page,
           limit,
@@ -684,6 +894,180 @@ router.get(
         success: false,
         error:
           "Unable to retrieve authorized users",
+      });
+    }
+  }
+);
+
+router.patch(
+  "/me/staff-profile",
+  authenticateUser,
+  requireApprovedAdmin(),
+  requireCompanySession,
+  async (request, response) => {
+    try {
+      const validation = z
+        .object({
+          staffCode: z
+            .string()
+            .trim()
+            .min(2)
+            .max(30)
+            .regex(
+              /^[A-Za-z0-9_-]+$/
+            ),
+          skuPrefix: z
+            .string()
+            .trim()
+            .min(2)
+            .max(30)
+            .regex(
+              /^[A-Za-z0-9_-]+$/
+            ),
+        })
+        .safeParse(request.body);
+
+      if (!validation.success) {
+        return response.status(400).json({
+          success: false,
+          error:
+            "Code métier ou préfixe SKU invalide",
+          details:
+            validation.error.flatten(),
+        });
+      }
+
+      const userId =
+        request.auth.user.id;
+
+      const {
+        data: currentProfile,
+        error: currentProfileError,
+      } = await supabaseAdmin
+        .from("staff_profiles")
+        .select(
+          "display_name, is_active"
+        )
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (currentProfileError) {
+        throw currentProfileError;
+      }
+
+      const {
+        data,
+        error,
+      } = await supabaseAdmin
+        .from("staff_profiles")
+        .upsert(
+          {
+            user_id: userId,
+            display_name:
+              currentProfile
+                ?.display_name ??
+              request.auth.user
+                .user_metadata
+                ?.full_name ??
+              request.auth.user.email,
+            staff_code:
+              validation.data.staffCode
+                .toUpperCase(),
+            sku_prefix:
+              validation.data.skuPrefix
+                .toUpperCase(),
+            is_active:
+              currentProfile
+                ?.is_active ??
+              true,
+          },
+          {
+            onConflict: "user_id",
+          }
+        )
+        .select(
+          "user_id, display_name, staff_code, sku_prefix, is_active"
+        )
+        .single();
+
+      if (error) {
+        if (
+          error.code === "23505"
+        ) {
+          return response
+            .status(409)
+            .json({
+              success: false,
+              error:
+                "Ce code métier ou ce préfixe SKU est déjà utilisé.",
+            });
+        }
+
+        throw error;
+      }
+
+      return response.status(200).json({
+        success: true,
+        profile: data,
+      });
+    } catch (error) {
+      console.error(
+        "Personal staff profile update error:",
+        error
+      );
+
+      return response.status(500).json({
+        success: false,
+        error:
+          "Impossible de modifier votre identité métier.",
+      });
+    }
+  }
+);
+
+router.post(
+  "/login-notification",
+  authenticateUser,
+  async (request, response) => {
+    try {
+      const email =
+        request.auth.user.email ??
+        (await getUserEmail(
+          request.auth.user.id
+        )) ??
+        "Un utilisateur";
+
+      await notifySafely({
+        eventType:
+          "login_attempted",
+        title:
+          "Tentative de connexion",
+        body:
+          `${email} a tenté de se connecter sur la plateforme`,
+        route:
+          "/administration/authorized-users",
+        actorUserId:
+          request.auth.user.id,
+        subjectUserId:
+          request.auth.user.id,
+        data: {
+          email,
+          userId:
+            request.auth.user.id,
+        },
+      });
+
+      return response.status(200).json({
+        success: true,
+      });
+    } catch (error) {
+      console.error(
+        "Login notification error:",
+        error
+      );
+
+      return response.status(200).json({
+        success: true,
       });
     }
   }
