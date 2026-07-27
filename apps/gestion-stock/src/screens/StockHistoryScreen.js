@@ -131,6 +131,7 @@ export default function StockHistoryScreen({
         const result =
           await getGlobalStockMovements({
             historyType: direction,
+            direction,
             search:
               activeSearch ||
               undefined,
@@ -138,8 +139,23 @@ export default function StockHistoryScreen({
             limit: 20,
           });
 
+        const allowedMovementTypes =
+          direction === "entries"
+            ? new Set([
+                "initial",
+                "purchase",
+              ])
+            : new Set([
+                "sale",
+              ]);
+
         setMovements(
-          result.movements ?? []
+          (result.movements ?? []).filter(
+            (movement) =>
+              allowedMovementTypes.has(
+                movement.movement_type
+              )
+          )
         );
 
         setPagination(
