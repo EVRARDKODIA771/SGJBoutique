@@ -130,7 +130,7 @@ export default function StockHistoryScreen({
       try {
         const result =
           await getGlobalStockMovements({
-            direction,
+            historyType: direction,
             search:
               activeSearch ||
               undefined,
@@ -529,6 +529,9 @@ export default function StockHistoryScreen({
                     }
                   >
                     Fiche
+                    {isEntries
+                      ? " produit"
+                      : " / reçu"}
                   </TableCell>
                 </View>
 

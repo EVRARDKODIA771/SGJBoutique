@@ -6,6 +6,7 @@ import {
 
 import {
   ActivityIndicator,
+  Image,
   Modal,
   Pressable,
   RefreshControl,
@@ -50,6 +51,9 @@ function ProductCard({
   const isLowStock =
     stockQuantity <= lowStockThreshold;
 
+  const backgroundImageUrl =
+    product.primary_image_url;
+
   function editProduct(event) {
     event?.stopPropagation?.();
     onEdit?.(product);
@@ -63,6 +67,19 @@ function ProductCard({
   if (compact) {
     return (
       <View style={styles.mobileProductItem}>
+        {backgroundImageUrl ? (
+          <Image
+            source={{
+              uri: backgroundImageUrl,
+            }}
+            style={
+              styles.mobileProductBackground
+            }
+            resizeMode="cover"
+            accessibilityIgnoresInvertColors
+          />
+        ) : null}
+
         <Pressable
           style={({ pressed }) => [
             styles.mobileProductMain,
@@ -72,22 +89,30 @@ function ProductCard({
             onPress?.(product)
           }
         >
-          <View
-            style={
-              styles.mobileProductIcon
-            }
-          >
-            <Text
+          {!backgroundImageUrl ? (
+            <View
               style={
-                styles.mobileProductIconText
+                styles.mobileProductIcon
               }
             >
-              {product.name
-                ?.trim()
-                ?.charAt(0)
-                ?.toUpperCase() ?? "P"}
-            </Text>
-          </View>
+              <Text
+                style={
+                  styles.mobileProductIconText
+                }
+              >
+                {product.name
+                  ?.trim()
+                  ?.charAt(0)
+                  ?.toUpperCase() ?? "P"}
+              </Text>
+            </View>
+          ) : (
+            <View
+              style={
+                styles.mobileImageSpacer
+              }
+            />
+          )}
 
           <View
             style={
@@ -206,23 +231,55 @@ function ProductCard({
       ]}
       onPress={() => onPress?.(product)}
     >
-      <View style={styles.productTop}>
-        <View
+      {backgroundImageUrl ? (
+        <Image
+          source={{
+            uri: backgroundImageUrl,
+          }}
           style={
-            styles.productPlaceholder
+            styles.productBackgroundImage
           }
-        >
-          <Text
+          resizeMode="cover"
+          accessibilityIgnoresInvertColors
+        />
+      ) : null}
+
+      <View style={styles.productTop}>
+        {!backgroundImageUrl ? (
+          <View
             style={
-              styles.productPlaceholderText
+              styles.productPlaceholder
             }
           >
-            {product.name
-              ?.trim()
-              ?.charAt(0)
-              ?.toUpperCase() ?? "P"}
-          </Text>
-        </View>
+            <Text
+              style={
+                styles.productPlaceholderText
+              }
+            >
+              {product.name
+                ?.trim()
+                ?.charAt(0)
+                ?.toUpperCase() ?? "P"}
+            </Text>
+          </View>
+        ) : (
+          <View
+            style={
+              styles.productImageBadge
+            }
+          >
+            <Text
+              style={
+                styles.productImageBadgeText
+              }
+            >
+              {product.name
+                ?.trim()
+                ?.charAt(0)
+                ?.toUpperCase() ?? "P"}
+            </Text>
+          </View>
+        )}
 
         <View
           style={styles.productTopActions}
@@ -1053,6 +1110,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    overflow: "hidden",
+  },
+
+  mobileProductBackground: {
+    ...StyleSheet.absoluteFillObject,
+    width: undefined,
+    height: undefined,
+    opacity: 0.16,
+  },
+
+  mobileImageSpacer: {
+    width: 38,
+    height: 38,
+    flexShrink: 0,
   },
 
   mobileProductMain: {
@@ -1203,6 +1274,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 12,
     elevation: 2,
+    overflow: "hidden",
+  },
+
+  productBackgroundImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: undefined,
+    height: undefined,
+    opacity: 0.18,
   },
 
   productTop: {
@@ -1260,6 +1339,22 @@ const styles = StyleSheet.create({
   },
 
   productPlaceholderText: {
+    color: colors.primary,
+    fontSize: 24,
+    fontWeight: "900",
+  },
+
+  productImageBadge: {
+    width: 58,
+    height: 58,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 16,
+    backgroundColor:
+      "rgba(255, 255, 255, 0.84)",
+  },
+
+  productImageBadgeText: {
     color: colors.primary,
     fontSize: 24,
     fontWeight: "900",

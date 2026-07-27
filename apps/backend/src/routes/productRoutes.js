@@ -343,6 +343,13 @@ productRoutes.get(
   async (request, response) => {
     try {
       const querySchema = z.object({
+        historyType: z
+          .enum([
+            "entries",
+            "exits",
+          ])
+          .optional(),
+
         direction: z
           .enum([
             "entries",
@@ -403,6 +410,7 @@ productRoutes.get(
       }
 
       const {
+        historyType,
         direction,
         movementType,
         productId,
@@ -459,7 +467,37 @@ productRoutes.get(
           );
       }
 
-      if (direction === "entries") {
+      /*
+       * Règle métier de l'écran d'historique :
+       * - une entrée provient de la création d'un parfum
+       *   ou d'un achat/ravitaillement fournisseur ;
+       * - une sortie provient uniquement d'une vente déclarée.
+       *
+       * Ce filtre ne dépend pas du signe affiché dans l'interface.
+       */
+      if (historyType === "entries") {
+        databaseQuery =
+          databaseQuery.in(
+            "movement_type",
+            [
+              "initial",
+              "purchase",
+            ]
+          );
+      }
+
+      if (historyType === "exits") {
+        databaseQuery =
+          databaseQuery.eq(
+            "movement_type",
+            "sale"
+          );
+      }
+
+      if (
+        !historyType &&
+        direction === "entries"
+      ) {
         databaseQuery =
           databaseQuery.gt(
             "quantity_change",
@@ -467,7 +505,10 @@ productRoutes.get(
           );
       }
 
-      if (direction === "exits") {
+      if (
+        !historyType &&
+        direction === "exits"
+      ) {
         databaseQuery =
           databaseQuery.lt(
             "quantity_change",
@@ -713,9 +754,76 @@ productRoutes.get(
         });
       }
 
+      const productIds =
+        (products ?? []).map(
+          (product) => product.id
+        );
+
+      let primaryImageByProductId =
+        new Map();
+
+      if (productIds.length > 0) {
+        const {
+          data: productImages,
+          error: imageError,
+        } = await supabaseAdmin
+          .from("product_images")
+          .select(
+            "product_id, public_url, is_primary, display_order"
+          )
+          .in(
+            "product_id",
+            productIds
+          )
+          .order(
+            "is_primary",
+            {
+              ascending: false,
+            }
+          )
+          .order(
+            "display_order",
+            {
+              ascending: true,
+            }
+          );
+
+        if (imageError) {
+          console.error(
+            "Product card images retrieval error:",
+            imageError
+          );
+        } else {
+          for (const image of
+            productImages ?? []) {
+            if (
+              !primaryImageByProductId.has(
+                image.product_id
+              )
+            ) {
+              primaryImageByProductId.set(
+                image.product_id,
+                image.public_url
+              );
+            }
+          }
+        }
+      }
+
+      const productsWithImages =
+        (products ?? []).map(
+          (product) => ({
+            ...product,
+            primary_image_url:
+              primaryImageByProductId.get(
+                product.id
+              ) ?? null,
+          })
+        );
+
       return response.status(200).json({
         success: true,
-        products: products ?? [],
+        products: productsWithImages,
         pagination: {
           page,
           limit,
