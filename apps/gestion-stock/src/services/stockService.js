@@ -242,6 +242,7 @@ export function getGlobalStockMovements({
   movementType,
   direction,
   productId,
+  search,
   page = 1,
   limit = 20,
 } = {}) {
@@ -249,6 +250,7 @@ export function getGlobalStockMovements({
     movementType,
     direction,
     productId,
+    search,
     page,
     limit,
   });

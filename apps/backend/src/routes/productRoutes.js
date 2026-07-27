@@ -26,6 +26,59 @@ import {
 
 const productRoutes = Router();
 
+function normalizeSearchValue(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("fr-FR");
+}
+
+function getMovementSearchText(movement) {
+  const createdAt = movement.created_at
+    ? new Date(movement.created_at)
+    : null;
+
+  const dateParts =
+    createdAt &&
+    !Number.isNaN(createdAt.getTime())
+      ? [
+          createdAt.toISOString(),
+          createdAt.toLocaleDateString(
+            "fr-FR"
+          ),
+          createdAt.toLocaleString(
+            "fr-FR"
+          ),
+          createdAt.getUTCFullYear(),
+        ]
+      : [];
+
+  return normalizeSearchValue(
+    [
+      movement.id,
+      ...dateParts,
+      movement.movement_type,
+      movement.reason,
+      movement.reference,
+      movement.quantity_change,
+      movement.quantity_before,
+      movement.quantity_after,
+      movement.product?.name,
+      movement.product?.brand,
+      movement.product?.sku,
+      movement.supplier?.name,
+      movement.seller?.display_name,
+      movement.seller?.staff_code,
+    ]
+      .filter(
+        (value) =>
+          value !== null &&
+          value !== undefined
+      )
+      .join(" ")
+  );
+}
+
 const PRODUCT_IMAGES_BUCKET =
   "product-images";
 
@@ -314,6 +367,12 @@ productRoutes.get(
           .uuid("Invalid product ID")
           .optional(),
 
+        search: z
+          .string()
+          .trim()
+          .max(200)
+          .optional(),
+
         page: z.coerce
           .number()
           .int()
@@ -347,6 +406,7 @@ productRoutes.get(
         direction,
         movementType,
         productId,
+        search,
         page,
         limit,
       } = validation.data;
@@ -367,7 +427,9 @@ productRoutes.get(
               name,
               brand,
               sku,
-              added_by_code
+              added_by_code,
+              purchase_price,
+              sale_price
             ),
             supplier:suppliers (
               id,
@@ -384,7 +446,10 @@ productRoutes.get(
             ascending: false,
           }
         )
-        .range(start, end);
+        .range(
+          search ? 0 : start,
+          search ? 4999 : end
+        );
 
       if (movementType) {
         databaseQuery =
@@ -492,19 +557,56 @@ productRoutes.get(
           })
         );
 
+      const searchTokens =
+        normalizeSearchValue(search)
+          .split(/\s+/)
+          .filter(Boolean);
+
+      const matchingMovements =
+        searchTokens.length === 0
+          ? enrichedMovements
+          : enrichedMovements.filter(
+              (movement) => {
+                const searchableText =
+                  getMovementSearchText(
+                    movement
+                  );
+
+                return searchTokens.every(
+                  (token) =>
+                    searchableText.includes(
+                      token
+                    )
+                );
+              }
+            );
+
+      const paginatedMovements =
+        searchTokens.length === 0
+          ? matchingMovements
+          : matchingMovements.slice(
+              start,
+              end + 1
+            );
+
+      const total =
+        searchTokens.length === 0
+          ? count ?? 0
+          : matchingMovements.length;
+
       return response.status(200).json({
         success: true,
 
         movements:
-          enrichedMovements,
+          paginatedMovements,
 
         pagination: {
           page,
           limit,
-          total: count ?? 0,
+          total,
 
           totalPages: Math.ceil(
-            (count ?? 0) / limit
+            total / limit
           ),
         },
       });

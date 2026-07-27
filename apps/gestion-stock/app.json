@@ -12,7 +12,7 @@
     },
     "android": {
       "package": "com.jdeparfum.gestionstock",
-      "versionCode": 6,
+      "versionCode": 7,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#FAF9F7",

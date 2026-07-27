@@ -43,19 +43,6 @@ const menuSections = [
         exact: true,
       },
 
-      {
-        label: "Parfums vendus",
-        route: "/products/sold",
-        exact: true,
-      },
-
-      {
-        label: "Parfums achetés chez les fournisseurs",
-
-        route: "/products/supplier-purchases",
-
-        exact: true,
-      },
     ],
   },
 

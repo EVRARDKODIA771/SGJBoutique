@@ -13,6 +13,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 
@@ -112,6 +113,11 @@ export default function AdministrationUsersScreen({
   view,
   onBack,
 }) {
+  const { width } =
+    useWindowDimensions();
+
+  const isCompact = width < 600;
+
   const isRequests =
     view === "requests";
 
@@ -452,7 +458,13 @@ export default function AdministrationUsersScreen({
         />
       }
     >
-      <View style={styles.container}>
+      <View
+        style={[
+          styles.container,
+          isCompact &&
+            styles.containerCompact,
+        ]}
+      >
         <Pressable
           style={({ pressed }) => [
             styles.backButton,
@@ -467,13 +479,31 @@ export default function AdministrationUsersScreen({
           </Text>
         </Pressable>
 
-        <View style={styles.headingRow}>
-          <View style={styles.heading}>
+        <View
+          style={[
+            styles.headingRow,
+            isCompact &&
+              styles.headingRowCompact,
+          ]}
+        >
+          <View
+            style={[
+              styles.heading,
+              isCompact &&
+                styles.headingCompact,
+            ]}
+          >
             <Text style={styles.eyebrow}>
               ADMINISTRATION
             </Text>
 
-            <Text style={styles.title}>
+            <Text
+              style={[
+                styles.title,
+                isCompact &&
+                  styles.titleCompact,
+              ]}
+            >
               {isRequests
                 ? "Demandes d’accès"
                 : "Utilisateurs autorisés"}
@@ -486,7 +516,13 @@ export default function AdministrationUsersScreen({
             </Text>
           </View>
 
-          <View style={styles.totalCard}>
+          <View
+            style={[
+              styles.totalCard,
+              isCompact &&
+                styles.totalCardCompact,
+            ]}
+          >
             <Text
               style={styles.totalLabel}
             >
@@ -503,9 +539,19 @@ export default function AdministrationUsersScreen({
           </View>
         </View>
 
-        <View style={styles.searchCard}>
+        <View
+          style={[
+            styles.searchCard,
+            isCompact &&
+              styles.searchCardCompact,
+          ]}
+        >
           <TextInput
-            style={styles.searchInput}
+            style={[
+              styles.searchInput,
+              isCompact &&
+                styles.searchInputCompact,
+            ]}
             value={searchInput}
             onChangeText={setSearchInput}
             onSubmitEditing={submitSearch}
@@ -619,7 +665,11 @@ export default function AdministrationUsersScreen({
               return (
                 <View
                   key={user.user_id}
-                  style={styles.userCard}
+                  style={[
+                    styles.userCard,
+                    isCompact &&
+                      styles.userCardCompact,
+                  ]}
                 >
                   <View
                     style={
@@ -628,7 +678,11 @@ export default function AdministrationUsersScreen({
                   >
                     <View
                       style={
-                        styles.userIdentity
+                          [
+                            styles.userIdentity,
+                            isCompact &&
+                              styles.userIdentityCompact,
+                          ]
                       }
                     >
                       <Text
@@ -654,6 +708,7 @@ export default function AdministrationUsersScreen({
                         style={
                           styles.userUuid
                         }
+                        selectable
                       >
                         UUID :{" "}
                         {user.user_id}
@@ -970,7 +1025,11 @@ export default function AdministrationUsersScreen({
                   )}
 
                   <View
-                    style={styles.actionsRow}
+                        style={[
+                          styles.actionsRow,
+                          isCompact &&
+                            styles.actionsRowCompact,
+                        ]}
                   >
                     {isRequests ? (
                       <>
@@ -1217,6 +1276,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 28,
   },
+  containerCompact: {
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+  },
   backButton: {
     alignSelf: "flex-start",
     paddingVertical: 8,
@@ -1234,10 +1297,18 @@ const styles = StyleSheet.create({
     gap: 18,
     marginBottom: 22,
   },
+  headingRowCompact: {
+    gap: 12,
+    marginBottom: 15,
+  },
   heading: {
     flex: 1,
     minWidth: 280,
     justifyContent: "center",
+  },
+  headingCompact: {
+    flexBasis: "100%",
+    minWidth: 0,
   },
   eyebrow: {
     color: colors.primary,
@@ -1251,6 +1322,9 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: "800",
     marginBottom: 8,
+  },
+  titleCompact: {
+    fontSize: 25,
   },
   subtitle: {
     maxWidth: 760,
@@ -1268,6 +1342,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingHorizontal: 22,
     paddingVertical: 18,
+  },
+  totalCardCompact: {
+    width: "100%",
+    minWidth: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
   },
   totalLabel: {
     color: colors.textMuted,
@@ -1291,6 +1371,9 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 18,
   },
+  searchCardCompact: {
+    padding: 10,
+  },
   searchInput: {
     flex: 1,
     minWidth: 250,
@@ -1304,6 +1387,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     fontSize: 14,
     outlineStyle: "none",
+  },
+  searchInputCompact: {
+    flexBasis: "100%",
+    minWidth: 0,
   },
   clearButton: {
     minHeight: 46,
@@ -1373,6 +1460,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
   },
+  userCardCompact: {
+    padding: 14,
+    borderLeftWidth: 4,
+  },
   userHeader: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -1384,6 +1475,10 @@ const styles = StyleSheet.create({
   userIdentity: {
     flex: 1,
     minWidth: 240,
+  },
+  userIdentityCompact: {
+    minWidth: 0,
+    flexBasis: "100%",
   },
   userName: {
     color: brandBlueDark,
@@ -1400,6 +1495,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 12,
     marginTop: 6,
+    flexShrink: 1,
   },
   statusBadge: {
     borderRadius: 999,
@@ -1530,6 +1626,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     marginTop: 18,
+  },
+  actionsRowCompact: {
+    flexDirection: "column",
+    alignItems: "stretch",
   },
   primaryButton: {
     backgroundColor: brandBlue,

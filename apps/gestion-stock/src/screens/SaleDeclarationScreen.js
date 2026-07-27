@@ -36,8 +36,13 @@ export default function SaleDeclarationScreen({
   ] = useState("");
 
   const [
-    clientIdentifier,
-    setClientIdentifier,
+    clientName,
+    setClientName,
+  ] = useState("");
+
+  const [
+    clientPhone,
+    setClientPhone,
   ] = useState("");
 
   const [
@@ -159,10 +164,10 @@ export default function SaleDeclarationScreen({
     }
 
     if (
-      !clientIdentifier.trim()
+      !clientName.trim()
     ) {
       setErrorMessage(
-        "Saisissez le nom ou le numéro du client."
+        "Saisissez le nom du client."
       );
       return;
     }
@@ -202,7 +207,12 @@ export default function SaleDeclarationScreen({
           reason:
             "Parfum acheté par un client",
           reference:
-            clientIdentifier.trim(),
+            [
+              clientName.trim(),
+              clientPhone.trim(),
+            ]
+              .filter(Boolean)
+              .join(" · "),
         }
       );
 
@@ -491,20 +501,37 @@ export default function SaleDeclarationScreen({
           )}
 
           <Text style={styles.label}>
-            Nom ou numéro du client *
+            Nom du client *
           </Text>
 
           <TextInput
             style={styles.input}
-            value={clientIdentifier}
+            value={clientName}
             onChangeText={
-              setClientIdentifier
+              setClientName
             }
-            placeholder="Exemple : Aminata ou 07 00 00 00 00"
+            placeholder="Exemple : Aminata"
             placeholderTextColor={
               colors.textMuted
             }
             maxLength={100}
+          />
+
+          <Text style={styles.label}>
+            Numéro du client
+          </Text>
+
+          <TextInput
+            style={styles.input}
+            value={clientPhone}
+            onChangeText={setClientPhone}
+            placeholder="Exemple : 07 00 00 00 00"
+            placeholderTextColor={
+              colors.textMuted
+            }
+            keyboardType="phone-pad"
+            inputMode="tel"
+            maxLength={30}
           />
 
           <Text style={styles.label}>

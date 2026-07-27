@@ -10,8 +10,12 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
+
+import SaleReceiptModal from
+  "../components/SaleReceiptModal.js";
 
 import {
   getGlobalStockMovements,
@@ -107,6 +111,17 @@ export default function StockHistoryScreen({
   const [requestError, setRequestError] =
     useState("");
 
+  const [searchInput, setSearchInput] =
+    useState("");
+
+  const [activeSearch, setActiveSearch] =
+    useState("");
+
+  const [
+    selectedReceipt,
+    setSelectedReceipt,
+  ] = useState(null);
+
   const loadMovements = useCallback(
     async () => {
       setIsLoading(true);
@@ -115,10 +130,10 @@ export default function StockHistoryScreen({
       try {
         const result =
           await getGlobalStockMovements({
-            movementType:
-              direction === "entries"
-                ? "purchase"
-                : "sale",
+            direction,
+            search:
+              activeSearch ||
+              undefined,
             page,
             limit: 20,
           });
@@ -153,6 +168,7 @@ export default function StockHistoryScreen({
     },
     [
       direction,
+      activeSearch,
       page,
     ]
   );
@@ -165,6 +181,19 @@ export default function StockHistoryScreen({
     nextDirection
   ) {
     setDirection(nextDirection);
+    setPage(1);
+  }
+
+  function submitSearch() {
+    setPage(1);
+    setActiveSearch(
+      searchInput.trim()
+    );
+  }
+
+  function clearSearch() {
+    setSearchInput("");
+    setActiveSearch("");
     setPage(1);
   }
 
@@ -282,6 +311,54 @@ export default function StockHistoryScreen({
             </Text>
           </Pressable>
         </View>
+
+        <View style={styles.searchCard}>
+          <TextInput
+            style={styles.searchInput}
+            value={searchInput}
+            onChangeText={setSearchInput}
+            onSubmitEditing={submitSearch}
+            placeholder="Date, parfum, client, téléphone, vendeuse…"
+            placeholderTextColor={
+              colors.textMuted
+            }
+            returnKeyType="search"
+            autoCorrect={false}
+          />
+
+          {searchInput ||
+          activeSearch ? (
+            <Pressable
+              style={styles.clearButton}
+              onPress={clearSearch}
+            >
+              <Text
+                style={
+                  styles.clearButtonText
+                }
+              >
+                Effacer
+              </Text>
+            </Pressable>
+          ) : null}
+
+          <Pressable
+            style={styles.searchButton}
+            onPress={submitSearch}
+          >
+            <Text
+              style={styles.searchButtonText}
+            >
+              Rechercher
+            </Text>
+          </Pressable>
+        </View>
+
+        <Text style={styles.searchHint}>
+          Chaque mot doit correspondre à
+          l’opération. Exemple : « 2026
+          Sensoria ».
+        </Text>
 
         {requestError ? (
           <View style={styles.errorBox}>
@@ -594,19 +671,33 @@ export default function StockHistoryScreen({
                               styles.openButton,
                               pressed &&
                                 styles.pressed,
-                              (!product ||
-                                !onOpenProduct) &&
+                              (movement.movement_type !==
+                                "sale" &&
+                                (!product ||
+                                  !onOpenProduct)) &&
                                 styles.disabledButton,
                             ]}
                             disabled={
-                              !product ||
-                              !onOpenProduct
+                              movement.movement_type !==
+                                "sale" &&
+                              (!product ||
+                                !onOpenProduct)
                             }
-                            onPress={() =>
+                            onPress={() => {
+                              if (
+                                movement.movement_type ===
+                                "sale"
+                              ) {
+                                setSelectedReceipt(
+                                  movement
+                                );
+                                return;
+                              }
+
                               onOpenProduct?.(
                                 product
-                              )
-                            }
+                              );
+                            }}
                           >
                             <Text
                               style={
@@ -694,6 +785,13 @@ export default function StockHistoryScreen({
           ) : null}
         </View>
       </View>
+
+      <SaleReceiptModal
+        movement={selectedReceipt}
+        onClose={() =>
+          setSelectedReceipt(null)
+        }
+      />
     </ScrollView>
   );
 }
@@ -784,6 +882,56 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
     marginBottom: 10,
+  },
+
+  searchCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 5,
+  },
+
+  searchInput: {
+    flex: 1,
+    minHeight: 44,
+    paddingHorizontal: 13,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    color: colors.text,
+    backgroundColor: colors.surface,
+  },
+
+  searchButton: {
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: 13,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+  },
+
+  searchButtonText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  clearButton: {
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: 9,
+  },
+
+  clearButtonText: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  searchHint: {
+    marginBottom: 10,
+    color: colors.textMuted,
+    fontSize: 11,
   },
 
   directionButton: {
