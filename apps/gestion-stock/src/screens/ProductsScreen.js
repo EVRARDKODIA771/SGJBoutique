@@ -1272,7 +1272,7 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     width: undefined,
     height: undefined,
-    opacity: 0.18,
+    opacity: 0.7,
   },
 
   productTop: {
