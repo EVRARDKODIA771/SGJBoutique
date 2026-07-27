@@ -67,19 +67,6 @@ function ProductCard({
   if (compact) {
     return (
       <View style={styles.mobileProductItem}>
-        {backgroundImageUrl ? (
-          <Image
-            source={{
-              uri: backgroundImageUrl,
-            }}
-            style={
-              styles.mobileProductBackground
-            }
-            resizeMode="cover"
-            accessibilityIgnoresInvertColors
-          />
-        ) : null}
-
         <Pressable
           style={({ pressed }) => [
             styles.mobileProductMain,
@@ -89,7 +76,21 @@ function ProductCard({
             onPress?.(product)
           }
         >
-          {!backgroundImageUrl ? (
+          {backgroundImageUrl ? (
+            <Image
+              source={{
+                uri: backgroundImageUrl,
+              }}
+              style={
+                styles.mobileProductImage
+              }
+              resizeMode="cover"
+              accessibilityIgnoresInvertColors
+              accessibilityLabel={
+                `Image du parfum ${product.name}`
+              }
+            />
+          ) : (
             <View
               style={
                 styles.mobileProductIcon
@@ -106,12 +107,6 @@ function ProductCard({
                   ?.toUpperCase() ?? "P"}
               </Text>
             </View>
-          ) : (
-            <View
-              style={
-                styles.mobileImageSpacer
-              }
-            />
           )}
 
           <View
@@ -1113,17 +1108,13 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
 
-  mobileProductBackground: {
-    ...StyleSheet.absoluteFillObject,
-    width: undefined,
-    height: undefined,
-    opacity: 0.16,
-  },
-
-  mobileImageSpacer: {
-    width: 38,
-    height: 38,
+  mobileProductImage: {
+    width: 58,
+    height: 58,
     flexShrink: 0,
+    borderRadius: 12,
+    backgroundColor:
+      colors.surfaceMuted,
   },
 
   mobileProductMain: {
