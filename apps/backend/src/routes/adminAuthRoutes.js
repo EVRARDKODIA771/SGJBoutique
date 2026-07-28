@@ -1508,14 +1508,16 @@ router.post(
       await notifySafely({
         eventType:
           "company_session_opened",
-        title: "Nouvelle connexion",
+        title: "Utilisateur connecté",
         body:
-          `${actorLabel} vient de se connecter`,
+          `${actorLabel} vient de se connecter à la plateforme`,
         route: "/dashboard",
         actorUserId:
           request.auth.user.id,
         data: {
           actorLabel,
+          authenticationMethod:
+            "company_password",
         },
         excludeUserIds: [
           request.auth.user.id,
@@ -1814,9 +1816,9 @@ router.post(
       await notifySafely({
         eventType:
           "company_session_opened",
-        title: "Nouvelle connexion",
+        title: "Utilisateur connecté",
         body:
-          `${actorLabel} vient de se connecter`,
+          `${actorLabel} vient de se connecter à la plateforme`,
         route: "/dashboard",
         actorUserId:
           request.auth.user.id,
