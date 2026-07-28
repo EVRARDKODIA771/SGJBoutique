@@ -13,6 +13,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 
@@ -48,28 +49,70 @@ function formatDate(value) {
   ).format(new Date(value));
 }
 
-function InformationItem({
+function SummaryCell({
   label,
   value,
   highlight = false,
+  tone = "default",
 }) {
   return (
-    <View style={styles.informationItem}>
+    <View style={styles.summaryCell}>
       <Text
-        style={styles.informationLabel}
+        style={styles.summaryLabel}
       >
         {label}
       </Text>
 
       <Text
         style={[
-          styles.informationValue,
+          styles.summaryValue,
           highlight &&
-            styles.highlightValue,
+            styles.summaryValueHighlight,
+          tone === "success" &&
+            styles.summaryValueSuccess,
+          tone === "warning" &&
+            styles.summaryValueWarning,
+          tone === "danger" &&
+            styles.summaryValueDanger,
         ]}
       >
         {value}
       </Text>
+    </View>
+  );
+}
+
+function SummaryRow({
+  left,
+  right,
+  compact,
+  alternate = false,
+}) {
+  return (
+    <View
+      style={[
+        styles.summaryRow,
+        alternate &&
+          styles.summaryRowAlternate,
+        compact &&
+          styles.summaryRowCompact,
+      ]}
+    >
+      <SummaryCell {...left} />
+
+      {right ? (
+        <>
+          <View
+            style={[
+              styles.summaryDivider,
+              compact &&
+                styles.summaryDividerCompact,
+            ]}
+          />
+
+          <SummaryCell {...right} />
+        </>
+      ) : null}
     </View>
   );
 }
@@ -83,6 +126,12 @@ export default function ProductDetailScreen({
   onProductChanged,
   onDeleted,
 }) {
+  const { width } =
+    useWindowDimensions();
+
+  const isCompact =
+    width < 720;
+
   const [product, setProduct] =
     useState(initialProduct ?? null);
 
@@ -199,6 +248,30 @@ export default function ProductDetailScreen({
 
   const stockQuantity =
     product?.stock_quantity ?? 0;
+
+  const lowStockThreshold =
+    product?.low_stock_threshold ?? 0;
+
+  const unitMargin =
+    (product?.sale_price ?? 0) -
+    (product?.purchase_price ?? 0);
+
+  const stockStatus =
+    stockQuantity <= 0
+      ? {
+          label: "Rupture de stock",
+          tone: "danger",
+        }
+      : stockQuantity <=
+          lowStockThreshold
+        ? {
+            label: "Stock faible",
+            tone: "warning",
+          }
+        : {
+            label: "Disponible",
+            tone: "success",
+          };
 
   function refreshProduct() {
     setIsRefreshing(true);
@@ -445,80 +518,210 @@ export default function ProductDetailScreen({
           </View>
         </View>
 
-        <View style={styles.cardsGrid}>
-          <View style={styles.detailCard}>
-            <Text
-              style={styles.cardTitle}
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryHeader}>
+            <View style={styles.summaryHeading}>
+              <Text
+                style={styles.summaryTitle}
+              >
+                Tableau récapitulatif
+              </Text>
+
+              <Text
+                style={styles.summarySubtitle}
+              >
+                Toutes les caractéristiques
+                essentielles de ce parfum.
+              </Text>
+            </View>
+
+            <View
+              style={[
+                styles.stockStatusBadge,
+                stockStatus.tone ===
+                  "success" &&
+                  styles.stockStatusSuccess,
+                stockStatus.tone ===
+                  "warning" &&
+                  styles.stockStatusWarning,
+                stockStatus.tone ===
+                  "danger" &&
+                  styles.stockStatusDanger,
+              ]}
             >
-              Prix
-            </Text>
+              <Text
+                style={[
+                  styles.stockStatusText,
+                  stockStatus.tone ===
+                    "success" &&
+                    styles.summaryValueSuccess,
+                  stockStatus.tone ===
+                    "warning" &&
+                    styles.summaryValueWarning,
+                  stockStatus.tone ===
+                    "danger" &&
+                    styles.summaryValueDanger,
+                ]}
+              >
+                {stockStatus.label}
+              </Text>
+            </View>
+          </View>
 
-            <InformationItem
-              label="Prix d’achat"
-              value={formatCurrency(
-                product.purchase_price
-              )}
+          <View style={styles.summaryTable}>
+            <SummaryRow
+              compact={isCompact}
+              left={{
+                label: "Nom du parfum",
+                value: product.name,
+                highlight: true,
+              }}
+              right={{
+                label: "Marque",
+                value:
+                  product.brand ||
+                  "Non renseignée",
+              }}
             />
 
-            <InformationItem
-              label="Prix de vente"
-              value={formatCurrency(
-                product.sale_price
-              )}
-              highlight
+            <SummaryRow
+              compact={isCompact}
+              alternate
+              left={{
+                label: "Code SKU",
+                value:
+                  product.sku ||
+                  "Non renseigné",
+              }}
+              right={{
+                label: "Catégorie",
+                value:
+                  category?.name ||
+                  "Sans catégorie",
+              }}
             />
 
-            <InformationItem
-              label="Marge unitaire"
-              value={formatCurrency(
-                (product.sale_price ??
-                  0) -
-                  (product.purchase_price ??
-                    0)
-              )}
+            <SummaryRow
+              compact={isCompact}
+              left={{
+                label: "Prix d’achat",
+                value: formatCurrency(
+                  product.purchase_price
+                ),
+              }}
+              right={{
+                label: "Prix de vente",
+                value: formatCurrency(
+                  product.sale_price
+                ),
+                highlight: true,
+              }}
+            />
+
+            <SummaryRow
+              compact={isCompact}
+              alternate
+              left={{
+                label: "Marge unitaire",
+                value:
+                  formatCurrency(
+                    unitMargin
+                  ),
+                tone:
+                  unitMargin >= 0
+                    ? "success"
+                    : "danger",
+              }}
+              right={{
+                label:
+                  "Quantité disponible",
+                value: `${stockQuantity} unité${
+                  stockQuantity > 1
+                    ? "s"
+                    : ""
+                }`,
+                highlight: true,
+              }}
+            />
+
+            <SummaryRow
+              compact={isCompact}
+              left={{
+                label: "État du stock",
+                value: stockStatus.label,
+                tone: stockStatus.tone,
+              }}
+              right={{
+                label:
+                  "Seuil de stock faible",
+                value: `${lowStockThreshold} unité${
+                  lowStockThreshold > 1
+                    ? "s"
+                    : ""
+                }`,
+              }}
+            />
+
+            <SummaryRow
+              compact={isCompact}
+              alternate
+              left={{
+                label: "Volume",
+                value: product.volume_ml
+                  ? `${product.volume_ml} ml`
+                  : "Non renseigné",
+              }}
+              right={{
+                label: "Note interne",
+                value:
+                  product.admin_rating !==
+                    null &&
+                  product.admin_rating !==
+                    undefined
+                    ? `${product.admin_rating} / 5`
+                    : "Non renseignée",
+              }}
+            />
+
+            <SummaryRow
+              compact={isCompact}
+              left={{
+                label: "Créé le",
+                value: formatDate(
+                  product.created_at
+                ),
+              }}
+              right={{
+                label:
+                  "Dernière modification",
+                value: formatDate(
+                  product.updated_at
+                ),
+              }}
             />
           </View>
 
-          <View style={styles.detailCard}>
-            <Text
-              style={styles.cardTitle}
+          {product.public_description ? (
+            <View
+              style={styles.descriptionRow}
             >
-              Stock
-            </Text>
+              <Text
+                style={styles.summaryLabel}
+              >
+                Description
+              </Text>
 
-            <InformationItem
-              label="Quantité disponible"
-              value={`${stockQuantity} unité${
-                stockQuantity > 1
-                  ? "s"
-                  : ""
-              }`}
-              highlight
-            />
-          </View>
-
-          <View style={styles.detailCard}>
-            <Text
-              style={styles.cardTitle}
-            >
-              Catalogue
-            </Text>
-
-            <InformationItem
-              label="Catégorie"
-              value={
-                category?.name ||
-                "Sans catégorie"
-              }
-            />
-
-            <InformationItem
-              label="Créé le"
-              value={formatDate(
-                product.created_at
-              )}
-            />
-          </View>
+              <Text
+                style={
+                  styles.descriptionValue
+                }
+              >
+                {
+                  product.public_description
+                }
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.sectionCard}>
@@ -947,21 +1150,157 @@ const styles = StyleSheet.create({
     lineHeight: 23,
   },
 
-  cardsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 15,
+  summaryCard: {
     marginTop: 16,
-  },
-
-  detailCard: {
-    flexGrow: 1,
-    flexBasis: 275,
-    padding: 20,
-    borderRadius: 17,
+    borderRadius: 18,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+    overflow: "hidden",
+  },
+
+  summaryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    backgroundColor:
+      colors.primaryLight,
+  },
+
+  summaryHeading: {
+    flexGrow: 1,
+    flexShrink: 1,
+    minWidth: 190,
+  },
+
+  summaryTitle: {
+    color: colors.primaryDark,
+    fontSize: 21,
+    fontWeight: "900",
+  },
+
+  summarySubtitle: {
+    marginTop: 4,
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+
+  stockStatusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 999,
+  },
+
+  stockStatusSuccess: {
+    backgroundColor:
+      colors.successLight,
+  },
+
+  stockStatusWarning: {
+    backgroundColor:
+      colors.warningLight,
+  },
+
+  stockStatusDanger: {
+    backgroundColor:
+      colors.dangerLight,
+  },
+
+  stockStatusText: {
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  summaryTable: {
+    width: "100%",
+  },
+
+  summaryRow: {
+    minHeight: 82,
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+
+  summaryRowAlternate: {
+    backgroundColor:
+      colors.inputBackground,
+  },
+
+  summaryRowCompact: {
+    flexDirection: "column",
+  },
+
+  summaryCell: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
+
+  summaryDivider: {
+    width: 1,
+    alignSelf: "stretch",
+    backgroundColor: colors.border,
+  },
+
+  summaryDividerCompact: {
+    width: "auto",
+    height: 1,
+    marginHorizontal: 20,
+  },
+
+  summaryLabel: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
+  },
+
+  summaryValue: {
+    marginTop: 5,
+    color: colors.text,
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: "800",
+  },
+
+  summaryValueHighlight: {
+    color: colors.primary,
+    fontSize: 19,
+  },
+
+  summaryValueSuccess: {
+    color: colors.success,
+  },
+
+  summaryValueWarning: {
+    color: colors.warning,
+  },
+
+  summaryValueDanger: {
+    color: colors.danger,
+  },
+
+  descriptionRow: {
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+
+  descriptionValue: {
+    marginTop: 7,
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 22,
   },
 
   cardTitle: {
@@ -969,27 +1308,6 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
     fontSize: 19,
     fontWeight: "800",
-  },
-
-  informationItem: {
-    marginTop: 11,
-  },
-
-  informationLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
-  },
-
-  informationValue: {
-    marginTop: 3,
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "700",
-  },
-
-  highlightValue: {
-    color: colors.primary,
-    fontSize: 18,
   },
 
   stockAlert: {
