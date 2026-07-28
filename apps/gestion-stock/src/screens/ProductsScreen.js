@@ -317,27 +317,29 @@ function ProductCard({
         </View>
       </View>
 
-      <Text
-        style={styles.productName}
-        numberOfLines={2}
-      >
-        {product.name}
-      </Text>
+      <View style={styles.productIdentityBox}>
+        <Text
+          style={styles.productName}
+          numberOfLines={2}
+        >
+          {product.name}
+        </Text>
 
-      <Text
-        style={styles.productBrand}
-        numberOfLines={1}
-      >
-        {product.brand ||
-          "Marque non renseignée"}
-      </Text>
+        <Text
+          style={styles.productBrand}
+          numberOfLines={1}
+        >
+          {product.brand ||
+            "Marque non renseignée"}
+        </Text>
 
-      <Text
-        style={styles.productSku}
-        numberOfLines={1}
-      >
-        {product.sku}
-      </Text>
+        <Text
+          style={styles.productSku}
+          numberOfLines={1}
+        >
+          {product.sku}
+        </Text>
+      </View>
 
       <View style={styles.priceBox}>
         <Text style={styles.priceLabel}>
@@ -1362,8 +1364,15 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
-  productName: {
+  productIdentityBox: {
     marginTop: 18,
+    padding: 13,
+    borderRadius: 12,
+    backgroundColor:
+      "rgba(255, 255, 255, 0.85)",
+  },
+
+  productName: {
     color: colors.primaryDark,
     fontSize: 21,
     fontWeight: "800",
@@ -1383,11 +1392,11 @@ const styles = StyleSheet.create({
   },
 
   priceBox: {
-    marginTop: 20,
+    marginTop: 12,
     padding: 13,
     borderRadius: 12,
     backgroundColor:
-      colors.surfaceMuted,
+      "rgba(255, 255, 255, 0.85)",
   },
 
   priceLabel: {
@@ -1407,7 +1416,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
-    marginTop: 17,
+    marginTop: 12,
+    padding: 13,
+    borderRadius: 12,
+    backgroundColor:
+      "rgba(255, 255, 255, 0.85)",
   },
 
   stockLabel: {
@@ -1446,7 +1459,11 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     gap: 6,
     marginTop: "auto",
-    paddingTop: 20,
+    paddingHorizontal: 13,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor:
+      "rgba(255, 255, 255, 0.85)",
   },
 
   openText: {
