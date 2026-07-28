@@ -66,10 +66,10 @@ function ProductCard({
 
   if (compact) {
     return (
-      <View style={styles.mobileProductItem}>
+      <View style={styles.mobileProductCard}>
         <Pressable
           style={({ pressed }) => [
-            styles.mobileProductMain,
+            styles.mobileProductVisual,
             pressed && styles.pressed,
           ]}
           onPress={() =>
@@ -81,9 +81,7 @@ function ProductCard({
               source={{
                 uri: backgroundImageUrl,
               }}
-              style={
-                styles.mobileProductImage
-              }
+              style={styles.mobileProductImage}
               resizeMode="cover"
               accessibilityIgnoresInvertColors
               accessibilityLabel={
@@ -93,12 +91,12 @@ function ProductCard({
           ) : (
             <View
               style={
-                styles.mobileProductIcon
+                styles.mobileProductPlaceholder
               }
             >
               <Text
                 style={
-                  styles.mobileProductIconText
+                  styles.mobileProductPlaceholderText
                 }
               >
                 {product.name
@@ -108,50 +106,93 @@ function ProductCard({
               </Text>
             </View>
           )}
+        </Pressable>
 
-          <View
-            style={
-              styles.mobileProductContent
+        <View style={styles.mobileProductActions}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.mobileEditButton,
+              pressed && styles.pressed,
+            ]}
+            onPress={editProduct}
+            accessibilityRole="button"
+            accessibilityLabel={
+              `Modifier ${product.name}`
             }
           >
-            <View
-              style={
-                styles.mobileProductTitleRow
-              }
-            >
-              <Text
-                style={
-                  styles.mobileProductName
-                }
-                numberOfLines={1}
-              >
-                {product.name}
-              </Text>
-            </View>
-
             <Text
-              style={
-                styles.mobileProductMeta
-              }
-              numberOfLines={1}
+              style={styles.mobileEditIcon}
             >
-              {product.sku}
+              ✎
             </Text>
+          </Pressable>
 
-            <View
-              style={
-                styles.mobileProductBottom
-              }
+          <Pressable
+            style={({ pressed }) => [
+              styles.mobileDeleteButton,
+              pressed && styles.pressed,
+            ]}
+            onPress={requestDeletion}
+            accessibilityRole="button"
+            accessibilityLabel={
+              `Supprimer ${product.name}`
+            }
+          >
+            <Text
+              style={styles.mobileDeleteIcon}
             >
-              <Text
-                style={
-                  styles.mobileProductPrice
-                }
-                numberOfLines={1}
-              >
+              🗑
+            </Text>
+          </Pressable>
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.mobileProductBody,
+            pressed && styles.pressed,
+          ]}
+          onPress={() =>
+            onPress?.(product)
+          }
+        >
+          <Text
+            style={styles.mobileProductName}
+            numberOfLines={2}
+          >
+            {product.name}
+          </Text>
+
+          <Text
+            style={styles.mobileProductBrand}
+            numberOfLines={1}
+          >
+            {product.brand ||
+              "Marque non renseignée"}
+          </Text>
+
+          <Text
+            style={styles.mobileProductMeta}
+            numberOfLines={1}
+          >
+            {product.sku}
+          </Text>
+
+          <View style={styles.mobileFactsRow}>
+            <View style={styles.mobileFactBox}>
+              <Text style={styles.mobileFactLabel}>
+                Prix de vente
+              </Text>
+
+              <Text style={styles.mobileProductPrice}>
                 {formatCurrency(
                   product.sale_price
                 )}
+              </Text>
+            </View>
+
+            <View style={styles.mobileFactBox}>
+              <Text style={styles.mobileFactLabel}>
+                Stock disponible
               </Text>
 
               <Text
@@ -161,58 +202,23 @@ function ProductCard({
                     styles.lowStockValue,
                 ]}
               >
-                Stock : {stockQuantity}
+                {stockQuantity} unité
+                {stockQuantity > 1
+                  ? "s"
+                  : ""}
               </Text>
             </View>
           </View>
 
-          <Text
-            style={
-              styles.mobileProductArrow
-            }
-          >
-            ›
-          </Text>
-        </Pressable>
+          <View style={styles.mobileOpenRow}>
+            <Text style={styles.mobileOpenText}>
+              Voir toutes les caractéristiques
+            </Text>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.mobileEditButton,
-            pressed && styles.pressed,
-          ]}
-          onPress={editProduct}
-          accessibilityRole="button"
-          accessibilityLabel={
-            `Modifier ${product.name}`
-          }
-        >
-          <Text
-            style={
-              styles.mobileEditIcon
-            }
-          >
-            ✎
-          </Text>
-        </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.mobileDeleteButton,
-            pressed && styles.pressed,
-          ]}
-          onPress={requestDeletion}
-          accessibilityRole="button"
-          accessibilityLabel={
-            `Supprimer ${product.name}`
-          }
-        >
-          <Text
-            style={
-              styles.mobileDeleteIcon
-            }
-          >
-            🗑
-          </Text>
+            <Text style={styles.mobileProductArrow}>
+              ›
+            </Text>
+          </View>
         </Pressable>
       </View>
     );
@@ -226,46 +232,28 @@ function ProductCard({
       ]}
       onPress={() => onPress?.(product)}
     >
-      {backgroundImageUrl ? (
-        <Image
-          source={{
-            uri: backgroundImageUrl,
-          }}
-          style={
-            styles.productBackgroundImage
-          }
-          resizeMode="cover"
-          accessibilityIgnoresInvertColors
-        />
-      ) : null}
-
-      <View style={styles.productTop}>
-        {!backgroundImageUrl ? (
-          <View
-            style={
-              styles.productPlaceholder
+      <View style={styles.productVisual}>
+        {backgroundImageUrl ? (
+          <Image
+            source={{
+              uri: backgroundImageUrl,
+            }}
+            style={styles.productHeroImage}
+            resizeMode="cover"
+            accessibilityIgnoresInvertColors
+            accessibilityLabel={
+              `Image du parfum ${product.name}`
             }
-          >
-            <Text
-              style={
-                styles.productPlaceholderText
-              }
-            >
-              {product.name
-                ?.trim()
-                ?.charAt(0)
-                ?.toUpperCase() ?? "P"}
-            </Text>
-          </View>
+          />
         ) : (
           <View
             style={
-              styles.productImageBadge
+              styles.productHeroPlaceholder
             }
           >
             <Text
               style={
-                styles.productImageBadgeText
+                styles.productHeroPlaceholderText
               }
             >
               {product.name
@@ -317,85 +305,87 @@ function ProductCard({
         </View>
       </View>
 
-      <View style={styles.productIdentityBox}>
-        <Text
-          style={styles.productName}
-          numberOfLines={2}
-        >
-          {product.name}
-        </Text>
-
-        <Text
-          style={styles.productBrand}
-          numberOfLines={1}
-        >
-          {product.brand ||
-            "Marque non renseignée"}
-        </Text>
-
-        <Text
-          style={styles.productSku}
-          numberOfLines={1}
-        >
-          {product.sku}
-        </Text>
-      </View>
-
-      <View style={styles.priceBox}>
-        <Text style={styles.priceLabel}>
-          Prix de vente
-        </Text>
-
-        <Text style={styles.priceValue}>
-          {formatCurrency(
-            product.sale_price
-          )}
-        </Text>
-      </View>
-
-      <View style={styles.stockRow}>
-        <View>
-          <Text style={styles.stockLabel}>
-            Stock disponible
+      <View style={styles.productCardBody}>
+        <View style={styles.productIdentityBox}>
+          <Text
+            style={styles.productName}
+            numberOfLines={2}
+          >
+            {product.name}
           </Text>
 
           <Text
-            style={[
-              styles.stockValue,
-              isLowStock &&
-                styles.lowStockValue,
-            ]}
+            style={styles.productBrand}
+            numberOfLines={1}
           >
-            {stockQuantity} unité
-            {stockQuantity > 1
-              ? "s"
-              : ""}
+            {product.brand ||
+              "Marque non renseignée"}
+          </Text>
+
+          <Text
+            style={styles.productSku}
+            numberOfLines={1}
+          >
+            {product.sku}
           </Text>
         </View>
 
-        {isLowStock ? (
-          <View
-            style={styles.lowStockBadge}
-          >
+        <View style={styles.priceBox}>
+          <Text style={styles.priceLabel}>
+            Prix de vente
+          </Text>
+
+          <Text style={styles.priceValue}>
+            {formatCurrency(
+              product.sale_price
+            )}
+          </Text>
+        </View>
+
+        <View style={styles.stockRow}>
+          <View>
+            <Text style={styles.stockLabel}>
+              Stock disponible
+            </Text>
+
             <Text
-              style={
-                styles.lowStockBadgeText
-              }
+              style={[
+                styles.stockValue,
+                isLowStock &&
+                  styles.lowStockValue,
+              ]}
             >
-              Stock faible
+              {stockQuantity} unité
+              {stockQuantity > 1
+                ? "s"
+                : ""}
             </Text>
           </View>
-        ) : null}
-      </View>
 
-      <View style={styles.openRow}>
-        <Text style={styles.openText}>
-          Voir la fiche
-        </Text>
+          {isLowStock ? (
+            <View
+              style={styles.lowStockBadge}
+            >
+              <Text
+                style={
+                  styles.lowStockBadgeText
+                }
+              >
+                Stock faible
+              </Text>
+            </View>
+          ) : null}
+        </View>
 
-        <Text style={styles.openArrow}>
-          ›
-        </Text>
+        <View style={styles.openRow}>
+          <Text style={styles.openText}>
+            Voir la fiche
+          </Text>
+
+          <Text style={styles.openArrow}>
+            ›
+          </Text>
+        </View>
       </View>
     </Pressable>
   );
@@ -1095,165 +1085,175 @@ const styles = StyleSheet.create({
     gap: 6,
   },
 
-  mobileProductItem: {
+  mobileProductCard: {
+    position: "relative",
     width: "100%",
-    minHeight: 62,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 18,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: "hidden",
   },
 
+  mobileProductVisual: {
+    width: "100%",
+    height: 210,
+    backgroundColor:
+      colors.surfaceMuted,
+  },
+
   mobileProductImage: {
-    width: 58,
-    height: 58,
-    flexShrink: 0,
+    width: "100%",
+    height: "100%",
+  },
+
+  mobileProductPlaceholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor:
+      colors.primaryLight,
+  },
+
+  mobileProductPlaceholderText: {
+    color: colors.primary,
+    fontSize: 54,
+    fontWeight: "900",
+  },
+
+  mobileProductActions: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    zIndex: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  mobileProductBody: {
+    padding: 16,
+    backgroundColor: colors.surface,
+  },
+
+  mobileProductName: {
+    color: colors.primaryDark,
+    fontSize: 21,
+    lineHeight: 26,
+    fontWeight: "900",
+  },
+
+  mobileProductBrand: {
+    marginTop: 5,
+    color: colors.textMuted,
+    fontSize: 13,
+  },
+
+  mobileProductMeta: {
+    marginTop: 7,
+    color: colors.secondaryDark,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+
+  mobileFactsRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 15,
+  },
+
+  mobileFactBox: {
+    flex: 1,
+    minWidth: 0,
+    padding: 12,
     borderRadius: 12,
     backgroundColor:
       colors.surfaceMuted,
   },
 
-  mobileProductMain: {
-    flex: 1,
-    minWidth: 0,
-    minHeight: 48,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+  mobileFactLabel: {
+    color: colors.textMuted,
+    fontSize: 10,
   },
 
-  mobileProductIcon: {
+  mobileProductPrice: {
+    marginTop: 4,
+    color: colors.primaryDark,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
+  mobileProductStock: {
+    marginTop: 4,
+    color: colors.success,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
+  mobileEditButton: {
     width: 38,
     height: 38,
     flexShrink: 0,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 11,
-    backgroundColor:
-      colors.primaryLight,
-  },
-
-  mobileProductIconText: {
-    color: colors.primary,
-    fontSize: 15,
-    fontWeight: "900",
-  },
-
-  mobileProductContent: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  mobileProductTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-
-  mobileProductName: {
-    flex: 1,
-    color: colors.primaryDark,
-    fontSize: 12,
-    lineHeight: 14,
-    fontWeight: "800",
-  },
-
-  mobileStatusBadge: {
-    flexShrink: 0,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 999,
-  },
-
-  mobileStatusText: {
-    fontSize: 8,
-    lineHeight: 10,
-    fontWeight: "800",
-  },
-
-  mobileProductMeta: {
-    marginTop: 1,
-    color: colors.textMuted,
-    fontSize: 9,
-    lineHeight: 11,
-  },
-
-  mobileProductBottom: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 8,
-    marginTop: 1,
-  },
-
-  mobileProductPrice: {
-    flexShrink: 1,
-    color: colors.primaryDark,
-    fontSize: 10,
-    lineHeight: 12,
-    fontWeight: "800",
-  },
-
-  mobileProductStock: {
-    flexShrink: 0,
-    color: colors.success,
-    fontSize: 9,
-    lineHeight: 11,
-    fontWeight: "800",
-  },
-
-  mobileEditButton: {
-    width: 30,
-    height: 30,
-    flexShrink: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 10,
+    borderRadius: 12,
     backgroundColor:
       colors.primaryLight,
   },
 
   mobileEditIcon: {
     color: colors.primary,
-    fontSize: 16,
-    lineHeight: 18,
+    fontSize: 18,
+    lineHeight: 21,
     fontWeight: "900",
   },
 
   mobileDeleteButton: {
-    width: 30,
-    height: 30,
+    width: 38,
+    height: 38,
     flexShrink: 0,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 10,
+    borderRadius: 12,
     backgroundColor: colors.dangerLight,
   },
 
   mobileDeleteIcon: {
-    fontSize: 14,
-    lineHeight: 17,
+    fontSize: 16,
+    lineHeight: 19,
+  },
+
+  mobileOpenRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 6,
+    marginTop: 15,
+    paddingTop: 13,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+
+  mobileOpenText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: "900",
   },
 
   mobileProductArrow: {
     flexShrink: 0,
     color: colors.primary,
-    fontSize: 18,
-    lineHeight: 20,
+    fontSize: 22,
+    lineHeight: 24,
   },
 
   productCard: {
     flexGrow: 1,
-    flexBasis: 260,
-    maxWidth: 395,
-    minHeight: 360,
-    padding: 18,
+    flexBasis: 560,
+    maxWidth: 620,
+    minHeight: 340,
+    flexDirection: "row",
+    padding: 0,
     borderRadius: 18,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -1270,21 +1270,45 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
 
-  productBackgroundImage: {
-    ...StyleSheet.absoluteFillObject,
-    width: undefined,
-    height: undefined,
-    opacity: 0.7,
+  productVisual: {
+    width: "46%",
+    minHeight: 340,
+    alignSelf: "stretch",
+    backgroundColor:
+      colors.surfaceMuted,
   },
 
-  productTop: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 10,
+  productHeroImage: {
+    width: "100%",
+    height: "100%",
+  },
+
+  productHeroPlaceholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor:
+      colors.primaryLight,
+  },
+
+  productHeroPlaceholderText: {
+    color: colors.primary,
+    fontSize: 58,
+    fontWeight: "900",
+  },
+
+  productCardBody: {
+    flex: 1,
+    minWidth: 0,
+    padding: 18,
+    backgroundColor: colors.surface,
   },
 
   productTopActions: {
+    position: "absolute",
+    top: 14,
+    right: 14,
+    zIndex: 2,
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
@@ -1321,38 +1345,6 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
 
-  productPlaceholder: {
-    width: 58,
-    height: 58,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 16,
-    backgroundColor:
-      colors.primaryLight,
-  },
-
-  productPlaceholderText: {
-    color: colors.primary,
-    fontSize: 24,
-    fontWeight: "900",
-  },
-
-  productImageBadge: {
-    width: 58,
-    height: 58,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 16,
-    backgroundColor:
-      "rgba(255, 255, 255, 0.84)",
-  },
-
-  productImageBadgeText: {
-    color: colors.primary,
-    fontSize: 24,
-    fontWeight: "900",
-  },
-
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -1365,11 +1357,7 @@ const styles = StyleSheet.create({
   },
 
   productIdentityBox: {
-    marginTop: 18,
-    padding: 13,
-    borderRadius: 12,
-    backgroundColor:
-      "rgba(255, 255, 255, 0.85)",
+    minHeight: 86,
   },
 
   productName: {
@@ -1392,11 +1380,11 @@ const styles = StyleSheet.create({
   },
 
   priceBox: {
-    marginTop: 12,
+    marginTop: 10,
     padding: 13,
     borderRadius: 12,
     backgroundColor:
-      "rgba(255, 255, 255, 0.85)",
+      colors.surfaceMuted,
   },
 
   priceLabel: {
@@ -1416,11 +1404,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
-    marginTop: 12,
+    marginTop: 10,
     padding: 13,
     borderRadius: 12,
     backgroundColor:
-      "rgba(255, 255, 255, 0.85)",
+      colors.surfaceMuted,
   },
 
   stockLabel: {
@@ -1459,11 +1447,9 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     gap: 6,
     marginTop: "auto",
-    paddingHorizontal: 13,
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor:
-      "rgba(255, 255, 255, 0.85)",
+    paddingTop: 13,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
 
   openText: {
