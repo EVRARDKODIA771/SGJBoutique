@@ -96,6 +96,7 @@ export default function StockHistoryScreen({
     useState([]);
   const [restockings, setRestockings] = useState([]);
   const [restockingId, setRestockingId] = useState("");
+  const [restockingMenuOpen, setRestockingMenuOpen] = useState(false);
 
   useEffect(() => {
     getRestockings()
@@ -231,6 +232,10 @@ export default function StockHistoryScreen({
   const isEntries =
     direction === "entries";
 
+  const selectedRestocking = restockings.find(
+    (restocking) => restocking.id === restockingId
+  ) ?? null;
+
   return (
     <ScrollView
       style={styles.screen}
@@ -290,27 +295,71 @@ export default function StockHistoryScreen({
         </View>
 
         <Text style={styles.subtitle}>Ravitaillement concerné</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 8 }}>
-          {restockings.map((restocking) => (
-            <Pressable
-              key={restocking.id}
-              style={{
-                paddingHorizontal: 12,
-                paddingVertical: 9,
-                borderRadius: 18,
-                backgroundColor: restockingId === restocking.id
-                  ? (restocking.status === "active" ? "#BBF7D0" : "#FECACA")
-                  : "#E5E7EB",
-              }}
-              onPress={() => { setRestockingId(restocking.id); setPage(1); }}
-            >
-              <Text style={{ fontWeight: "700" }}>
-                {restocking.title} · {restocking.supplier?.name} · {restocking.restocking_date}
-                {restocking.status === "active" ? " · ACTIF" : " · INACTIF"}
+        <View style={styles.restockingPicker}>
+          <Pressable
+            style={[
+              styles.restockingSelect,
+              selectedRestocking?.status === "active"
+                ? styles.activeRestockingSelect
+                : selectedRestocking
+                  ? styles.inactiveRestockingSelect
+                  : null,
+            ]}
+            onPress={() => setRestockingMenuOpen((value) => !value)}
+          >
+            <View style={styles.restockingSelectContent}>
+              <Text style={styles.restockingSelectTitle}>
+                {selectedRestocking?.title || "Choisir un ravitaillement"}
               </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+              {selectedRestocking ? (
+                <Text style={styles.restockingSelectMeta}>
+                  {selectedRestocking.supplier?.name} · {selectedRestocking.restocking_date}
+                </Text>
+              ) : null}
+            </View>
+            {selectedRestocking ? (
+              <Text style={selectedRestocking.status === "active"
+                ? styles.activeRestockingStatus
+                : styles.inactiveRestockingStatus}>
+                {selectedRestocking.status === "active" ? "ACTIF" : "INACTIF"}
+              </Text>
+            ) : null}
+            <Text style={styles.restockingChevron}>
+              {restockingMenuOpen ? "⌃" : "⌄"}
+            </Text>
+          </Pressable>
+
+          {restockingMenuOpen ? (
+            <View style={styles.restockingMenu}>
+              {restockings.map((restocking) => (
+                <Pressable
+                  key={restocking.id}
+                  style={[
+                    styles.restockingOption,
+                    restocking.id === restockingId && styles.restockingOptionSelected,
+                  ]}
+                  onPress={() => {
+                    setRestockingId(restocking.id);
+                    setRestockingMenuOpen(false);
+                    setPage(1);
+                  }}
+                >
+                  <View style={styles.restockingOptionContent}>
+                    <Text style={styles.restockingOptionTitle}>{restocking.title}</Text>
+                    <Text style={styles.restockingOptionMeta}>
+                      {restocking.supplier?.name} · {restocking.restocking_date}
+                    </Text>
+                  </View>
+                  <Text style={restocking.status === "active"
+                    ? styles.activeRestockingStatus
+                    : styles.inactiveRestockingStatus}>
+                    {restocking.status === "active" ? "ACTIF" : "INACTIF"}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+        </View>
 
         <View style={styles.directionTabs}>
           <Pressable
@@ -972,6 +1021,110 @@ const styles = StyleSheet.create({
     marginTop: 4,
     color: colors.textMuted,
     fontSize: 13,
+  },
+
+  restockingPicker: {
+    width: "100%",
+    maxWidth: 720,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+
+  restockingSelect: {
+    minHeight: 58,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 9,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+
+  activeRestockingSelect: {
+    borderColor: "#65B77D",
+    backgroundColor: "#ECFDF3",
+  },
+
+  inactiveRestockingSelect: {
+    borderColor: "#E59A9A",
+    backgroundColor: "#FEF2F2",
+  },
+
+  restockingSelectContent: {
+    flex: 1,
+  },
+
+  restockingSelectTitle: {
+    color: colors.primaryDark,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+
+  restockingSelectMeta: {
+    marginTop: 3,
+    color: colors.textMuted,
+    fontSize: 11,
+  },
+
+  restockingChevron: {
+    color: colors.primary,
+    fontSize: 20,
+    fontWeight: "900",
+  },
+
+  activeRestockingStatus: {
+    color: "#16803A",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+
+  inactiveRestockingStatus: {
+    color: "#C62828",
+    fontSize: 11,
+    fontWeight: "900",
+  },
+
+  restockingMenu: {
+    marginTop: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    overflow: "hidden",
+  },
+
+  restockingOption: {
+    minHeight: 58,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+
+  restockingOptionSelected: {
+    backgroundColor: colors.inputBackground,
+  },
+
+  restockingOptionContent: {
+    flex: 1,
+  },
+
+  restockingOptionTitle: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+
+  restockingOptionMeta: {
+    marginTop: 3,
+    color: colors.textMuted,
+    fontSize: 11,
   },
 
   directionTabs: {
