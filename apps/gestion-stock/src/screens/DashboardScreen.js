@@ -457,7 +457,7 @@ export default function DashboardScreen({
             </Text>
           </View>
 
-          <Pressable onPress={() => onNavigate?.("restockings")}>
+          <Pressable onPress={() => onNavigate?.("restockingProfits")}>
             <Text style={{ color: colors.primary, fontWeight: "800", marginBottom: 14 }}>
               Historique des bénéfices ›
             </Text>

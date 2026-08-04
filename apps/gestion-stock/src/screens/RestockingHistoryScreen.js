@@ -5,7 +5,7 @@ import {
 } from "react-native";
 
 import {
-  completeRestocking, createRestocking, getRestocking, getRestockings, getSuppliers,
+  completeRestocking, getRestocking, getRestockings, getSuppliers,
 } from "../services/stockService.js";
 import { verifyCompanyPassword } from "../services/authService.js";
 import {
@@ -17,7 +17,11 @@ function money(value) {
   return `${new Intl.NumberFormat("fr-FR").format(value ?? 0)} FCFA`;
 }
 
-export default function RestockingHistoryScreen({ onBack }) {
+export default function RestockingHistoryScreen({
+  onBack,
+  onCreate,
+  initialRestockingId,
+}) {
   const [suppliers, setSuppliers] = useState([]);
   const [supplierId, setSupplierId] = useState("");
   const [restockings, setRestockings] = useState([]);
@@ -27,10 +31,6 @@ export default function RestockingHistoryScreen({ onBack }) {
   const [password, setPassword] = useState("");
   const [showPasswordStep, setShowPasswordStep] = useState(false);
   const [pendingCompletion, setPendingCompletion] = useState(null);
-  const [showCreate, setShowCreate] = useState(false);
-  const [newTitle, setNewTitle] = useState("");
-  const [newDate, setNewDate] = useState(new Date().toISOString().slice(0, 10));
-  const [newInvoice, setNewInvoice] = useState("");
 
   const load = useCallback(async () => {
     setError("");
@@ -56,6 +56,10 @@ export default function RestockingHistoryScreen({ onBack }) {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (initialRestockingId) openDetail(initialRestockingId);
+  }, [initialRestockingId]);
 
   async function openDetail(id) {
     setLoading(true);
@@ -115,34 +119,24 @@ export default function RestockingHistoryScreen({ onBack }) {
     }
   }
 
-  async function saveRestocking() {
-    if (!supplierId || !newTitle.trim() || !newDate || !newInvoice.trim()) {
-      setError("Choisissez un fournisseur et renseignez le titre, la date et la facture.");
-      return;
-    }
-    setLoading(true);
-    try {
-      await createRestocking({
-        title: newTitle.trim(), restockingDate: newDate,
-        supplierId, invoiceNumber: newInvoice.trim(),
-      });
-      setNewTitle("");
-      setNewInvoice("");
-      setShowCreate(false);
-      await load();
-    } catch (creationError) {
-      setError(creationError?.message || "Impossible de créer le ravitaillement.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Pressable onPress={selected ? () => setSelected(null) : onBack}>
         <Text style={styles.back}>‹ Retour</Text>
       </Pressable>
-      <Text style={styles.title}>Historique des bénéfices</Text>
+      <View style={styles.titleRow}>
+        <View style={styles.titleArea}>
+          <Text style={styles.title}>Historique des ravitaillements</Text>
+          <Text style={styles.description}>
+            Consultez les achats, les ventes, les clients, les vendeuses et le bénéfice de chaque ravitaillement.
+          </Text>
+        </View>
+        {!selected ? (
+          <Pressable style={styles.primaryButton} onPress={onCreate}>
+            <Text style={styles.buttonText}>+ Créer un ravitaillement</Text>
+          </Pressable>
+        ) : null}
+      </View>
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {loading ? <ActivityIndicator color={colors.primary} /> : null}
@@ -172,40 +166,33 @@ export default function RestockingHistoryScreen({ onBack }) {
             ))}
           </View>
 
-          <Pressable style={{ backgroundColor: colors.primary, borderRadius: 10, padding: 12 }}
-            onPress={() => setShowCreate((value) => !value)}>
-            <Text style={styles.buttonText}>+ Créer un ravitaillement</Text>
-          </Pressable>
-
-          {showCreate ? (
-            <View style={styles.card}>
-              <Text style={styles.subtitle}>Nouveau ravitaillement</Text>
-              <TextInput style={styles.input} value={newTitle} onChangeText={setNewTitle}
-                placeholder="Titre" />
-              <TextInput style={styles.input} value={newDate} onChangeText={setNewDate}
-                placeholder="AAAA-MM-JJ" />
-              <TextInput style={styles.input} value={newInvoice} onChangeText={setNewInvoice}
-                placeholder="Numéro de facture" />
-              <Pressable style={{ backgroundColor: colors.primary, borderRadius: 10, padding: 12 }}
-                onPress={saveRestocking}>
-                <Text style={styles.buttonText}>Créer</Text>
-              </Pressable>
-            </View>
-          ) : null}
-
-          {restockings.map((restocking) => (
-            <Pressable key={restocking.id} style={styles.card} onPress={() => openDetail(restocking.id)}>
-              <View style={styles.row}>
-                <Text style={styles.cardTitle}>{restocking.title}</Text>
-                <Text style={restocking.status === "active" ? styles.active : styles.inactive}>
-                  {restocking.status === "active" ? "ACTIF" : "INACTIF"}
-                </Text>
+          {supplierId ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator>
+              <View style={styles.table}>
+                <View style={[styles.tableRow, styles.tableHeader]}>
+                  <Text style={[styles.tableCell, styles.nameCell]}>Ravitaillement</Text>
+                  <Text style={styles.tableCell}>Date</Text>
+                  <Text style={styles.tableCell}>Fournisseur</Text>
+                  <Text style={styles.tableCell}>Facture</Text>
+                  <Text style={styles.tableCell}>État</Text>
+                  <Text style={styles.tableCell}>Bénéfice</Text>
+                </View>
+                {restockings.map((restocking) => (
+                  <Pressable key={restocking.id} style={styles.tableRow}
+                    onPress={() => openDetail(restocking.id)}>
+                    <Text style={[styles.tableCell, styles.nameCell, styles.cardTitle]}>{restocking.title}</Text>
+                    <Text style={styles.tableCell}>{restocking.restocking_date}</Text>
+                    <Text style={styles.tableCell}>{restocking.supplier?.name}</Text>
+                    <Text style={styles.tableCell}>{restocking.invoice_number}</Text>
+                    <Text style={[styles.tableCell, restocking.status === "active" ? styles.active : styles.inactive]}>
+                      {restocking.status === "active" ? "ACTIF" : "INACTIF"}
+                    </Text>
+                    <Text style={[styles.tableCell, styles.profit]}>{money(restocking.statistics?.profit)}</Text>
+                  </Pressable>
+                ))}
               </View>
-              <Text>{restocking.supplier?.name} · {restocking.restocking_date}</Text>
-              <Text>Facture : {restocking.invoice_number}</Text>
-              <Text>Restant : {restocking.statistics?.remainingUnits ?? 0} unité(s)</Text>
-            </Pressable>
-          ))}
+            </ScrollView>
+          ) : null}
         </>
       ) : (
         <View style={styles.card}>
@@ -221,11 +208,13 @@ export default function RestockingHistoryScreen({ onBack }) {
           <Text>Ventes : {money(selected.statistics?.salesRevenue)}</Text>
           <Text>Coût des unités vendues : {money(selected.statistics?.purchaseCost)}</Text>
 
-          <Text style={styles.subtitle}>Parfums du ravitaillement</Text>
+          <Text style={styles.subtitle}>Produits achetés chez ce fournisseur</Text>
           {selected.items.map((item) => (
             <View key={item.id} style={styles.line}>
-              <Text>{item.product?.name}</Text>
-              <Text>{item.initial_quantity - item.remaining_quantity} vendu(s) / {item.remaining_quantity} restant(s)</Text>
+              <Text style={styles.lineTitle}>{item.product?.name} {item.product?.brand ? `· ${item.product.brand}` : ""}</Text>
+              <Text>Quantité achetée ce jour : {item.initial_quantity}</Text>
+              <Text>Vendue : {item.initial_quantity - item.remaining_quantity} · Restante : {item.remaining_quantity}</Text>
+              <Text>Achat : {money(item.purchase_price)} / unité · Vente : {money(item.sale_price)} / unité</Text>
             </View>
           ))}
 
@@ -233,8 +222,10 @@ export default function RestockingHistoryScreen({ onBack }) {
           {selected.allocations.map((sale) => (
             <View key={sale.id} style={styles.line}>
               <Text>{sale.restocking_item?.product?.name}</Text>
-              <Text>{sale.quantity} · {sale.movement?.reference || "Client non renseigné"}</Text>
-              <Text>{new Date(sale.movement?.created_at || sale.created_at).toLocaleString("fr-FR")}</Text>
+              <Text>Quantité : {sale.quantity} · Client : {sale.client?.name || "Client non renseigné"}</Text>
+              {sale.client?.phone ? <Text>Téléphone : {sale.client.phone}</Text> : null}
+              <Text>Vendeuse : {sale.seller?.display_name || sale.seller?.staff_code || "Non renseignée"}</Text>
+              <Text>Vendu le {new Date(sale.movement?.created_at || sale.created_at).toLocaleString("fr-FR")}</Text>
             </View>
           ))}
 
@@ -254,9 +245,13 @@ const styles = StyleSheet.create({
   content: { padding: 20, gap: 14 },
   back: { color: colors.primary, fontWeight: "700", fontSize: 16 },
   title: { fontSize: 28, fontWeight: "800", color: colors.text },
+  titleRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 14 },
+  titleArea: { flex: 1, minWidth: 260 },
+  description: { marginTop: 5, color: colors.textMuted, lineHeight: 20 },
   subtitle: { fontSize: 17, fontWeight: "700", marginTop: 10 },
   card: { backgroundColor: colors.surface, borderRadius: 14, padding: 16, gap: 8 },
   cardTitle: { fontSize: 18, fontWeight: "800", flex: 1 },
+  lineTitle: { fontWeight: "900", color: colors.primaryDark },
   row: { flexDirection: "row", justifyContent: "space-between", gap: 10 },
   active: { color: "#16803A", fontWeight: "900" },
   inactive: { color: "#C62828", fontWeight: "900" },
@@ -266,6 +261,12 @@ const styles = StyleSheet.create({
   chipSelected: { backgroundColor: "#BBF7D0" },
   line: { borderTopWidth: 1, borderTopColor: "#E5E7EB", paddingTop: 8, gap: 2 },
   input: { borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, padding: 12 },
+  primaryButton: { backgroundColor: colors.primary, borderRadius: 10, padding: 13 },
+  table: { minWidth: 1040, borderWidth: 1, borderColor: colors.border, borderRadius: 12, overflow: "hidden", backgroundColor: colors.surface },
+  tableRow: { minHeight: 58, flexDirection: "row", alignItems: "center", borderBottomWidth: 1, borderBottomColor: colors.border, paddingHorizontal: 10 },
+  tableHeader: { minHeight: 48, backgroundColor: colors.inputBackground },
+  tableCell: { width: 155, paddingHorizontal: 6, color: colors.text },
+  nameCell: { width: 235 },
   dangerButton: { backgroundColor: "#C62828", borderRadius: 10, padding: 13, marginTop: 12 },
   buttonText: { color: "white", textAlign: "center", fontWeight: "800" },
   error: { backgroundColor: "#FEE2E2", color: "#991B1B", padding: 10, borderRadius: 8 },

@@ -51,6 +51,28 @@ async function loadRestockingSummary(restocking) {
     0
   );
 
+  const itemIds = normalizedItems.map((item) => item.id);
+  let allocations = [];
+
+  if (itemIds.length > 0) {
+    const allocationResult = await supabaseAdmin
+      .from("sale_allocations")
+      .select("quantity, purchase_price_snapshot, sale_price_snapshot")
+      .in("restocking_item_id", itemIds);
+
+    if (allocationResult.error) throw allocationResult.error;
+    allocations = allocationResult.data ?? [];
+  }
+
+  const salesRevenue = allocations.reduce(
+    (sum, row) => sum + Number(row.quantity) * Number(row.sale_price_snapshot),
+    0
+  );
+  const purchaseCost = allocations.reduce(
+    (sum, row) => sum + Number(row.quantity) * Number(row.purchase_price_snapshot),
+    0
+  );
+
   return {
     ...restocking,
     items: normalizedItems,
@@ -59,6 +81,9 @@ async function loadRestockingSummary(restocking) {
       initialUnits,
       soldUnits: initialUnits - remainingUnits,
       remainingUnits,
+      salesRevenue,
+      purchaseCost,
+      profit: salesRevenue - purchaseCost,
     },
   };
 }
@@ -236,13 +261,45 @@ restockingRoutes.get("/:restockingId", async (request, response) => {
         .select(`
           id, quantity, purchase_price_snapshot, sale_price_snapshot, created_at,
           restocking_item:restocking_items (id, product:products (id, name, brand)),
-          movement:stock_movements (id, created_at, reference, reason, created_by)
+          movement:stock_movements (id, created_at, reference, reason, performed_by)
         `)
         .in("restocking_item_id", itemIds)
         .order("created_at", { ascending: false });
       if (result.error) throw result.error;
       allocations = result.data ?? [];
     }
+
+    const sellerIds = [
+      ...new Set(
+        allocations
+          .map((sale) => sale.movement?.performed_by)
+          .filter(Boolean)
+      ),
+    ];
+    let sellersById = new Map();
+
+    if (sellerIds.length > 0) {
+      const sellerResult = await supabaseAdmin
+        .from("staff_profiles")
+        .select("user_id, display_name, staff_code")
+        .in("user_id", sellerIds);
+
+      if (sellerResult.error) throw sellerResult.error;
+      sellersById = new Map(
+        (sellerResult.data ?? []).map((seller) => [seller.user_id, seller])
+      );
+    }
+
+    allocations = allocations.map((sale) => {
+      const [clientName = "Client non renseigné", clientPhone = ""] =
+        String(sale.movement?.reference ?? "").split(" · ");
+
+      return {
+        ...sale,
+        client: { name: clientName, phone: clientPhone },
+        seller: sellersById.get(sale.movement?.performed_by) ?? null,
+      };
+    });
 
     const salesRevenue = allocations.reduce(
       (sum, sale) => sum + Number(sale.quantity) * Number(sale.sale_price_snapshot), 0

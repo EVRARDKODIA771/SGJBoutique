@@ -71,6 +71,9 @@ export default function DashboardPage() {
           supplierPurchases:
             "/products/supplier-purchases",
           stock: "/stock",
+          restockings: "/restockings",
+          restockingProfits:
+            "/restockings/profits",
           lowStock:
             "/products/low-stock",
           outOfStock:

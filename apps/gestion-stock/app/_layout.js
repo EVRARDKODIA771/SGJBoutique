@@ -99,6 +99,9 @@ function isAdministrationPage(
       "/stock"
     ) ||
     pathname.startsWith(
+      "/restockings"
+    ) ||
+    pathname.startsWith(
       "/categories"
     ) ||
     pathname.startsWith(

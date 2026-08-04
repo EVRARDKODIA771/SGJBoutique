@@ -67,6 +67,28 @@ const menuSections = [
   },
 
   {
+    title: "RAVITAILLEMENTS",
+
+    items: [
+      {
+        label: "Créer un ravitaillement",
+        route: "/restockings/new",
+        exact: true,
+      },
+      {
+        label: "Historique des ravitaillements",
+        route: "/restockings",
+        exact: true,
+      },
+      {
+        label: "Historique des bénéfices",
+        route: "/restockings/profits",
+        exact: true,
+      },
+    ],
+  },
+
+  {
     title: "ORGANISATION",
 
     items: [
