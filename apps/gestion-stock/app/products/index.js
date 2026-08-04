@@ -54,7 +54,7 @@ export default function ProductsPage() {
   return (
     <ProductsScreen
       onBack={() => {
-        router.push("/dashboard");
+        router.back();
       }}
       onCreate={() => {
         router.push("/products/new");

@@ -54,7 +54,7 @@ export default function NewProductPage() {
   return (
     <ProductFormScreen
       onBack={() => {
-        router.push("/products");
+        router.back();
       }}
       onCreated={(product) => {
         router.replace(

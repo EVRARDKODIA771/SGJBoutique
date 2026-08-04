@@ -183,9 +183,7 @@ export default function EditProductPage() {
     <ProductFormScreen
       product={product}
       onBack={() => {
-        router.push(
-          `/products/${productId}`
-        );
+        router.back();
       }}
       onUpdated={(updatedProduct) => {
         router.replace(

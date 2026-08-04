@@ -64,7 +64,7 @@ export default function AccessRequestsPage() {
     <AdministrationUsersScreen
       view="requests"
       onBack={() => {
-        router.push("/dashboard");
+        router.back();
       }}
     />
   );

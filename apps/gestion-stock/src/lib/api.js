@@ -17,6 +17,38 @@ export class ApiError extends Error {
   }
 }
 
+export async function publicApiRequest(
+  path,
+  {
+    method = "GET",
+    body,
+    headers = {},
+  } = {}
+) {
+  const requestHeaders = {
+    Accept: "application/json",
+    ...headers,
+  };
+
+  let requestBody = body;
+  if (body !== undefined && body !== null) {
+    requestHeaders["Content-Type"] = "application/json";
+    requestBody = typeof body === "string" ? body : JSON.stringify(body);
+  }
+
+  const response = await fetch(`${env.apiUrl}${path}`, {
+    method,
+    headers: requestHeaders,
+    body: requestBody,
+  });
+
+  if (!response.ok) {
+    throw new ApiError("Unable to record login attempt", response.status);
+  }
+
+  return response.status === 204 ? null : response.json();
+}
+
 /*
  * Nettoie complètement une session devenue
  * invalide ou impossible à renouveler.

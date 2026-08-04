@@ -4,6 +4,7 @@ import {
 
 import {
   apiRequest,
+  publicApiRequest,
 } from "../lib/api.js";
 
 import {
@@ -23,6 +24,18 @@ export async function initializeAuth() {
     useAuthStore.getState();
 
   try {
+    try {
+      await publicApiRequest(
+        "/api/admin/auth/login-attempt",
+        {
+          method: "POST",
+          body: { email: email.trim() },
+        }
+      );
+    } catch (attemptError) {
+      console.warn("Login attempt notification error:", attemptError);
+    }
+
     const {
       data,
       error,
@@ -92,7 +105,7 @@ export async function signIn(
 
     try {
       await apiRequest(
-        "/api/admin/auth/login-notification",
+        "/api/admin/auth/login-success",
         {
           method: "POST",
           requiresCompanySession: false,

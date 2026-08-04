@@ -55,7 +55,7 @@ export default function OutOfStockPage() {
     <StockAlertProductsScreen
       view="out"
       onBack={() => {
-        router.push("/dashboard");
+        router.back();
       }}
       onOpenProduct={(productId) => {
         router.push(

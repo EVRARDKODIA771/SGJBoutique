@@ -22,9 +22,7 @@ export default function SignupPage() {
 
   return (
     <SignupScreen
-      onBack={() =>
-        router.replace("/login")
-      }
+      onBack={() => router.back()}
       onRegistered={({
         hasSession,
       }) => {

@@ -184,9 +184,7 @@ export default function ProductStockPage() {
     <StockMovementScreen
       product={product}
       onBack={() => {
-        router.push(
-          `/products/${productId}`
-        );
+        router.back();
       }}
       onRecorded={(updatedProduct) => {
         router.replace(

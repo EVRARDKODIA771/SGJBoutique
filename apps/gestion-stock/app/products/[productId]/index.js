@@ -65,7 +65,7 @@ export default function ProductDetailPage() {
       productId={productId}
       initialProduct={null}
       onBack={() => {
-        router.push("/products");
+        router.back();
       }}
       onEdit={() => {
         router.push(

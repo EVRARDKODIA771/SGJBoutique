@@ -47,7 +47,7 @@ export default function SuppliersPage() {
   return (
     <SuppliersScreen
       onBack={() => {
-        router.push("/dashboard");
+        router.back();
       }}
     />
   );

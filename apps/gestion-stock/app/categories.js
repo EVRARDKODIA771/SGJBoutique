@@ -47,7 +47,7 @@ export default function CategoriesPage() {
   return (
     <CategoriesScreen
       onBack={() => {
-        router.push("/dashboard");
+        router.back();
       }}
     />
   );

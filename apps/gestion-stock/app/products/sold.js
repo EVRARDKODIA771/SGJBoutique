@@ -54,7 +54,7 @@ export default function SoldProductsPage() {
   return (
     <SoldProductsScreen
       onBack={() => {
-        router.push("/products");
+        router.back();
       }}
       onOpenProduct={(product) => {
         if (!product?.id) {

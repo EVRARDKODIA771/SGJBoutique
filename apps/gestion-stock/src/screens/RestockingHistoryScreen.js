@@ -20,10 +20,13 @@ function money(value) {
 export default function RestockingHistoryScreen({
   onBack,
   onCreate,
+  onOpenRestocking,
   initialRestockingId,
+  detailOnly = false,
 }) {
   const [suppliers, setSuppliers] = useState([]);
   const [supplierId, setSupplierId] = useState("");
+  const [supplierMenuOpen, setSupplierMenuOpen] = useState(false);
   const [restockings, setRestockings] = useState([]);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -62,6 +65,11 @@ export default function RestockingHistoryScreen({
   }, [initialRestockingId]);
 
   async function openDetail(id) {
+    if (!detailOnly && onOpenRestocking) {
+      onOpenRestocking(id);
+      return;
+    }
+
     setLoading(true);
     try {
       const result = await getRestocking(id);
@@ -121,17 +129,19 @@ export default function RestockingHistoryScreen({
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Pressable onPress={selected ? () => setSelected(null) : onBack}>
+      <Pressable onPress={onBack}>
         <Text style={styles.back}>‹ Retour</Text>
       </Pressable>
       <View style={styles.titleRow}>
         <View style={styles.titleArea}>
-          <Text style={styles.title}>Historique des ravitaillements</Text>
+          <Text style={styles.title}>
+            {detailOnly ? "Détail du ravitaillement" : "Historique des ravitaillements"}
+          </Text>
           <Text style={styles.description}>
             Consultez les achats, les ventes, les clients, les vendeuses et le bénéfice de chaque ravitaillement.
           </Text>
         </View>
-        {!selected ? (
+        {!selected && !detailOnly ? (
           <Pressable style={styles.primaryButton} onPress={onCreate}>
             <Text style={styles.buttonText}>+ Créer un ravitaillement</Text>
           </Pressable>
@@ -154,16 +164,33 @@ export default function RestockingHistoryScreen({
         </View>
       ) : null}
 
-      {!selected ? (
+      {!selected && !detailOnly ? (
         <>
           <Text style={styles.subtitle}>Choisir d'abord un fournisseur</Text>
-          <View style={styles.chips}>
-            {suppliers.map((supplier) => (
-              <Pressable key={supplier.id} style={[styles.chip, supplierId === supplier.id && styles.chipSelected]}
-                onPress={() => setSupplierId(supplier.id)}>
-                <Text>{supplier.name}</Text>
-              </Pressable>
-            ))}
+          <View style={styles.supplierPicker}>
+            <Pressable style={styles.supplierButton}
+              onPress={() => setSupplierMenuOpen((value) => !value)}>
+              <Text style={supplierId ? styles.supplierValue : styles.supplierPlaceholder}>
+                {suppliers.find((supplier) => supplier.id === supplierId)?.name || "Sélectionner un fournisseur"}
+              </Text>
+              <Text style={styles.chevron}>{supplierMenuOpen ? "⌃" : "⌄"}</Text>
+            </Pressable>
+            {supplierMenuOpen ? (
+              <View style={styles.supplierMenu}>
+                {suppliers.map((supplier) => (
+                  <Pressable key={supplier.id} style={[
+                    styles.supplierOption,
+                    supplierId === supplier.id && styles.supplierOptionSelected,
+                  ]} onPress={() => {
+                    setSupplierId(supplier.id);
+                    setSupplierMenuOpen(false);
+                  }}>
+                    <Text style={styles.supplierValue}>{supplier.name}</Text>
+                    {supplierId === supplier.id ? <Text style={styles.selectedMark}>✓</Text> : null}
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
           </View>
 
           {supplierId ? (
@@ -194,7 +221,7 @@ export default function RestockingHistoryScreen({
             </ScrollView>
           ) : null}
         </>
-      ) : (
+      ) : selected ? (
         <View style={styles.card}>
           <View style={styles.row}>
             <Text style={styles.cardTitle}>{selected.title}</Text>
@@ -235,7 +262,7 @@ export default function RestockingHistoryScreen({
             </Pressable>
           ) : null}
         </View>
-      )}
+      ) : null}
     </ScrollView>
   );
 }
@@ -256,9 +283,15 @@ const styles = StyleSheet.create({
   active: { color: "#16803A", fontWeight: "900" },
   inactive: { color: "#C62828", fontWeight: "900" },
   profit: { color: "#16803A", fontWeight: "900", fontSize: 18 },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { paddingHorizontal: 12, paddingVertical: 9, borderRadius: 18, backgroundColor: "#E5E7EB" },
-  chipSelected: { backgroundColor: "#BBF7D0" },
+  supplierPicker: { maxWidth: 520, marginBottom: 8 },
+  supplierButton: { minHeight: 54, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.surface },
+  supplierPlaceholder: { color: colors.textMuted },
+  supplierValue: { flex: 1, color: colors.text, fontWeight: "700" },
+  chevron: { color: colors.primary, fontSize: 20, fontWeight: "900" },
+  supplierMenu: { marginTop: 6, borderWidth: 1, borderColor: colors.border, borderRadius: 12, overflow: "hidden", backgroundColor: colors.surface },
+  supplierOption: { minHeight: 50, flexDirection: "row", alignItems: "center", paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
+  supplierOptionSelected: { backgroundColor: "#ECFDF3" },
+  selectedMark: { color: "#16803A", fontWeight: "900" },
   line: { borderTopWidth: 1, borderTopColor: "#E5E7EB", paddingTop: 8, gap: 2 },
   input: { borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 10, padding: 12 },
   primaryButton: { backgroundColor: colors.primary, borderRadius: 10, padding: 13 },

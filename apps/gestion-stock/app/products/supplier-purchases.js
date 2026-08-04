@@ -54,7 +54,7 @@ export default function SupplierPurchasesPage() {
   return (
     <SupplierPurchasesScreen
       onBack={() => {
-        router.push("/products");
+        router.back();
       }}
       onOpenProduct={(product) => {
         if (!product?.id) {

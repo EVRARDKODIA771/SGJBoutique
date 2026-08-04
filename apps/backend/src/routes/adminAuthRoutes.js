@@ -8,6 +8,8 @@ import {
   Router,
 } from "express";
 
+import rateLimit from "express-rate-limit";
+
 import {
   z,
 } from "zod";
@@ -58,6 +60,18 @@ const newCompanyPasswordSchema = z.object({
       12,
       "Company password must contain at least 12 characters"
     ),
+});
+
+const loginAttemptSchema = z.object({
+  email: z.string().trim().email().max(254),
+}).strict();
+
+const loginAttemptLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 12,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  message: { success: true },
 });
 
 const biometricCredentialSchema =
@@ -1026,7 +1040,36 @@ router.patch(
 );
 
 router.post(
-  "/login-notification",
+  "/login-attempt",
+  loginAttemptLimiter,
+  async (request, response) => {
+    const validation = loginAttemptSchema.safeParse(request.body);
+
+    if (!validation.success) {
+      return response.status(202).json({ success: true });
+    }
+
+    try {
+      const email = validation.data.email.toLocaleLowerCase("fr-FR");
+
+      await notifySafely({
+        eventType: "login_attempted",
+        title: "Tentative de connexion",
+        body: `${email} a tenté de se connecter sur la plateforme`,
+        route: "/administration/authorized-users",
+        data: { email },
+      });
+
+      return response.status(202).json({ success: true });
+    } catch (error) {
+      console.error("Public login attempt notification error:", error);
+      return response.status(202).json({ success: true });
+    }
+  }
+);
+
+router.post(
+  "/login-success",
   authenticateUser,
   async (request, response) => {
     try {
@@ -1039,11 +1082,11 @@ router.post(
 
       await notifySafely({
         eventType:
-          "login_attempted",
+          "login_succeeded",
         title:
-          "Tentative de connexion",
+          "Connexion réussie",
         body:
-          `${email} a tenté de se connecter sur la plateforme`,
+          `${email} vient de se connecter à la plateforme`,
         route:
           "/administration/authorized-users",
         actorUserId:
@@ -1055,6 +1098,7 @@ router.post(
           userId:
             request.auth.user.id,
         },
+        excludeUserIds: [request.auth.user.id],
       });
 
       return response.status(200).json({

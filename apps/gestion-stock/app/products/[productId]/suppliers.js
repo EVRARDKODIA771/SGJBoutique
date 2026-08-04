@@ -183,9 +183,7 @@ export default function ProductSuppliersPage() {
     <ProductSuppliersScreen
       product={product}
       onBack={() => {
-        router.push(
-          `/products/${productId}`
-        );
+        router.back();
       }}
     />
   );

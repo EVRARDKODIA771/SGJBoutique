@@ -55,7 +55,7 @@ export default function AuthorizedUsersPage() {
     <AdministrationUsersScreen
       view="authorized"
       onBack={() => {
-        router.push("/dashboard");
+        router.back();
       }}
     />
   );

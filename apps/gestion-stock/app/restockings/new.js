@@ -14,8 +14,8 @@ export default function NewRestockingPage() {
 
   return (
     <RestockingFormScreen
-      onBack={() => router.push("/restockings")}
-      onCreated={(restocking) => router.replace(`/restockings?selected=${restocking.id}`)}
+      onBack={() => router.back()}
+      onCreated={(restocking) => router.replace(`/restockings/${restocking.id}`)}
     />
   );
 }

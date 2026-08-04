@@ -66,7 +66,7 @@ export default function StockPage() {
         initialDirection
       }
       onBack={() => {
-        router.push("/dashboard");
+        router.back();
       }}
       onOpenProduct={(product) => {
         router.push(

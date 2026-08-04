@@ -14,8 +14,8 @@ export default function RestockingProfitsPage() {
 
   return (
     <ProfitHistoryScreen
-      onBack={() => router.push("/dashboard")}
-      onOpenRestocking={(id) => router.push(`/restockings?selected=${id}`)}
+      onBack={() => router.back()}
+      onOpenRestocking={(id) => router.push(`/restockings/${id}`)}
     />
   );
 }

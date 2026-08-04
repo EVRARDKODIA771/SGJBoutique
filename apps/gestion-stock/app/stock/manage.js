@@ -47,7 +47,7 @@ export default function ManageStockPage() {
   return (
     <ProductsScreen
       onBack={() => {
-        router.push("/dashboard");
+        router.back();
       }}
       onCreate={() => {
         router.push("/products/new");

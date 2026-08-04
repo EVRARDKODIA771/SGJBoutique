@@ -49,7 +49,7 @@ export default function StockSalePage() {
   return (
     <SaleDeclarationScreen
       onBack={() => {
-        router.push("/dashboard");
+        router.back();
       }}
       onCompleted={() => {
         router.replace("/stock");
