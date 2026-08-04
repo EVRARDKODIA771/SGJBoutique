@@ -206,6 +206,7 @@ export default function DashboardScreen({
     purchaseCost: 0,
     profit: 0,
   });
+  const [activeRestockings, setActiveRestockings] = useState([]);
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -235,6 +236,7 @@ export default function DashboardScreen({
           profit: 0,
         }
       );
+      setActiveRestockings(result.activeRestockings ?? []);
     } catch (error) {
       console.error("Dashboard loading error:", error);
 
@@ -441,6 +443,25 @@ export default function DashboardScreen({
               </Pressable>
             </View>
           ) : null}
+
+          <View style={{ backgroundColor: "#ECFDF3", borderRadius: 12, padding: 14, marginBottom: 12 }}>
+            <Text style={{ color: "#16803A", fontWeight: "800" }}>
+              Ravitaillement(s) actif(s)
+            </Text>
+            <Text style={{ color: colors.text, marginTop: 4 }}>
+              {activeRestockings.length > 0
+                ? activeRestockings.map((item) =>
+                    `${item.title} · ${item.supplier?.name} · ${item.restocking_date}`
+                  ).join("\n")
+                : "Aucun ravitaillement actif"}
+            </Text>
+          </View>
+
+          <Pressable onPress={() => onNavigate?.("restockings")}>
+            <Text style={{ color: colors.primary, fontWeight: "800", marginBottom: 14 }}>
+              Historique des bénéfices ›
+            </Text>
+          </Pressable>
 
           <View style={styles.mobileProfitCard}>
             <View style={styles.mobileProfitInfo}>

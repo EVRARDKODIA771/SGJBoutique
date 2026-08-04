@@ -26,6 +26,9 @@ import supplierRoutes from
 import notificationRoutes from
   "./src/routes/notificationRoutes.js";
 
+import restockingRoutes from
+  "./src/routes/restockingRoutes.js";
+
 const app = express();
 
 const port =
@@ -222,6 +225,12 @@ app.use(
 app.use(
   "/api/admin/notifications",
   notificationRoutes
+);
+
+/* RAVITAILLEMENTS */
+app.use(
+  "/api/admin/restockings",
+  restockingRoutes
 );
 
 /*

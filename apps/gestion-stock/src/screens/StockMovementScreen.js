@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -24,6 +25,8 @@ import { zodResolver } from
 import { z } from "zod";
 
 import {
+  getRestockings,
+  getSuppliers,
   recordStockMovement,
 } from "../services/stockService.js";
 
@@ -124,8 +127,19 @@ const stockMovementSchema = z
         100,
         "La référence ne peut pas dépasser 100 caractères"
       ),
+
+    supplierId: z.string().uuid().nullable(),
+    restockingId: z.string().uuid().nullable(),
   })
   .superRefine((values, context) => {
+    if (values.movementType === "purchase" &&
+        (!values.supplierId || !values.restockingId)) {
+      context.addIssue({
+        code: "custom",
+        path: ["restockingId"],
+        message: "Choisissez le fournisseur et le ravitaillement",
+      });
+    }
     if (
       values.movementType ===
         "adjustment" &&
@@ -214,6 +228,10 @@ export default function StockMovementScreen({
 }) {
   const [requestError, setRequestError] =
     useState("");
+  const [suppliers, setSuppliers] = useState([]);
+  const [restockings, setRestockings] = useState([]);
+  const [supplierMenuOpen, setSupplierMenuOpen] = useState(false);
+  const [restockingMenuOpen, setRestockingMenuOpen] = useState(false);
 
   const {
     control,
@@ -235,11 +253,32 @@ export default function StockMovementScreen({
       adjustmentDirection: null,
       reason: "",
       reference: "",
+      supplierId: null,
+      restockingId: null,
     },
   });
 
   const selectedMovementType =
     watch("movementType");
+  const selectedSupplierId = watch("supplierId");
+  const selectedRestockingId = watch("restockingId");
+
+  useEffect(() => {
+    getSuppliers({ isActive: true, page: 1, limit: 100 })
+      .then((result) => setSuppliers(result.suppliers ?? []))
+      .catch(() => setRequestError("Impossible de charger les fournisseurs."));
+  }, []);
+
+  useEffect(() => {
+    if (!selectedSupplierId) {
+      setRestockings([]);
+      setValue("restockingId", null);
+      return;
+    }
+    getRestockings({ supplierId: selectedSupplierId, status: "active" })
+      .then((result) => setRestockings(result.restockings ?? []))
+      .catch(() => setRequestError("Impossible de charger les ravitaillements."));
+  }, [selectedSupplierId, setValue]);
 
   const selectedAdjustmentDirection =
     watch("adjustmentDirection");
@@ -351,6 +390,11 @@ export default function StockMovementScreen({
     ) {
       movementData.adjustmentDirection =
         values.adjustmentDirection;
+    }
+
+    if (values.movementType === "purchase") {
+      movementData.supplierId = values.supplierId;
+      movementData.restockingId = values.restockingId;
     }
 
     try {
@@ -771,6 +815,48 @@ export default function StockMovementScreen({
           ) : null}
 
           <View style={styles.divider} />
+
+          {selectedMovementType === "purchase" ? (
+            <View style={{ gap: 12, marginBottom: 20 }}>
+              <Text style={styles.sectionTitle}>Ravitaillement concerné</Text>
+              <Pressable style={styles.input} onPress={() => setSupplierMenuOpen((value) => !value)}>
+                <Text>{suppliers.find((item) => item.id === selectedSupplierId)?.name || "Choisir le fournisseur"}</Text>
+              </Pressable>
+              {supplierMenuOpen ? (
+                <View>
+                  {suppliers.map((supplier) => (
+                    <Pressable key={supplier.id} style={styles.input} onPress={() => {
+                      setValue("supplierId", supplier.id, { shouldValidate: true });
+                      setSupplierMenuOpen(false);
+                    }}>
+                      <Text>{supplier.name}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : null}
+
+              <Pressable style={styles.input} onPress={() => setRestockingMenuOpen((value) => !value)}>
+                <Text>
+                  {restockings.find((item) => item.id === selectedRestockingId)
+                    ? `${restockings.find((item) => item.id === selectedRestockingId).title} · ${restockings.find((item) => item.id === selectedRestockingId).restocking_date}`
+                    : "Choisir le ravitaillement"}
+                </Text>
+              </Pressable>
+              {restockingMenuOpen ? (
+                <View>
+                  {restockings.map((restocking) => (
+                    <Pressable key={restocking.id} style={styles.input} onPress={() => {
+                      setValue("restockingId", restocking.id, { shouldValidate: true });
+                      setRestockingMenuOpen(false);
+                    }}>
+                      <Text>{restocking.title} · {restocking.restocking_date}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : null}
+              {errors.restockingId ? <Text style={styles.fieldError}>{errors.restockingId.message}</Text> : null}
+            </View>
+          ) : null}
 
           <Text
             style={styles.sectionTitle}

@@ -30,6 +30,8 @@ import { z } from "zod";
 
 import {
   createProduct,
+  createRestocking,
+  getRestockings,
   getSuppliers,
   updateProduct,
   uploadProductImage,
@@ -107,12 +109,18 @@ const sharedProductSchema = z.object({
 
 const createProductSchema =
   sharedProductSchema.extend({
-    initialQuantity: integerText,
+    initialQuantity: optionalPositiveInteger.refine(
+      (value) => value !== "",
+      "La quantité initiale est obligatoire"
+    ),
 
     supplierId: z
       .string()
-      .uuid()
-      .nullable(),
+      .uuid("Choisissez un fournisseur"),
+
+    restockingId: z
+      .string()
+      .uuid("Choisissez un ravitaillement"),
   });
 
 const updateProductSchema =
@@ -247,6 +255,16 @@ export default function ProductFormScreen({
   const [requestError, setRequestError] =
     useState("");
 
+  const [restockings, setRestockings] = useState([]);
+  const [isRestockingMenuOpen, setIsRestockingMenuOpen] = useState(false);
+  const [isCreatingRestocking, setIsCreatingRestocking] = useState(false);
+  const [newRestockingTitle, setNewRestockingTitle] = useState("");
+  const [newRestockingDate, setNewRestockingDate] = useState(
+    new Date().toISOString().slice(0, 10)
+  );
+  const [newInvoiceNumber, setNewInvoiceNumber] = useState("");
+  const [isSavingRestocking, setIsSavingRestocking] = useState(false);
+
   const [
     selectedImage,
     setSelectedImage,
@@ -288,7 +306,7 @@ export default function ProductFormScreen({
 
       initialQuantity: isEditing
         ? ""
-        : "0",
+        : "1",
 
       lowStockThreshold:
         valueToText(
@@ -304,6 +322,7 @@ export default function ProductFormScreen({
       ),
 
       supplierId: null,
+      restockingId: null,
     },
   });
 
@@ -316,6 +335,55 @@ export default function ProductFormScreen({
         supplier.id ===
         selectedSupplierId
     ) ?? null;
+
+  const selectedRestockingId = watch("restockingId");
+  const selectedRestocking = restockings.find(
+    (restocking) => restocking.id === selectedRestockingId
+  ) ?? null;
+
+  useEffect(() => {
+    if (isEditing || !selectedSupplierId) {
+      setRestockings([]);
+      setValue("restockingId", null);
+      return;
+    }
+
+    getRestockings({ supplierId: selectedSupplierId, status: "active" })
+      .then((result) => setRestockings(result.restockings ?? []))
+      .catch((error) => {
+        console.error("Restockings loading error:", error);
+        setRequestError("Impossible de charger les ravitaillements actifs.");
+      });
+  }, [isEditing, selectedSupplierId, setValue]);
+
+  async function handleCreateRestocking() {
+    if (!selectedSupplierId || !newRestockingTitle.trim() ||
+        !newRestockingDate || !newInvoiceNumber.trim()) {
+      setRequestError("Renseignez le titre, la date, le fournisseur et le numéro de facture.");
+      return;
+    }
+
+    setIsSavingRestocking(true);
+    setRequestError("");
+    try {
+      const result = await createRestocking({
+        title: newRestockingTitle.trim(),
+        restockingDate: newRestockingDate,
+        supplierId: selectedSupplierId,
+        invoiceNumber: newInvoiceNumber.trim(),
+      });
+      const created = result.restocking;
+      setRestockings((current) => [created, ...current]);
+      setValue("restockingId", created.id, { shouldValidate: true });
+      setIsCreatingRestocking(false);
+      setNewRestockingTitle("");
+      setNewInvoiceNumber("");
+    } catch (error) {
+      setRequestError(error?.message || "Impossible de créer le ravitaillement.");
+    } finally {
+      setIsSavingRestocking(false);
+    }
+  }
 
   useEffect(() => {
     if (isEditing) {
@@ -494,6 +562,9 @@ export default function ProductFormScreen({
 
           supplierId:
             values.supplierId,
+
+          restockingId:
+            values.restockingId,
 
           supplierReference: null,
         });
@@ -972,6 +1043,84 @@ export default function ProductFormScreen({
                     ) : null}
                   </>
                 )}
+
+                {selectedSupplier ? (
+                  <View style={styles.supplierArea}>
+                    <Text style={styles.label}>Ravitaillement *</Text>
+                    <Pressable
+                      style={styles.supplierSelect}
+                      onPress={() => setIsRestockingMenuOpen((current) => !current)}
+                    >
+                      <Text style={styles.supplierSelectText}>
+                        {selectedRestocking
+                          ? `${selectedRestocking.title} · ${selectedRestocking.restocking_date}`
+                          : "Sélectionner un ravitaillement"}
+                      </Text>
+                      <Text style={styles.supplierArrow}>▼</Text>
+                    </Pressable>
+
+                    {isRestockingMenuOpen ? (
+                      <View style={styles.supplierOptions}>
+                        {restockings.map((restocking) => (
+                          <Pressable
+                            key={restocking.id}
+                            style={styles.supplierOption}
+                            onPress={() => {
+                              setValue("restockingId", restocking.id, { shouldValidate: true });
+                              setIsRestockingMenuOpen(false);
+                            }}
+                          >
+                            <Text style={styles.supplierOptionText}>
+                              {restocking.title} · {restocking.restocking_date}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    ) : null}
+
+                    {errors.restockingId ? (
+                      <Text style={styles.fieldError}>{errors.restockingId.message}</Text>
+                    ) : null}
+
+                    <Pressable onPress={() => setIsCreatingRestocking((current) => !current)}>
+                      <Text style={{ color: colors.primary, fontWeight: "700", marginTop: 12 }}>
+                        + Créer un ravitaillement
+                      </Text>
+                    </Pressable>
+
+                    {isCreatingRestocking ? (
+                      <View style={{ gap: 10, marginTop: 12 }}>
+                        <TextInput
+                          style={styles.input}
+                          value={newRestockingTitle}
+                          onChangeText={setNewRestockingTitle}
+                          placeholder="Titre du ravitaillement"
+                        />
+                        <TextInput
+                          style={styles.input}
+                          value={newRestockingDate}
+                          onChangeText={setNewRestockingDate}
+                          placeholder="AAAA-MM-JJ"
+                        />
+                        <TextInput
+                          style={styles.input}
+                          value={newInvoiceNumber}
+                          onChangeText={setNewInvoiceNumber}
+                          placeholder="Numéro de facture"
+                        />
+                        <Pressable
+                          style={styles.submitButton}
+                          onPress={handleCreateRestocking}
+                          disabled={isSavingRestocking}
+                        >
+                          <Text style={styles.submitButtonText}>
+                            {isSavingRestocking ? "Création…" : "Créer et sélectionner"}
+                          </Text>
+                        </Pressable>
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null}
 
               </View>
             </>

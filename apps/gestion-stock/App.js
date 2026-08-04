@@ -52,6 +52,9 @@ import StockHistoryScreen from
 import StockMovementScreen from
   "./src/screens/StockMovementScreen.js";
 
+import RestockingHistoryScreen from
+  "./src/screens/RestockingHistoryScreen.js";
+
 import SuppliersScreen from
   "./src/screens/SuppliersScreen.js";
 
@@ -259,6 +262,14 @@ function ApplicationContent() {
             "product-detail"
           );
         }}
+      />
+    );
+  }
+
+  if (activeSection === "restockings") {
+    return (
+      <RestockingHistoryScreen
+        onBack={returnToDashboard}
       />
     );
   }

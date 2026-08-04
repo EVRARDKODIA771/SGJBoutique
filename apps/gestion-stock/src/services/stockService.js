@@ -44,8 +44,31 @@ export function getProducts({
 
 export function getDashboardStatistics() {
   return apiRequest(
-    "/api/admin/products/dashboard-statistics"
+    "/api/admin/restockings/dashboard-statistics"
   );
+}
+
+export function getRestockings({ supplierId, status } = {}) {
+  const query = buildQuery({ supplierId, status });
+  return apiRequest(`/api/admin/restockings${query}`);
+}
+
+export function getRestocking(restockingId) {
+  return apiRequest(`/api/admin/restockings/${restockingId}`);
+}
+
+export function createRestocking(restockingData) {
+  return apiRequest("/api/admin/restockings", {
+    method: "POST",
+    body: restockingData,
+  });
+}
+
+export function completeRestocking(restockingId, authorizationMethod) {
+  return apiRequest(`/api/admin/restockings/${restockingId}/complete`, {
+    method: "POST",
+    body: { authorizationMethod },
+  });
 }
 
 export function getSoldProducts({
@@ -243,6 +266,7 @@ export function getGlobalStockMovements({
   movementType,
   direction,
   productId,
+  restockingId,
   search,
   page = 1,
   limit = 20,
@@ -252,6 +276,7 @@ export function getGlobalStockMovements({
     movementType,
     direction,
     productId,
+    restockingId,
     search,
     page,
     limit,

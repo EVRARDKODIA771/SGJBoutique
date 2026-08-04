@@ -374,6 +374,11 @@ productRoutes.get(
           .uuid("Invalid product ID")
           .optional(),
 
+        restockingId: z
+          .string()
+          .uuid("Invalid restocking ID")
+          .optional(),
+
         search: z
           .string()
           .trim()
@@ -414,6 +419,7 @@ productRoutes.get(
         direction,
         movementType,
         productId,
+        restockingId,
         search,
         page,
         limit,
@@ -459,6 +465,31 @@ productRoutes.get(
           search ? 0 : start,
           search ? 4999 : end
         );
+
+      if (restockingId) {
+        if (historyType === "exits" || direction === "exits") {
+          const { data: restockingItems, error: restockingItemsError } = await supabaseAdmin
+            .from("restocking_items")
+            .select("id")
+            .eq("restocking_id", restockingId);
+          if (restockingItemsError) throw restockingItemsError;
+
+          const itemIds = (restockingItems ?? []).map((item) => item.id);
+          const { data: allocations, error: allocationError } = itemIds.length
+            ? await supabaseAdmin
+                .from("sale_allocations")
+                .select("stock_movement_id")
+                .in("restocking_item_id", itemIds)
+            : { data: [], error: null };
+          if (allocationError) throw allocationError;
+          const movementIds = [...new Set((allocations ?? []).map((item) => item.stock_movement_id))];
+          databaseQuery = movementIds.length
+            ? databaseQuery.in("id", movementIds)
+            : databaseQuery.eq("id", "00000000-0000-0000-0000-000000000000");
+        } else {
+          databaseQuery = databaseQuery.eq("restocking_id", restockingId);
+        }
+      }
 
       if (movementType) {
         databaseQuery =
@@ -1564,6 +1595,10 @@ productRoutes.post(
           .nullable()
           .optional(),
 
+        restockingId: z
+          .string()
+          .uuid("Invalid restocking ID"),
+
         supplierReference: z
           .string()
           .trim()
@@ -1605,8 +1640,8 @@ productRoutes.post(
           .number()
           .int()
           .min(
-            0,
-            "Initial quantity cannot be negative"
+            1,
+            "Initial quantity must be positive"
           ),
 
         lowStockThreshold: z
@@ -1645,6 +1680,27 @@ productRoutes.post(
       }
 
       const product = validation.data;
+
+      const { data: selectedRestocking, error: restockingError } =
+        await supabaseAdmin
+          .from("restockings")
+          .select("id, supplier_id, status")
+          .eq("id", product.restockingId)
+          .maybeSingle();
+
+      if (restockingError) throw restockingError;
+      if (!selectedRestocking || selectedRestocking.status !== "active") {
+        return response.status(409).json({
+          success: false,
+          error: "An active restocking is required",
+        });
+      }
+      if (selectedRestocking.supplier_id !== product.supplierId) {
+        return response.status(400).json({
+          success: false,
+          error: "The restocking does not belong to the selected supplier",
+        });
+      }
 
       /*
        * Ce client transmet le JWT de
@@ -1809,6 +1865,30 @@ productRoutes.post(
               "Unable to create product",
           });
       }
+
+      const { data: restockingItem, error: itemError } = await supabaseAdmin
+        .from("restocking_items")
+        .insert({
+          restocking_id: product.restockingId,
+          product_id: createdProduct.id,
+          initial_quantity: product.initialQuantity,
+          remaining_quantity: product.initialQuantity,
+          purchase_price: product.purchasePrice,
+          sale_price: product.salePrice,
+        })
+        .select("id")
+        .single();
+
+      if (itemError) throw itemError;
+
+      await supabaseAdmin
+        .from("stock_movements")
+        .update({
+          restocking_id: product.restockingId,
+          restocking_item_id: restockingItem.id,
+        })
+        .eq("product_id", createdProduct.id)
+        .eq("movement_type", "initial");
 
       const actorLabel =
         await getUserDisplayLabel(
@@ -2805,6 +2885,12 @@ productRoutes.post(
             .nullable()
             .optional(),
 
+          restockingId: z
+            .string()
+            .uuid("Invalid restocking ID")
+            .nullable()
+            .optional(),
+
           unitPrice: z
             .number()
             .int()
@@ -2872,26 +2958,26 @@ productRoutes.post(
           if (
             movement.movementType ===
               "purchase" &&
-            !movement.supplierId
+            (!movement.supplierId || !movement.restockingId)
           ) {
             context.addIssue({
               code: "custom",
               path: ["supplierId"],
               message:
-                "A supplier is required for a purchase",
+                "A supplier and a restocking are required for a purchase",
             });
           }
 
           if (
             movement.movementType !==
               "purchase" &&
-            movement.supplierId
+            (movement.supplierId || movement.restockingId)
           ) {
             context.addIssue({
               code: "custom",
               path: ["supplierId"],
               message:
-                "A supplier can only be selected for a purchase",
+                "A supplier and a restocking can only be selected for a purchase",
             });
           }
         });
@@ -3064,6 +3150,83 @@ productRoutes.post(
             error:
               "Unable to record stock movement",
           });
+      }
+
+      const { data: recordedMovement, error: recordedMovementError } =
+        await supabaseAdmin
+          .from("stock_movements")
+          .select("id")
+          .eq("product_id", productId)
+          .eq("movement_type", movement.movementType)
+          .eq("created_by", request.auth.user.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+      if (recordedMovementError || !recordedMovement) {
+        throw recordedMovementError ?? new Error("Recorded movement not found");
+      }
+
+      if (movement.movementType === "purchase") {
+        const { data: selectedRestocking, error: restockingError } =
+          await supabaseAdmin
+            .from("restockings")
+            .select("id, supplier_id, status")
+            .eq("id", movement.restockingId)
+            .maybeSingle();
+        if (restockingError) throw restockingError;
+        if (!selectedRestocking || selectedRestocking.status !== "active") {
+          return response.status(409).json({ success: false, error: "An active restocking is required" });
+        }
+        if (selectedRestocking.supplier_id !== movement.supplierId) {
+          return response.status(400).json({ success: false, error: "Restocking supplier mismatch" });
+        }
+
+        const { data: existingItem, error: existingItemError } = await supabaseAdmin
+          .from("restocking_items")
+          .select("id, initial_quantity, remaining_quantity")
+          .eq("restocking_id", movement.restockingId)
+          .eq("product_id", productId)
+          .maybeSingle();
+        if (existingItemError) throw existingItemError;
+
+        let restockingItemId;
+        if (existingItem) {
+          restockingItemId = existingItem.id;
+          const { error: updateItemError } = await supabaseAdmin
+            .from("restocking_items")
+            .update({
+              initial_quantity: existingItem.initial_quantity + movement.quantity,
+              remaining_quantity: existingItem.remaining_quantity + movement.quantity,
+              purchase_price: Number(movement.unitPrice ?? updatedProduct.purchase_price ?? 0),
+              sale_price: Number(updatedProduct.sale_price ?? 0),
+            })
+            .eq("id", existingItem.id);
+          if (updateItemError) throw updateItemError;
+        } else {
+          const { data: createdItem, error: createItemError } = await supabaseAdmin
+            .from("restocking_items")
+            .insert({
+              restocking_id: movement.restockingId,
+              product_id: productId,
+              initial_quantity: movement.quantity,
+              remaining_quantity: movement.quantity,
+              purchase_price: Number(movement.unitPrice ?? updatedProduct.purchase_price ?? 0),
+              sale_price: Number(updatedProduct.sale_price ?? 0),
+            })
+            .select("id")
+            .single();
+          if (createItemError) throw createItemError;
+          restockingItemId = createdItem.id;
+        }
+
+        await supabaseAdmin
+          .from("stock_movements")
+          .update({
+            restocking_id: movement.restockingId,
+            restocking_item_id: restockingItemId,
+          })
+          .eq("id", recordedMovement.id);
       }
 
       const actorLabel =

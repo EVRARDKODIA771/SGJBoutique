@@ -19,6 +19,7 @@ import SaleReceiptModal from
 
 import {
   getGlobalStockMovements,
+  getRestockings,
 } from "../services/stockService.js";
 
 import {
@@ -93,6 +94,18 @@ export default function StockHistoryScreen({
 
   const [movements, setMovements] =
     useState([]);
+  const [restockings, setRestockings] = useState([]);
+  const [restockingId, setRestockingId] = useState("");
+
+  useEffect(() => {
+    getRestockings()
+      .then((result) => {
+        const values = result.restockings ?? [];
+        setRestockings(values);
+        if (values.length > 0) setRestockingId(values[0].id);
+      })
+      .catch(() => setRequestError("Impossible de charger les ravitaillements."));
+  }, []);
 
   const [page, setPage] =
     useState(1);
@@ -135,6 +148,7 @@ export default function StockHistoryScreen({
             search:
               activeSearch ||
               undefined,
+            restockingId: restockingId || undefined,
             page,
             limit: 20,
           });
@@ -186,6 +200,7 @@ export default function StockHistoryScreen({
       direction,
       activeSearch,
       page,
+      restockingId,
     ]
   );
 
@@ -273,6 +288,29 @@ export default function StockHistoryScreen({
             sorties pour afficher le tableau.
           </Text>
         </View>
+
+        <Text style={styles.subtitle}>Ravitaillement concerné</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 8 }}>
+          {restockings.map((restocking) => (
+            <Pressable
+              key={restocking.id}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 9,
+                borderRadius: 18,
+                backgroundColor: restockingId === restocking.id
+                  ? (restocking.status === "active" ? "#BBF7D0" : "#FECACA")
+                  : "#E5E7EB",
+              }}
+              onPress={() => { setRestockingId(restocking.id); setPage(1); }}
+            >
+              <Text style={{ fontWeight: "700" }}>
+                {restocking.title} · {restocking.supplier?.name} · {restocking.restocking_date}
+                {restocking.status === "active" ? " · ACTIF" : " · INACTIF"}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
 
         <View style={styles.directionTabs}>
           <Pressable
