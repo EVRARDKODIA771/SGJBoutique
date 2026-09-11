@@ -1,68 +1,68 @@
 {
-  "expo": {
-    "name": "JDE Parfum",
-    "slug": "jdeparfum",
-    "scheme": "jde-parfum",
-    "version": "1.2.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "package": "com.jdeparfum.gestionstock",
-      "versionCode": 8,
-      "googleServicesFile": "./google-services.json",
-      "adaptiveIcon": {
-        "backgroundColor": "#FAF9F7",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      },
-      "blockedPermissions": [
-        "android.permission.RECORD_AUDIO"
-      ],
-      "predictiveBackGestureEnabled": false
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      "expo-router",
-      "expo-secure-store",
-      "expo-web-browser",
-      [
-        "expo-local-authentication",
-        {
-          "faceIDPermission": "Autoriser JDE Parfum à utiliser Face ID pour déverrouiller l’accès entreprise."
-        }
-      ],
-      [
-        "expo-camera",
-        {
-          "recordAudioAndroid": false,
-          "barcodeScannerEnabled": false
-        }
-      ],
-      [
-        "expo-image-picker",
-        {
-          "photosPermission": "Autoriser JDE Parfum à sélectionner les photos des parfums."
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/notification-icon.png",
-          "color": "#6F4E37",
-          "defaultChannel": "jde-parfum"
-        }
-      ]
-    ],
-    "extra": {
-      "eas": {
-        "projectId": "d3035aad-2b2d-4d58-bd58-c86235410a78"
-      }
-    }
-  }
+    "expo":  {
+                 "name":  "SGJ parfum",
+                 "slug":  "jdeparfum",
+                 "scheme":  "jde-parfum",
+                 "version":  "1.2.1",
+                 "orientation":  "portrait",
+                 "icon":  "./assets/icon.png",
+                 "userInterfaceStyle":  "light",
+                 "ios":  {
+                             "supportsTablet":  true
+                         },
+                 "android":  {
+                                 "package":  "com.jdeparfum.gestionstock",
+                                 "versionCode":  9,
+                                 "googleServicesFile":  "./google-services.json",
+                                 "adaptiveIcon":  {
+                                                      "backgroundColor":  "#FAF9F7",
+                                                      "foregroundImage":  "./assets/android-icon-foreground.png",
+                                                      "monochromeImage":  "./assets/android-icon-monochrome.png"
+                                                  },
+                                 "blockedPermissions":  [
+                                                            "android.permission.RECORD_AUDIO"
+                                                        ],
+                                 "predictiveBackGestureEnabled":  false
+                             },
+                 "web":  {
+                             "favicon":  "./assets/favicon.png"
+                         },
+                 "plugins":  [
+                                 "expo-router",
+                                 "expo-secure-store",
+                                 "expo-web-browser",
+                                 [
+                                     "expo-local-authentication",
+                                     {
+                                         "faceIDPermission":  "Autoriser JDE Parfum ÃƒÂ  utiliser Face ID pour dÃƒÂ©verrouiller lÃ¢â‚¬â„¢accÃƒÂ¨s entreprise."
+                                     }
+                                 ],
+                                 [
+                                     "expo-camera",
+                                     {
+                                         "recordAudioAndroid":  false,
+                                         "barcodeScannerEnabled":  false
+                                     }
+                                 ],
+                                 [
+                                     "expo-image-picker",
+                                     {
+                                         "photosPermission":  "Autoriser JDE Parfum ÃƒÂ  sÃƒÂ©lectionner les photos des parfums."
+                                     }
+                                 ],
+                                 [
+                                     "expo-notifications",
+                                     {
+                                         "icon":  "./assets/notification-icon.png",
+                                         "color":  "#6F4E37",
+                                         "defaultChannel":  "jde-parfum"
+                                     }
+                                 ]
+                             ],
+                 "extra":  {
+                               "eas":  {
+                                           "projectId":  "d3035aad-2b2d-4d58-bd58-c86235410a78"
+                                       }
+                           }
+             }
 }
