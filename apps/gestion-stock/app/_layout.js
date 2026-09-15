@@ -190,7 +190,6 @@ export default function RootLayout() {
            * vers /access alors que l'adhésion est encore null.
            */
           if (
-            event === "SIGNED_IN" &&
             useAuthStore.getState()
               .isInitializing
           ) {

@@ -95,8 +95,10 @@ export async function signIn(
       throw error;
     }
 
-    const statusResult =
-      await getAdminAccessStatus();
+    let statusResult =
+      await getAdminAccessStatus(
+        data.session.access_token
+      );
 
     if (
       statusResult.membership?.status !==
@@ -124,10 +126,14 @@ export async function signIn(
      * appuyer sur un second bouton.
      */
     if (!statusResult.membership) {
-      await requestAdminAccess();
+      await requestAdminAccess(
+        data.session.access_token
+      );
 
       statusResult =
-        await getAdminAccessStatus();
+        await getAdminAccessStatus(
+          data.session.access_token
+        );
     }
 
     /*
@@ -202,11 +208,14 @@ export async function signUp({
  * afin de conserver la compatibilité avec
  * l’organisation actuelle du backend Vercel.
  */
-export async function getAdminAccessStatus() {
+export async function getAdminAccessStatus(
+  accessToken
+) {
   const result = await apiRequest(
     "/api/admin/auth/access/status",
     {
       requiresCompanySession: false,
+      accessToken,
     }
   );
 
@@ -222,12 +231,15 @@ export async function getAdminAccessStatus() {
 /*
  * Enregistrement d’une demande d’accès.
  */
-export async function requestAdminAccess() {
+export async function requestAdminAccess(
+  accessToken
+) {
   const result = await apiRequest(
     "/api/admin/auth/access/request",
     {
       method: "POST",
       requiresCompanySession: false,
+      accessToken,
     }
   );
 

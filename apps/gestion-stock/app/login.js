@@ -24,8 +24,13 @@ export default function LoginPage() {
 
   return (
     <LoginScreen
-      onAuthenticated={() => {
-        router.replace("/");
+      onAuthenticated={(result) => {
+        router.replace(
+          result.membership?.status ===
+            "approved"
+            ? "/company-password"
+            : "/access"
+        );
       }}
       onSignUp={() => {
         router.push("/signup");

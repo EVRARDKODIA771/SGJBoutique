@@ -205,6 +205,7 @@ export async function apiRequest(
   options = {}
 ) {
   let accessToken =
+    options.accessToken ??
     await getAccessToken();
 
   let {
