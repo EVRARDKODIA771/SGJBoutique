@@ -17,6 +17,8 @@ import {
   requireCompanySession,
 } from "../middleware/requireCompanySession.js";
 
+import { getUserDisplayLabel, notifySafely } from "../services/notificationService.js";
+
 const supplierRoutes = Router();
 
 supplierRoutes.use(
@@ -281,6 +283,16 @@ supplierRoutes.post(
         });
       }
 
+      const actorLabel = await getUserDisplayLabel(request.auth.user.id);
+      await notifySafely({
+        eventType: "supplier_created",
+        title: "Fournisseur créé",
+        body: `${actorLabel} a créé le fournisseur « ${createdSupplier.name} ».`,
+        actorUserId: request.auth.user.id,
+        route: "/suppliers",
+        data: { supplierId: createdSupplier.id },
+      });
+
       return response.status(201).json({
         success: true,
         message:
@@ -514,6 +526,16 @@ supplierRoutes.patch(
             "Unable to update supplier",
         });
       }
+
+      const actorLabel = await getUserDisplayLabel(request.auth.user.id);
+      await notifySafely({
+        eventType: "supplier_updated",
+        title: "Fournisseur modifié",
+        body: `${actorLabel} a modifié le fournisseur « ${updatedSupplier.name} ».`,
+        actorUserId: request.auth.user.id,
+        route: "/suppliers",
+        data: { supplierId: identifierValidation.data },
+      });
 
       return response.status(200).json({
         success: true,

@@ -2,6 +2,10 @@ import {
   supabaseAdmin,
 } from "../lib/supabaseAdmin.js";
 
+import webPush from "web-push";
+
+import { env } from "../config/env.js";
+
 const EXPO_PUSH_URL =
   "https://exp.host/--/api/v2/push/send";
 
@@ -10,6 +14,53 @@ const EXPO_RECEIPTS_URL =
 
 const MAX_EXPO_BATCH_SIZE = 100;
 const MAX_EXPO_RECEIPT_BATCH_SIZE = 100;
+
+const webPushConfigured = Boolean(
+  env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY
+);
+
+if (webPushConfigured) {
+  webPush.setVapidDetails(
+    env.VAPID_SUBJECT,
+    env.VAPID_PUBLIC_KEY,
+    env.VAPID_PRIVATE_KEY
+  );
+}
+
+async function sendWebPushNotifications(notification, subscriptions) {
+  if (!webPushConfigured || subscriptions.length === 0) return;
+
+  const payload = JSON.stringify({
+    title: notification.title,
+    body: notification.body,
+    route: notification.route,
+    notificationId: notification.id,
+    eventType: notification.event_type,
+    data: notification.data,
+  });
+
+  await Promise.allSettled(
+    subscriptions.map(async (subscription) => {
+      try {
+        await webPush.sendNotification({
+          endpoint: subscription.endpoint,
+          keys: {
+            p256dh: subscription.p256dh,
+            auth: subscription.auth,
+          },
+        }, payload, { TTL: 60 * 60, urgency: "high" });
+      } catch (error) {
+        console.error("Web Push sending error:", error.statusCode, error.message);
+        if (error.statusCode === 404 || error.statusCode === 410) {
+          await supabaseAdmin
+            .from("web_push_subscriptions")
+            .update({ is_active: false })
+            .eq("id", subscription.id);
+        }
+      }
+    })
+  );
+}
 
 function splitIntoBatches(
   values,
@@ -512,12 +563,24 @@ export async function sendBusinessNotification({
     throw devicesError;
   }
 
+  const { data: webSubscriptions, error: webSubscriptionsError } =
+    await supabaseAdmin
+      .from("web_push_subscriptions")
+      .select("id, user_id, endpoint, p256dh, auth")
+      .in("user_id", recipientIds)
+      .eq("is_active", true);
+
+  if (webSubscriptionsError) throw webSubscriptionsError;
+
+  await sendWebPushNotifications(notification, webSubscriptions ?? []);
+
   if (!devices?.length) {
     return {
       notification,
       recipientCount:
         recipientIds.length,
       deviceCount: 0,
+      webSubscriptionCount: webSubscriptions?.length ?? 0,
     };
   }
 
@@ -570,6 +633,7 @@ export async function sendBusinessNotification({
     recipientCount:
       recipientIds.length,
     deviceCount: devices.length,
+    webSubscriptionCount: webSubscriptions?.length ?? 0,
   };
 }
 

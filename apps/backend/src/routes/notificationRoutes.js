@@ -22,6 +22,8 @@ import {
   requireCompanySession,
 } from "../middleware/requireCompanySession.js";
 
+import { env } from "../config/env.js";
+
 const router = Router();
 
 router.use(
@@ -29,6 +31,69 @@ router.use(
   requireApprovedAdmin(),
   requireCompanySession
 );
+
+router.get("/web-push/public-key", (request, response) => {
+  if (!env.VAPID_PUBLIC_KEY) {
+    return response.status(503).json({
+      success: false,
+      error: "Web Push is not configured",
+    });
+  }
+
+  return response.status(200).json({
+    success: true,
+    publicKey: env.VAPID_PUBLIC_KEY,
+  });
+});
+
+router.post("/web-push/subscriptions", async (request, response) => {
+  try {
+    const validation = z.object({
+      endpoint: z.string().url().max(2000),
+      expirationTime: z.number().nullable().optional(),
+      keys: z.object({
+        p256dh: z.string().min(1).max(500),
+        auth: z.string().min(1).max(500),
+      }),
+      userAgent: z.string().max(500).nullable().optional(),
+    }).safeParse(request.body);
+
+    if (!validation.success) {
+      return response.status(400).json({
+        success: false,
+        error: "Invalid Web Push subscription",
+      });
+    }
+
+    const subscription = validation.data;
+    const { data, error } = await supabaseAdmin
+      .from("web_push_subscriptions")
+      .upsert({
+        user_id: request.auth.user.id,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+        expiration_time: subscription.expirationTime
+          ? new Date(subscription.expirationTime).toISOString()
+          : null,
+        user_agent: subscription.userAgent ?? null,
+        is_active: true,
+        last_seen_at: new Date().toISOString(),
+      }, { onConflict: "endpoint" })
+      .select("id, last_seen_at")
+      .single();
+
+    if (error) throw error;
+
+    return response.status(200).json({ success: true, subscription: data });
+  } catch (error) {
+    console.error("Web Push subscription error:", error);
+    return response.status(500).json({
+      success: false,
+      error: "Unable to register this browser",
+    });
+  }
+});
 
 router.post(
   "/devices",

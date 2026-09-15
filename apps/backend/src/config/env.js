@@ -26,6 +26,10 @@ const environmentSchema = z.object({
   ALLOWED_ORIGINS: z
     .string()
     .default(""),
+
+  VAPID_PUBLIC_KEY: z.string().trim().optional(),
+  VAPID_PRIVATE_KEY: z.string().trim().optional(),
+  VAPID_SUBJECT: z.string().trim().default("mailto:admin@sgjboutique.app"),
 });
 
 const validation =

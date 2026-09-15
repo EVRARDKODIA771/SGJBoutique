@@ -24,18 +24,6 @@ export async function initializeAuth() {
     useAuthStore.getState();
 
   try {
-    try {
-      await publicApiRequest(
-        "/api/admin/auth/login-attempt",
-        {
-          method: "POST",
-          body: { email: email.trim() },
-        }
-      );
-    } catch (attemptError) {
-      console.warn("Login attempt notification error:", attemptError);
-    }
-
     const {
       data,
       error,
@@ -96,27 +84,20 @@ export async function signIn(
       });
 
     if (error) {
+      try {
+        await publicApiRequest("/api/admin/auth/login-attempt", {
+          method: "POST",
+          body: { email: email.trim() },
+        });
+      } catch (attemptError) {
+        console.warn("Login attempt notification error:", attemptError);
+      }
       throw error;
     }
 
     useAuthStore
       .getState()
       .setSession(data.session);
-
-    try {
-      await apiRequest(
-        "/api/admin/auth/login-success",
-        {
-          method: "POST",
-          requiresCompanySession: false,
-        }
-      );
-    } catch (notificationError) {
-      console.warn(
-        "Login notification error:",
-        notificationError
-      );
-    }
 
     const statusResult =
       await getAdminAccessStatus();
@@ -125,6 +106,15 @@ export async function signIn(
       statusResult.membership?.status !==
       "approved"
     ) {
+      try {
+        await publicApiRequest("/api/admin/auth/login-attempt", {
+          method: "POST",
+          body: { email: email.trim() },
+        });
+      } catch (attemptError) {
+        console.warn("Login attempt notification error:", attemptError);
+      }
+
       await clearLocalBiometricAccess(
         data.user.id
       );

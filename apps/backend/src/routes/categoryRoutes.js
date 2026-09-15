@@ -17,6 +17,8 @@ import {
   requireCompanySession,
 } from "../middleware/requireCompanySession.js";
 
+import { getUserDisplayLabel, notifySafely } from "../services/notificationService.js";
+
 const categoryRoutes = Router();
 
 categoryRoutes.use(
@@ -258,6 +260,16 @@ categoryRoutes.post(
         });
       }
 
+      const actorLabel = await getUserDisplayLabel(request.auth.user.id);
+      await notifySafely({
+        eventType: "category_created",
+        title: "Catégorie créée",
+        body: `${actorLabel} a créé la catégorie « ${createdCategory.name} ».`,
+        actorUserId: request.auth.user.id,
+        route: "/categories",
+        data: { categoryId: createdCategory.id },
+      });
+
       return response.status(201).json({
         success: true,
         message:
@@ -464,6 +476,16 @@ categoryRoutes.patch(
             "Unable to update category",
         });
       }
+
+      const actorLabel = await getUserDisplayLabel(request.auth.user.id);
+      await notifySafely({
+        eventType: "category_updated",
+        title: "Catégorie modifiée",
+        body: `${actorLabel} a modifié la catégorie « ${updatedCategory.name} ».`,
+        actorUserId: request.auth.user.id,
+        route: "/categories",
+        data: { categoryId: identifierValidation.data },
+      });
 
       return response.status(200).json({
         success: true,

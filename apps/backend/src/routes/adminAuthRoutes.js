@@ -1563,9 +1563,6 @@ router.post(
           authenticationMethod:
             "company_password",
         },
-        excludeUserIds: [
-          request.auth.user.id,
-        ],
       });
 
       return response.status(200).json({
@@ -1871,9 +1868,6 @@ router.post(
           authenticationMethod:
             "biometric",
         },
-        excludeUserIds: [
-          request.auth.user.id,
-        ],
       });
 
       return response.status(200).json({

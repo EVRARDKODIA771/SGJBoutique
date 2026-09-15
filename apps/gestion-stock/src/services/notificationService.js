@@ -86,10 +86,11 @@ async function configureAndroidChannel() {
 }
 
 export async function registerDeviceForPushNotifications() {
-  if (
-    Platform.OS === "web" ||
-    !Device.isDevice
-  ) {
+  if (Platform.OS === "web") {
+    return registerBrowserForPushNotifications();
+  }
+
+  if (!Device.isDevice) {
     return null;
   }
 
@@ -161,6 +162,51 @@ export async function registerDeviceForPushNotifications() {
   );
 
   return expoPushToken;
+}
+
+function urlBase64ToUint8Array(value) {
+  const padding = "=".repeat((4 - (value.length % 4)) % 4);
+  const base64 = (value + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map((character) => character.charCodeAt(0)));
+}
+
+async function registerBrowserForPushNotifications() {
+  if (
+    typeof window === "undefined" ||
+    !("serviceWorker" in navigator) ||
+    !("PushManager" in window) ||
+    !("Notification" in window)
+  ) {
+    return null;
+  }
+
+  let permission = Notification.permission;
+  if (permission === "default") permission = await Notification.requestPermission();
+  if (permission !== "granted") return null;
+
+  const keyResult = await apiRequest("/api/admin/notifications/web-push/public-key");
+  const registration = await navigator.serviceWorker.register("/sgj-push-sw.js");
+  await navigator.serviceWorker.ready;
+
+  let subscription = await registration.pushManager.getSubscription();
+  if (!subscription) {
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(keyResult.publicKey),
+    });
+  }
+
+  const serialized = subscription.toJSON();
+  await apiRequest("/api/admin/notifications/web-push/subscriptions", {
+    method: "POST",
+    body: {
+      ...serialized,
+      userAgent: navigator.userAgent,
+    },
+  });
+
+  return serialized.endpoint;
 }
 
 export async function markNotificationRead(

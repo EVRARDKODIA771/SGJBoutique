@@ -192,6 +192,17 @@ restockingRoutes.post("/", async (request, response) => {
       .single();
 
     if (error) throw error;
+
+    const actorLabel = await getUserDisplayLabel(request.auth.user.id);
+    await notifySafely({
+      eventType: "restocking_created",
+      title: "Arrivage créé",
+      body: `${actorLabel} vient de créer « ${restocking.title} ».`,
+      actorUserId: request.auth.user.id,
+      route: "/restockings",
+      data: { restockingId: restocking.id, supplierId: value.supplierId },
+    });
+
     return response.status(201).json({ success: true, restocking });
   } catch (error) {
     console.error("Restocking creation error:", error);
@@ -456,17 +467,22 @@ restockingRoutes.post("/:restockingId/complete", async (request, response) => {
       .single();
     if (error) throw error;
 
-    if ((remainingItems ?? []).length > 0) {
-      const actorLabel = await getUserDisplayLabel(request.auth.user.id);
-      await notifySafely({
-        eventType: "restocking_forced_completed",
-        title: "Ravitaillement arrêté avant épuisement",
-        body: `${actorLabel} a arrêté « ${restocking.title} » alors qu'il restait du stock.`,
-        actorUserId: request.auth.user.id,
-        route: "/restockings",
-        data: { restockingId: restocking.id, authorizationMethod: validation.data.authorizationMethod },
-      });
-    }
+    const forcedCompletion = (remainingItems ?? []).length > 0;
+    const actorLabel = await getUserDisplayLabel(request.auth.user.id);
+    await notifySafely({
+      eventType: forcedCompletion
+        ? "restocking_forced_completed"
+        : "restocking_completed",
+      title: forcedCompletion
+        ? "Ravitaillement arrêté avant épuisement"
+        : "Ravitaillement terminé",
+      body: forcedCompletion
+        ? `${actorLabel} a arrêté « ${restocking.title} » alors qu'il restait du stock.`
+        : `${actorLabel} a terminé « ${restocking.title} ».`,
+      actorUserId: request.auth.user.id,
+      route: "/restockings",
+      data: { restockingId: restocking.id, authorizationMethod: validation.data.authorizationMethod },
+    });
 
     return response.status(200).json({ success: true, restocking: completed });
   } catch (error) {
