@@ -95,10 +95,6 @@ export async function signIn(
       throw error;
     }
 
-    useAuthStore
-      .getState()
-      .setSession(data.session);
-
     const statusResult =
       await getAdminAccessStatus();
 
@@ -133,6 +129,15 @@ export async function signIn(
       statusResult =
         await getAdminAccessStatus();
     }
+
+    /*
+     * Ne rendre la session visible aux gardes de navigation
+     * qu'une fois le statut administratif connu. Cela évite
+     * le passage erroné par /access pour un compte approuvé.
+     */
+    useAuthStore
+      .getState()
+      .setSession(data.session);
 
     return {
       session: data.session,
@@ -199,7 +204,7 @@ export async function signUp({
  */
 export async function getAdminAccessStatus() {
   const result = await apiRequest(
-    "/api/admin/products/access-status",
+    "/api/admin/auth/access/status",
     {
       requiresCompanySession: false,
     }
@@ -219,7 +224,7 @@ export async function getAdminAccessStatus() {
  */
 export async function requestAdminAccess() {
   const result = await apiRequest(
-    "/api/admin/products/access-request",
+    "/api/admin/auth/access/request",
     {
       method: "POST",
       requiresCompanySession: false,

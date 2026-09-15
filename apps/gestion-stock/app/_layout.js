@@ -183,6 +183,20 @@ export default function RootLayout() {
             return;
           }
 
+          /*
+           * signIn() charge d'abord le statut administratif,
+           * puis publie la session dans le store. Sans cette
+           * garde, SIGNED_IN provoque une redirection prématurée
+           * vers /access alors que l'adhésion est encore null.
+           */
+          if (
+            event === "SIGNED_IN" &&
+            useAuthStore.getState()
+              .isInitializing
+          ) {
+            return;
+          }
+
           setSession(newSession);
         }
       );
