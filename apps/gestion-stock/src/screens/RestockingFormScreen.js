@@ -4,6 +4,7 @@ import {
 } from "react-native";
 
 import { createRestocking, getSuppliers } from "../services/stockService.js";
+import DatePickerField, { getTodayIsoDate } from "../components/DatePickerField.js";
 import { colors } from "../theme/colors.js";
 
 export default function RestockingFormScreen({ onBack, onCreated }) {
@@ -11,7 +12,7 @@ export default function RestockingFormScreen({ onBack, onCreated }) {
   const [supplierId, setSupplierId] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [title, setTitle] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(getTodayIsoDate);
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -90,8 +91,7 @@ export default function RestockingFormScreen({ onBack, onCreated }) {
           placeholder="Exemple : Arrivage août JDE" placeholderTextColor={colors.textMuted} />
 
         <Text style={styles.label}>Date du ravitaillement *</Text>
-        <TextInput style={styles.input} value={date} onChangeText={setDate}
-          placeholder="AAAA-MM-JJ" placeholderTextColor={colors.textMuted} />
+        <DatePickerField value={date} onChange={setDate} />
 
         <Text style={styles.label}>Numéro de facture *</Text>
         <TextInput style={styles.input} value={invoiceNumber} onChangeText={setInvoiceNumber}

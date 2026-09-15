@@ -40,6 +40,9 @@ import {
 import { colors } from
   "../theme/colors.js";
 
+import DatePickerField, { getTodayIsoDate } from
+  "../components/DatePickerField.js";
+
 const integerText = z
   .string()
   .trim()
@@ -259,9 +262,7 @@ export default function ProductFormScreen({
   const [isRestockingMenuOpen, setIsRestockingMenuOpen] = useState(false);
   const [isCreatingRestocking, setIsCreatingRestocking] = useState(false);
   const [newRestockingTitle, setNewRestockingTitle] = useState("");
-  const [newRestockingDate, setNewRestockingDate] = useState(
-    new Date().toISOString().slice(0, 10)
-  );
+  const [newRestockingDate, setNewRestockingDate] = useState(getTodayIsoDate);
   const [newInvoiceNumber, setNewInvoiceNumber] = useState("");
   const [isSavingRestocking, setIsSavingRestocking] = useState(false);
 
@@ -1096,11 +1097,10 @@ export default function ProductFormScreen({
                           onChangeText={setNewRestockingTitle}
                           placeholder="Titre du ravitaillement"
                         />
-                        <TextInput
+                        <DatePickerField
                           style={styles.input}
                           value={newRestockingDate}
-                          onChangeText={setNewRestockingDate}
-                          placeholder="AAAA-MM-JJ"
+                          onChange={setNewRestockingDate}
                         />
                         <TextInput
                           style={styles.input}
