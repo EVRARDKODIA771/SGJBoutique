@@ -21,9 +21,72 @@ restockingRoutes.use(
 const createSchema = z.object({
   title: z.string().trim().min(1).max(150),
   restockingDate: z.string().date(),
-  supplierId: z.string().uuid(),
+  supplierId: z.string().trim().uuid(),
   invoiceNumber: z.string().trim().min(1).max(100),
 }).strict();
+
+/*
+ * Plusieurs versions de l'interface ont été distribuées (web et APK).
+ * Cette normalisation maintient leur compatibilité et neutralise les
+ * différences de clavier/navigateur les plus courantes, sans relâcher la
+ * validation finale effectuée par Zod.
+ */
+function normalizeRestockingDate(rawDate) {
+  if (typeof rawDate !== "string") return rawDate;
+
+  const date = rawDate
+    .trim()
+    .replace(/[‐‑‒–—−]/g, "-");
+
+  const frenchDate = date.match(
+    /^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/
+  );
+
+  if (frenchDate) {
+    const [, day, month, year] = frenchDate;
+    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  }
+
+  const isoDate = date.match(/^(\d{4}-\d{2}-\d{2})(?:[T\s].*)?$/);
+  return isoDate?.[1] ?? date;
+}
+
+function normalizeCreatePayload(body) {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return body;
+  }
+
+  return {
+    title:
+      body.title ??
+      body.restockingTitle ??
+      body.restocking_title,
+    restockingDate: normalizeRestockingDate(
+      body.restockingDate ??
+      body.restocking_date ??
+      body.date
+    ),
+    supplierId:
+      body.supplierId ??
+      body.supplier_id ??
+      body.supplier,
+    invoiceNumber:
+      body.invoiceNumber ??
+      body.invoice_number ??
+      body.invoice,
+  };
+}
+
+function getRestockingValidationMessage(validationError) {
+  const field = validationError.issues?.[0]?.path?.[0];
+
+  return ({
+    title: "Le titre du ravitaillement est invalide",
+    restockingDate: "La date du ravitaillement est invalide (format attendu : AAAA-MM-JJ)",
+    supplierId: "Le fournisseur sélectionné est invalide",
+    invoiceNumber: "Le numéro de facture est invalide",
+  })[field] ?? "Les données du ravitaillement sont invalides";
+}
 
 async function loadRestockingSummary(restocking) {
   const { data: items, error } = await supabaseAdmin
@@ -89,11 +152,13 @@ async function loadRestockingSummary(restocking) {
 }
 
 restockingRoutes.post("/", async (request, response) => {
-  const validation = createSchema.safeParse(request.body);
+  const validation = createSchema.safeParse(
+    normalizeCreatePayload(request.body)
+  );
   if (!validation.success) {
     return response.status(400).json({
       success: false,
-      error: "Invalid restocking data",
+      error: getRestockingValidationMessage(validation.error),
       details: validation.error.flatten(),
     });
   }

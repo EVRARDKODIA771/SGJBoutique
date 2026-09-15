@@ -5,6 +5,7 @@ import {
 
 import {
   ActivityIndicator,
+  AppState,
   Image,
   Modal,
   Pressable,
@@ -266,13 +267,37 @@ export default function RootLayout() {
       return;
     }
 
-    registerDeviceForPushNotifications()
-      .catch((error) => {
-        console.error(
-          "Push notification registration error:",
-          error
-        );
-      });
+    const registerDevice = () => {
+      registerDeviceForPushNotifications()
+        .catch((error) => {
+          console.error(
+            "Push notification registration error:",
+            error
+          );
+        });
+    };
+
+    registerDevice();
+
+    const appStateSubscription =
+      AppState.addEventListener(
+        "change",
+        (nextState) => {
+          if (nextState === "active") {
+            registerDevice();
+          }
+        }
+      );
+
+    const refreshInterval = setInterval(
+      registerDevice,
+      6 * 60 * 60 * 1000
+    );
+
+    return () => {
+      appStateSubscription.remove();
+      clearInterval(refreshInterval);
+    };
   }, [
     session?.user?.id,
     adminMembership?.status,

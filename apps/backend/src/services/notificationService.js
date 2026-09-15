@@ -5,7 +5,11 @@ import {
 const EXPO_PUSH_URL =
   "https://exp.host/--/api/v2/push/send";
 
+const EXPO_RECEIPTS_URL =
+  "https://exp.host/--/api/v2/push/getReceipts";
+
 const MAX_EXPO_BATCH_SIZE = 100;
+const MAX_EXPO_RECEIPT_BATCH_SIZE = 100;
 
 function splitIntoBatches(
   values,
@@ -146,11 +150,9 @@ async function markDeliveryResult(
   const errorCode =
     ticket?.details?.error ?? null;
 
+  /* InvalidCredentials concerne Firebase, pas le téléphone lui-même. */
   const invalidToken =
-    [
-      "DeviceNotRegistered",
-      "InvalidCredentials",
-    ].includes(errorCode);
+    errorCode === "DeviceNotRegistered";
 
   const {
     error,
@@ -204,6 +206,121 @@ async function markDeliveryResult(
       );
     }
   }
+}
+
+async function markReceiptResult(
+  delivery,
+  receipt
+) {
+  const isDelivered =
+    receipt?.status === "ok";
+
+  const errorCode =
+    receipt?.details?.error ?? null;
+
+  const invalidToken =
+    errorCode === "DeviceNotRegistered";
+
+  const now = new Date().toISOString();
+
+  const { error } = await supabaseAdmin
+    .from("push_deliveries")
+    .update({
+      status: isDelivered
+        ? "delivered"
+        : invalidToken
+          ? "invalid_token"
+          : "failed",
+      error_code: errorCode,
+      error_message:
+        receipt?.message ?? null,
+      delivered_at:
+        isDelivered ? now : null,
+      receipt_checked_at: now,
+    })
+    .eq("id", delivery.id);
+
+  if (error) {
+    console.error(
+      "Push receipt update error:",
+      error
+    );
+  }
+
+  if (invalidToken) {
+    const { error: deviceError } =
+      await supabaseAdmin
+        .from("push_devices")
+        .update({ is_active: false })
+        .eq("id", delivery.push_device_id);
+
+    if (deviceError) {
+      console.error(
+        "Invalid receipt device deactivation error:",
+        deviceError
+      );
+    }
+  }
+}
+
+/*
+ * Expo renvoie d'abord un ticket, puis un reçu final. Les reçus des envois
+ * précédents sont contrôlés à chaque nouvelle notification, ce qui convient
+ * à Vercel serverless sans processus permanent à maintenir éveillé.
+ */
+async function refreshPendingExpoReceipts() {
+  const { data, error } = await supabaseAdmin
+    .from("push_deliveries")
+    .select("id, push_device_id, expo_ticket_id")
+    .eq("status", "sent")
+    .not("expo_ticket_id", "is", null)
+    .is("receipt_checked_at", null)
+    .order("created_at", { ascending: true })
+    .limit(MAX_EXPO_RECEIPT_BATCH_SIZE);
+
+  if (error) throw error;
+  if (!data?.length) return;
+
+  const response = await fetch(
+    EXPO_RECEIPTS_URL,
+    {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Accept-Encoding": "gzip, deflate",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ids: data.map(
+          (delivery) =>
+            delivery.expo_ticket_id
+        ),
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Expo receipt service returned ${response.status}`
+    );
+  }
+
+  const result = await response.json();
+  const receipts = result?.data ?? {};
+
+  await Promise.all(
+    data.map((delivery) => {
+      const receipt =
+        receipts[delivery.expo_ticket_id];
+
+      return receipt
+        ? markReceiptResult(
+            delivery,
+            receipt
+          )
+        : Promise.resolve();
+    })
+  );
 }
 
 async function sendPendingDeliveries(
@@ -312,6 +429,15 @@ export async function sendBusinessNotification({
   data = {},
   excludeUserIds = [],
 }) {
+  try {
+    await refreshPendingExpoReceipts();
+  } catch (error) {
+    console.error(
+      "Expo push receipt refresh error:",
+      error
+    );
+  }
+
   const recipientIds =
     await getApprovedRecipientIds(
       excludeUserIds

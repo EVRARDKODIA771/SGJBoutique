@@ -31,11 +31,10 @@ function configureNotificationHandler() {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       /*
-       * La notification reste dans le volet
-       * Android sans afficher de bannière
-       * intrusive au-dessus de l’application.
+       * Les alertes métier restent visibles même lorsque
+       * l'application est ouverte.
        */
-      shouldShowBanner: false,
+      shouldShowBanner: true,
       shouldShowList: true,
       shouldPlaySound: true,
       shouldSetBadge: true,
@@ -69,7 +68,7 @@ async function configureAndroidChannel() {
           "Ventes, stock et accès administratifs",
         importance:
           Notifications
-            .AndroidImportance.DEFAULT,
+            .AndroidImportance.HIGH,
         vibrationPattern: [
           0,
           250,
