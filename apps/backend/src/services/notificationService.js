@@ -15,16 +15,31 @@ const EXPO_RECEIPTS_URL =
 const MAX_EXPO_BATCH_SIZE = 100;
 const MAX_EXPO_RECEIPT_BATCH_SIZE = 100;
 
-const webPushConfigured = Boolean(
+let webPushConfigured = Boolean(
   env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY
 );
 
 if (webPushConfigured) {
-  webPush.setVapidDetails(
-    env.VAPID_SUBJECT,
-    env.VAPID_PUBLIC_KEY,
-    env.VAPID_PRIVATE_KEY
-  );
+  try {
+    webPush.setVapidDetails(
+      env.VAPID_SUBJECT,
+      env.VAPID_PUBLIC_KEY,
+      env.VAPID_PRIVATE_KEY
+    );
+  } catch (error) {
+    /*
+     * Une configuration VAPID incorrecte ne doit jamais
+     * empêcher le backend entier de démarrer. Les autres
+     * notifications et toutes les routes métier restent
+     * disponibles pendant que la configuration est corrigée.
+     */
+    webPushConfigured = false;
+
+    console.error(
+      "Web Push configuration error; browser push disabled:",
+      error.message
+    );
+  }
 }
 
 async function sendWebPushNotifications(notification, subscriptions) {
